@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "workspace.library": [
+    "scripts"
+  ],
+  "workspace.checkThirdParty": false,
+  "diagnostics.globals": [
+    "client"
+  ]
+}

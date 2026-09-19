@@ -1,0 +1,20 @@
+[package]
+name = "mud-client"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+crossterm = { version = "0.28", features = ["event-stream"] }
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+directories = "5"
+futures = "0.3"
+mlua = { version = "0.12.1", features = ["lua54", "vendored"] }
+ratatui = "0.29"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+toml = "0.8"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+unicode-width = "0.2"
