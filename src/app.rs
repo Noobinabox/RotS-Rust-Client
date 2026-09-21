@@ -1,6 +1,9 @@
 use std::{
+    collections::BTreeMap,
     fmt::Write,
+    fs,
     path::{Path, PathBuf},
+    time::{Duration, Instant},
 };
 
 use chrono::Local;
@@ -83,6 +86,15 @@ pub struct App {
     active_divider: Option<Divider>,
     dispatching_handler_commands: bool,
     mud_ansi_colors: AnsiColorState,
+    lua_timers: BTreeMap<String, LuaTimer>,
+}
+
+struct LuaTimer {
+    interval: Duration,
+    next_due: Instant,
+    callback: String,
+    repeat: bool,
+    tick_count: u64,
 }
 
 struct CommandBudget {
@@ -151,6 +163,7 @@ impl App {
             active_divider: None,
             dispatching_handler_commands: false,
             mud_ansi_colors: AnsiColorState::default(),
+            lua_timers: BTreeMap::new(),
         }
     }
 
@@ -301,7 +314,9 @@ impl App {
             }
             AppEvent::Timer(TimerEvent::Tick) => {
                 self.state.tick_output_status();
-                self.animations.tick(std::time::Instant::now());
+                let now = Instant::now();
+                self.animations.tick(now);
+                self.run_due_lua_timers(now, command_tx).await;
                 false
             }
             AppEvent::Script(event) => {
@@ -478,6 +493,16 @@ impl App {
         if command == "lua" || command.starts_with("lua ") {
             let input = command.strip_prefix("lua").unwrap_or_default().trim();
             match self.handle_lua_command(input, command_tx, budgets).await {
+                Ok(message) => push_output_lines(&mut self.state, message, OutputCategory::System),
+                Err(error) => push_output_lines(&mut self.state, error, OutputCategory::Error),
+            }
+            return true;
+        }
+        if command == "timer" || command.starts_with("timer ") {
+            match self
+                .handle_timer_command(command.strip_prefix("timer").unwrap_or_default())
+                .await
+            {
                 Ok(message) => push_output_lines(&mut self.state, message, OutputCategory::System),
                 Err(error) => push_output_lines(&mut self.state, error, OutputCategory::Error),
             }
@@ -687,6 +712,32 @@ impl App {
                 .collect();
             match self.state.path.execute(path_command.trim(), &variables) {
                 Ok(result) => {
+                    if let Some((name, value)) = result.file {
+                        let safe_name = name.replace(['/', '\\'], "_");
+                        let base = self
+                            .config_path
+                            .as_deref()
+                            .and_then(Path::parent)
+                            .unwrap_or_else(|| Path::new("."));
+                        let directory = base.join("bot_paths");
+                        match fs::create_dir_all(&directory).and_then(|_| {
+                            fs::write(directory.join(format!("{safe_name}.path")), value)
+                        }) {
+                            Ok(()) => push_output_lines(
+                                &mut self.state,
+                                format!(
+                                    "Path mapping `{safe_name}` saved under {}.",
+                                    directory.display()
+                                ),
+                                OutputCategory::System,
+                            ),
+                            Err(error) => push_output_lines(
+                                &mut self.state,
+                                format!("Failed to save path mapping `{safe_name}`: {error}"),
+                                OutputCategory::Error,
+                            ),
+                        }
+                    }
                     if let Some((name, value)) = result.variable {
                         match self.variables.with_runtime(&name, &value) {
                             Ok(updated) => {
@@ -1195,7 +1246,99 @@ impl App {
                 LuaAction::LocalCommand(command) => {
                     Box::pin(self.handle_text_commands(&command, command_tx, budgets)).await;
                 }
+                LuaAction::SetTimer {
+                    name,
+                    interval_ms,
+                    callback,
+                    repeat,
+                } => {
+                    self.set_lua_timer(name, interval_ms, callback, repeat);
+                }
+                LuaAction::CancelTimer(name) => {
+                    self.lua_timers.remove(&name);
+                }
             }
+        }
+    }
+
+    fn set_lua_timer(&mut self, name: String, interval_ms: u64, callback: String, repeat: bool) {
+        let name = name.trim().to_string();
+        let callback = callback.trim().to_string();
+        if name.is_empty() || callback.is_empty() {
+            self.state.push_output(
+                "Timer name and callback are required.",
+                OutputCategory::Error,
+            );
+            return;
+        }
+        self.lua_timers.insert(
+            name,
+            LuaTimer {
+                interval: Duration::from_millis(interval_ms.max(1)),
+                next_due: Instant::now() + Duration::from_millis(interval_ms.max(1)),
+                callback,
+                repeat,
+                tick_count: 0,
+            },
+        );
+    }
+
+    async fn run_due_lua_timers(&mut self, now: Instant, command_tx: &mpsc::Sender<ClientCommand>) {
+        let due = self
+            .lua_timers
+            .iter_mut()
+            .filter_map(|(name, timer)| {
+                if timer.next_due > now {
+                    return None;
+                }
+                timer.tick_count += 1;
+                let callback = timer.callback.clone();
+                let tick_count = timer.tick_count;
+                if timer.repeat {
+                    timer.next_due = now + timer.interval;
+                }
+                Some((name.clone(), callback, tick_count, timer.repeat))
+            })
+            .collect::<Vec<_>>();
+        for (name, callback, tick_count, repeat) in due {
+            if !repeat {
+                self.lua_timers.remove(&name);
+            }
+            self.run_lua_hook(
+                &callback,
+                LuaHookContext {
+                    kind: "timer".to_string(),
+                    timer: Some(name),
+                    tick_count: Some(tick_count),
+                    ..LuaHookContext::default()
+                },
+                command_tx,
+                &mut Vec::new(),
+            )
+            .await;
+        }
+    }
+
+    async fn handle_timer_command(&mut self, input: &str) -> std::result::Result<String, String> {
+        let fields = input.split_whitespace().collect::<Vec<_>>();
+        match fields.as_slice() {
+            [] | ["list"] => {
+                if self.lua_timers.is_empty() { return Ok("# Timers\n\nNo timers are scheduled.".to_string()); }
+                let mut output = String::from("# Timers\n\n");
+                for (name, timer) in &self.lua_timers {
+                    writeln!(output, "- `{name}` -> `{}` every {}ms ({})", timer.callback, timer.interval.as_millis(), if timer.repeat { "repeat" } else { "once" }).unwrap();
+                }
+                Ok(output)
+            }
+            ["set", name, interval, callback, ..] => {
+                let interval_ms = interval.parse::<u64>().map_err(|_| "interval must be milliseconds".to_string())?;
+                let repeat = fields.get(4).map(|value| *value != "once").unwrap_or(true);
+                self.set_lua_timer((*name).to_string(), interval_ms, (*callback).to_string(), repeat);
+                Ok(format!("Timer `{name}` scheduled."))
+            }
+            ["cancel", name] => { self.lua_timers.remove(*name); Ok(format!("Timer `{name}` cancelled.")) }
+            ["clear"] => { self.lua_timers.clear(); Ok("All Lua timers cancelled.".to_string()) }
+            _ => Err("usage: /timer [list|set <name> <interval_ms> <lua_function> [once|repeat]|cancel <name>|clear]".to_string()),
         }
     }
 

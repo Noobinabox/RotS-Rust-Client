@@ -378,3 +378,25 @@ ctx.captures
 - Hooks can enqueue only `lua.max_actions_per_hook` actions.
 
 For the full API surface, including `client.msdp`, snapshots, output search, UI toggles, map door helpers, and `client.time`, see [Lua API Reference](lua-api.md).
+
+## Opt-in bot controller
+
+The repository includes [`scripts/bot.lua`](../scripts/bot.lua), modeled on the existing TinTin++ bot workflow: named paths, creature lists, periodic stepping, route verification, recovery routing, path cycling, and optional restart. It is deliberately not enabled automatically.
+
+To use it, set `[lua] entrypoint = "bot.lua"` and keep `enabled = true`, then start it manually with `/lua call bot_start`. The client automatically loads the companion `scripts/bot_areas.lua` data file when `bot.lua` is the entrypoint. Load a TinTin++ area with `/lua call bot_load_area <area>`; use `/lua call bot_status` and `/lua call bot_stop` for control. Edit `bot_config.paths` for additional game-specific room names and creatures.
+
+Add game-specific trigger and event rules that call `bot_flee_line` when the character flees and `bot_room_changed` when authoritative room data changes. The controller only sends movement through `client.map.run`, so normal map room flags and weighted routing remain in force.
+
+Mob selection is exact-text based. The area file stores the complete room description from TinTin++ as `mob_triggers[].text`; `bot_mob_line` compares `ctx.line` for equality and only then sends the configured short attack name. Add a catch-all Lua trigger for room lines after loading an area:
+
+```toml
+[[triggers.rules]]
+name = "bot-exact-mob-selector"
+pattern = ".+"
+lua = "bot_mob_line"
+priority = 1
+```
+
+Do not replace these exact descriptions with broad patterns such as `spider` or `troll`; that can attack a stronger creature sharing the same keyword.
+
+The path builder is available through `/lua call bot_add_path <name> <start> <destination> [creature...]`. Set restart behavior with `/lua call bot_set_restart on|off` and multi-path cycling with `/lua call bot_set_cycle on|off`.

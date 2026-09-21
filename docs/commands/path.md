@@ -23,6 +23,22 @@ e
 
 `create` clears the current path and begins recording. `start` resumes recording without clearing. Normal cardinal movement commands are captured with reverse directions automatically. `stop` stops recording; `destroy` clears the path and stops recording.
 
+## Create a named bot area in the client
+
+Use the alias-driven mapping workflow while playing:
+
+```text
+/path mapping Ancient Spider
+n
+e
+open gate
+n
+/path mapping stop
+/path mapping save
+```
+
+`/path mapping <name>` clears the current recording and starts capturing movement. `/path mapping stop` stops recording without deleting the route. `/path mapping save` writes the route to `bot_paths/<name>.path` beside the active `config.toml`, creating that directory when needed. Names are sanitized for safe filenames.
+
 ## Edit and navigate
 
 ```text

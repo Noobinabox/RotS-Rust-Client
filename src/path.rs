@@ -11,6 +11,7 @@ pub struct PathState {
     pub steps: Vec<PathStep>,
     pub position: usize,
     pub mapping: bool,
+    pub mapping_name: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -19,6 +20,7 @@ pub struct PathResult {
     pub commands: Vec<String>,
     pub show_map: bool,
     pub variable: Option<(String, String)>,
+    pub file: Option<(String, String)>,
 }
 
 impl PathState {
@@ -46,6 +48,32 @@ impl PathState {
         };
         match command {
             "" | "help" => Ok(self.help()),
+            _ if command.eq_ignore_ascii_case("mapping") => match fields.get(1).map(String::as_str)
+            {
+                Some("stop") => {
+                    self.mapping = false;
+                    Ok(self.message("Path mapping stopped."))
+                }
+                Some("save") => {
+                    let name = self
+                        .mapping_name
+                        .clone()
+                        .ok_or("usage: /path mapping <name> before saving")?;
+                    Ok(PathResult {
+                        message: format!("Path mapping `{name}` saved."),
+                        file: Some((name, self.serialize("both")?)),
+                        ..PathResult::default()
+                    })
+                }
+                Some(name) if !name.is_empty() => {
+                    self.steps.clear();
+                    self.position = 0;
+                    self.mapping = true;
+                    self.mapping_name = Some(name.to_string());
+                    Ok(self.message(format!("Path mapping `{name}` started.")))
+                }
+                _ => Err("usage: /path mapping <name|stop|save>".to_string()),
+            },
             _ if option("create") => {
                 self.steps.clear();
                 self.position = 0;
@@ -264,7 +292,7 @@ impl PathState {
         }
     }
     fn help(&self) -> PathResult {
-        self.message("# Path Commands\n\n/path create|destroy|start|stop\n/path insert <forward> [backward]\n/path delete\n/path describe\n/path get length|position\n/path goto start|end|<position>\n/path move <number>\n/path walk [forward|backward]\n/path run\n/path swap\n/path zip|unzip <speedwalk>\n/path map\n/path save <forward|backward|both> <variable>\n/path load <variable>")
+        self.message("# Path Commands\n\n/path mapping <name>\n/path mapping stop\n/path mapping save\n/path create|destroy|start|stop\n/path insert <forward> [backward]\n/path delete\n/path describe\n/path get length|position\n/path goto start|end|<position>\n/path move <number>\n/path walk [forward|backward]\n/path run\n/path swap\n/path zip|unzip <speedwalk>\n/path map\n/path save <forward|backward|both> <variable>\n/path load <variable>")
     }
     fn describe(&self) -> String {
         format!(

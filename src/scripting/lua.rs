@@ -29,6 +29,13 @@ pub enum LuaAction {
     UnsetVariable(String),
     EmitEvent(String, Option<String>),
     LocalCommand(String),
+    SetTimer {
+        name: String,
+        interval_ms: u64,
+        callback: String,
+        repeat: bool,
+    },
+    CancelTimer(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -56,6 +63,8 @@ pub struct LuaHookContext {
     pub category: Option<OutputCategory>,
     pub captures: Vec<String>,
     pub colors: Option<AnsiColors>,
+    pub timer: Option<String>,
+    pub tick_count: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -246,6 +255,27 @@ impl LuaEngine {
         let source = fs::read_to_string(&path).map_err(|error| {
             format!("failed to read Lua entrypoint {}: {error}", path.display())
         })?;
+        if path.file_name().and_then(|name| name.to_str()) == Some("bot.lua") {
+            let areas_path = path.with_file_name("bot_areas.lua");
+            if areas_path.exists() {
+                let areas = fs::read_to_string(&areas_path).map_err(|error| {
+                    format!(
+                        "failed to read Lua bot areas {}: {error}",
+                        areas_path.display()
+                    )
+                })?;
+                self.lua
+                    .load(&areas)
+                    .set_name(areas_path.to_string_lossy().as_ref())
+                    .exec()
+                    .map_err(|error| {
+                        format!(
+                            "failed to execute Lua bot areas {}: {error}",
+                            areas_path.display()
+                        )
+                    })?;
+            }
+        }
         self.lua
             .load(&source)
             .set_name(path.to_string_lossy().as_ref())
@@ -310,6 +340,7 @@ impl LuaEngine {
         client.set("map", map_table(&self.lua, &self.actions, &self.snapshot)?)?;
         client.set("ui", ui_table(&self.lua, &self.actions)?)?;
         client.set("time", time_table(&self.lua)?)?;
+        client.set("timer", timer_table(&self.lua, &self.actions)?)?;
         self.lua.globals().set("client", client)?;
         Ok(())
     }
@@ -336,6 +367,12 @@ impl LuaEngine {
             table.set("category", format!("{category:?}"))?;
         }
         table.set("captures", vec_to_lua_array(&self.lua, context.captures)?)?;
+        if let Some(timer) = context.timer {
+            table.set("timer", timer)?;
+        }
+        if let Some(tick_count) = context.tick_count {
+            table.set("tick_count", tick_count)?;
+        }
         if let Some(colors) = context.colors {
             let color_table = self.lua.create_table()?;
             color_table.set(
@@ -808,6 +845,36 @@ fn time_table(lua: &Lua) -> mlua::Result<Table> {
                 .duration_since(UNIX_EPOCH)
                 .map(|duration| duration.as_millis() as u64)
                 .unwrap_or_default())
+        })?,
+    )?;
+    Ok(table)
+}
+
+fn timer_table(lua: &Lua, actions: &Rc<LuaActionQueue>) -> mlua::Result<Table> {
+    let table = lua.create_table()?;
+    table.set(
+        "set",
+        lua.create_function({
+            let actions = Rc::clone(actions);
+            move |_, (name, interval_ms, callback, repeat): (String, u64, String, Option<bool>)| {
+                actions.push(LuaAction::SetTimer {
+                    name,
+                    interval_ms,
+                    callback,
+                    repeat: repeat.unwrap_or(true),
+                });
+                Ok(())
+            }
+        })?,
+    )?;
+    table.set(
+        "cancel",
+        lua.create_function({
+            let actions = Rc::clone(actions);
+            move |_, name: String| {
+                actions.push(LuaAction::CancelTimer(name));
+                Ok(())
+            }
         })?,
     )?;
     Ok(table)

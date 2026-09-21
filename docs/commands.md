@@ -22,6 +22,7 @@ Every local command starts with `/` and is handled by the client instead of bein
 - [`/event`](commands/event.md) — inspect or emit script events.
 - [`/handler`](commands/handler.md) — react to script events.
 - [`/lua`](commands/lua.md) — inspect and run Lua hooks.
+- [`/timer`](commands/timer.md) — schedule named Lua callbacks.
 
 ## Mapping and paths
 

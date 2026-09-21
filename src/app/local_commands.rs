@@ -15,6 +15,7 @@ pub(super) fn is_recognized_local_command(text: &str) -> bool {
                 | "reload"
                 | "reconnect"
                 | "lua"
+                | "timer"
                 | "alias"
                 | "trigger"
                 | "triggers"

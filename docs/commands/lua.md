@@ -24,3 +24,5 @@ Lua is controlled by `[lua]` configuration. Hooks use the safe `client` API; fil
 ```
 
 See [Lua API](../lua-api.md) and [Lua examples](../lua-scripting-examples.md).
+
+The opt-in bot controller is documented in [Lua Botting](../botting.md).

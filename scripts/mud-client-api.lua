@@ -167,6 +167,10 @@
 ---@class MudTimeApi
 ---@field now_ms fun(): integer Return Unix time in milliseconds.
 
+---@class MudTimerApi
+---@field set fun(name: string, interval_ms: integer, callback: string, repeat_timer?: boolean) Schedule a Lua callback.
+---@field cancel fun(name: string) Cancel a named timer.
+
 ---Global client API available inside configured Lua hooks.
 ---@class MudClientApi
 ---@field send fun(command: string) Queue one MUD command through the normal command pipeline.
@@ -185,6 +189,7 @@
 ---@field map MudMapApi Mapper helpers.
 ---@field ui MudUiApi UI local command helpers.
 ---@field time MudTimeApi Time helpers.
+---@field timer MudTimerApi Timer helpers.
 
 ---@type MudClientApi
 client = client

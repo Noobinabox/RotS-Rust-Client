@@ -354,6 +354,17 @@ Queues `/map set weight <weight>`.
 client.map.set_weight(4)
 ```
 
+## Timers
+
+Timers run on the client event loop and call a named Lua function without blocking network or terminal input.
+
+```lua
+client.timer.set("bot-controller", 750, "bot_tick", true)
+client.timer.cancel("bot-controller")
+```
+
+Timer callbacks receive `ctx.kind == "timer"`, `ctx.timer`, and an increasing `ctx.tick_count`. Manage timers with `/timer list`, `/timer set <name> <interval_ms> <lua_function> [once|repeat]`, `/timer cancel <name>`, and `/timer clear`.
+
 ## UI
 
 ### `client.ui.toggle(panel, state)`
