@@ -161,7 +161,7 @@ The Social panel captures incoming and outgoing tells, chats, says, narrates, gr
 | Option | Meaning |
 |---|---|
 | `load_on_startup` | Loads the configured map file when the client starts. Errors are shown in the output pane and do not stop startup. |
-| `path` | Map TOML path. Relative paths resolve beside the active `config.toml`; without a config file path they resolve from the current working directory. |
+| `path` | Map TOML path. Relative paths resolve beside the active `config.toml`; interactive `/map read` and `/map write` paths use the same base. Without a config file path they resolve from the current working directory. |
 | `save_on_exit` | Saves the current map to `path` during graceful client shutdown. |
 
 ### map.doors

@@ -25,12 +25,8 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) -> InputAction {
 
     match key.code {
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            if state.submitted_input_selected || !state.input.is_empty() {
-                clear_current_input(state);
-                InputAction::None
-            } else {
-                InputAction::Command(ClientCommand::Quit)
-            }
+            clear_current_input(state);
+            InputAction::None
         }
         KeyCode::Esc => InputAction::None,
         KeyCode::Enter => submit_input(state),
@@ -370,16 +366,12 @@ mod tests {
     }
 
     #[test]
-    fn ctrl_c_quits_when_input_is_empty() {
+    fn ctrl_c_never_quits_when_input_is_empty() {
         let mut state = AppState::new(&AppConfig::default());
 
-        assert_eq!(
-            handle_key(
-                &mut state,
-                KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
-            ),
-            InputAction::Command(ClientCommand::Quit)
-        );
+        let key = KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL);
+        assert_eq!(handle_key(&mut state, key), InputAction::None);
+        assert_eq!(handle_key(&mut state, key), InputAction::None);
     }
 
     #[test]

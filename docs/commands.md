@@ -54,7 +54,7 @@ Examples:
 
 MUD output scrolling clamps to the oldest full visible page instead of scrolling beyond retained text into blank space.
 | `F2` | Cycle styled, plain, and debug output views. The title indicator appears briefly. |
-| `Ctrl-C` | Clear non-empty command input; quit when the input is empty. |
+| `Ctrl-C` | Clear the command input. Use `/quit` to exit. |
 
 Repeat examples:
 
@@ -154,6 +154,9 @@ Common mapper commands are documented in [Mapper](mapping.md).
 | `/map exitflag <direction> <flag> [on|off]` | Toggle a flag on an exit from the current room. Flags include `avoid`, `block`, `hide`, `invis`, and `teleport`. |
 | `/map door <direction> [state|none] [name]` | Set or clear a directional door state and optional name on an exit. Closed, pickable, and locked named doors expand movement into open, pick, or unlock/open commands. |
 | `/map list [query]` | List mapped rooms, optionally filtered. |
+| `/map landmark [query]` / `/map landmarks [query]` | List landmarks, optionally filtered by name. |
+| `/map landmark <name> <vnum> [description] [size]` | Create or update a named landmark. |
+| `/map unlandmark <name-or-pattern>` | Remove matching landmarks. |
 | `/map find <vnum|name>` | Show an optimized route to a room. |
 | `/map run <vnum|name>` | Send the optimized route to the MUD. |
 | `/map read <file>` | Load a map file. |

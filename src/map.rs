@@ -1,7 +1,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use serde::{Deserialize, Serialize};
@@ -12,6 +12,7 @@ use crate::network::msdp::MsdpValue;
 #[serde(default)]
 pub struct MapState {
     pub rooms: BTreeMap<String, Room>,
+    pub landmarks: BTreeMap<String, Landmark>,
     pub current_room: Option<String>,
     pub previous_room: Option<String>,
     pub follow: bool,
@@ -29,6 +30,7 @@ impl Default for MapState {
     fn default() -> Self {
         Self {
             rooms: BTreeMap::new(),
+            landmarks: BTreeMap::new(),
             current_room: None,
             previous_room: None,
             follow: true,
@@ -61,6 +63,26 @@ pub struct Room {
     pub exits: BTreeMap<String, Exit>,
     pub exit_order: Vec<String>,
     pub flags: BTreeSet<RoomFlag>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default)]
+pub struct Landmark {
+    pub name: String,
+    pub room: String,
+    pub description: String,
+    pub size: String,
+}
+
+impl Default for Landmark {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            room: String::new(),
+            description: String::new(),
+            size: String::new(),
+        }
+    }
 }
 
 impl Default for Room {
@@ -164,9 +186,17 @@ struct Direction {
 
 impl MapState {
     pub fn execute(&mut self, input: &str) -> Result<MapCommandResult, String> {
+        self.execute_with_base_path(input, None)
+    }
+
+    pub fn execute_with_base_path(
+        &mut self,
+        input: &str,
+        base_path: Option<&Path>,
+    ) -> Result<MapCommandResult, String> {
         let mut parts = input.split_whitespace();
         let Some(command) = parts.next() else {
-            return Ok(self.help());
+            return Ok(self.help_with_landmarks());
         };
         match command {
             "create" => {
@@ -241,6 +271,47 @@ impl MapState {
             "list" => {
                 let query = parts.collect::<Vec<_>>().join(" ");
                 Ok(self.message(self.list(&query)))
+            }
+            "landmarks" => {
+                let query = parts.collect::<Vec<_>>().join(" ");
+                Ok(self.message(self.list_landmarks(&query)))
+            }
+            "landmark" => {
+                let values = parts.collect::<Vec<_>>();
+                if values.len() < 2 {
+                    return Ok(self.message(
+                        self.list_landmarks(values.first().copied().unwrap_or_default()),
+                    ));
+                }
+                let name = values[0];
+                let room = values[1];
+                let size = if values.len() > 3 {
+                    values.last().copied().unwrap_or_default()
+                } else {
+                    ""
+                };
+                let description = if values.len() == 3 {
+                    values[2].to_string()
+                } else if values.len() > 3 {
+                    values[2..values.len() - 1].join(" ")
+                } else {
+                    String::new()
+                };
+                self.set_landmark(name, room, &description, size)?;
+                Ok(self.message(format!("Landmark '{}' now points to room {}.", name, room)))
+            }
+            "unlandmark" => {
+                let pattern = required(parts.next(), "usage: /map unlandmark <name-or-pattern>")?;
+                let removed = self.remove_landmarks(pattern);
+                Ok(self.message(if removed == 0 {
+                    format!("No landmarks matched '{}'.", pattern)
+                } else {
+                    format!(
+                        "Removed {} landmark{}.",
+                        removed,
+                        if removed == 1 { "" } else { "s" }
+                    )
+                }))
             }
             "find" => {
                 let query = parts.collect::<Vec<_>>().join(" ");
@@ -321,21 +392,24 @@ impl MapState {
             }
             "read" => {
                 let path = required(parts.next(), "usage: /map read <file>")?;
-                self.read_from_path(path)?;
-                Ok(self.message(format!("Read map from {}.", path)))
+                let path = resolve_file_path(base_path, path);
+                self.read_from_path(&path)?;
+                Ok(self.message(format!("Read map from {}.", path.display())))
             }
             "write" => {
                 let path = required(parts.next(), "usage: /map write <file>")?;
-                self.write_to_path(path)?;
-                Ok(self.message(format!("Wrote map to {}.", path)))
+                let path = resolve_file_path(base_path, path);
+                self.write_to_path(&path)?;
+                Ok(self.message(format!("Wrote map to {}.", path.display())))
             }
-            "help" => Ok(self.help()),
+            "help" => Ok(self.help_with_landmarks()),
             _ => Err(format!("Unknown map command `{}`. Try /map help.", command)),
         }
     }
 
     pub fn create(&mut self) {
         self.rooms.clear();
+        self.landmarks.clear();
         self.current_room = Some("1".to_string());
         self.previous_room = None;
         self.next_generated_id = 2;
@@ -785,6 +859,7 @@ impl MapState {
             return Ok(());
         }
         self.rooms.remove(target);
+        self.landmarks.retain(|_, landmark| landmark.room != target);
         for room in self.rooms.values_mut() {
             room.exits
                 .retain(|_, exit| exit.to.as_deref() != Some(target));
@@ -1042,6 +1117,67 @@ impl MapState {
         }
     }
 
+    fn set_landmark(
+        &mut self,
+        name: &str,
+        room: &str,
+        description: &str,
+        size: &str,
+    ) -> Result<(), String> {
+        if name.trim().is_empty() || room.trim().is_empty() {
+            return Err("usage: /map landmark <name> <room> [description] [size]".to_string());
+        }
+        if !self.rooms.contains_key(room) {
+            return Err(format!("No mapped room matches `{}`.", room));
+        }
+        self.landmarks.insert(
+            name.to_string(),
+            Landmark {
+                name: name.to_string(),
+                room: room.to_string(),
+                description: description.to_string(),
+                size: size.to_string(),
+            },
+        );
+        Ok(())
+    }
+
+    fn list_landmarks(&self, query: &str) -> String {
+        let query = query.to_ascii_lowercase();
+        let lines = self
+            .landmarks
+            .values()
+            .filter(|landmark| {
+                query.is_empty() || landmark.name.to_ascii_lowercase().contains(&query)
+            })
+            .map(|landmark| {
+                format!(
+                    "NAME: {:<16} VNUM:{:>7} SIZE: {:>7} DESC: {}",
+                    landmark.name, landmark.room, landmark.size, landmark.description
+                )
+            })
+            .collect::<Vec<_>>();
+        if lines.is_empty() {
+            format!("No landmarks matched '{}'.", query)
+        } else {
+            lines.join("\n")
+        }
+    }
+
+    fn remove_landmarks(&mut self, pattern: &str) -> usize {
+        let names = self
+            .landmarks
+            .keys()
+            .filter(|name| wildcard_match(name, pattern))
+            .cloned()
+            .collect::<Vec<_>>();
+        let count = names.len();
+        for name in names {
+            self.landmarks.remove(&name);
+        }
+        count
+    }
+
     fn info(&self) -> String {
         let Some(current) = self.current_room.as_ref() else {
             return "Map inactive.".to_string();
@@ -1067,6 +1203,14 @@ impl MapState {
         self.message("# Map Commands\n\n## Display\n- `/map map` - show a full MUD-output-pane map centered on the current room\n- `/map get` / `/map info` - show current room details\n- `/map list [query]` - list mapped rooms\n\n## Movement and Rooms\n- `/map create` - create a new map\n- `/map goto <vnum|name> [dig]` - select a room\n- `/map move <direction>` - move only the mapper\n- `/map dig <direction> [new|vnum]` - create and link a room\n- `/map link <direction> <vnum> [both]` - link rooms\n- `/map unlink <direction>` - remove an exit link\n- `/map delete <direction|vnum>` - delete an exit or room\n- `/map undo` - undo the last mapper-created move\n- `/map return` - restore the previous mapper room\n- `/map leave` - leave the map while remembering the previous room\n\n## Metadata and Flags\n- `/map set <option> <value>` - set room metadata\n- `/map flag <name> [on|off]` - toggle mapper-wide flags\n- `/map roomflag [flag[;flag...] [on|off|get <variable>]]` - list or update current-room flags\n- `/map exitflag <direction> <flag> [on|off]` - toggle an exit flag\n- `/map door <direction> [state|none] [name]` - mark or clear an exit door\n\n## Paths and Files\n- `/map find <vnum|name>` - show a weighted path\n- `/map run <vnum|name>` - send a weighted path\n- `/map read <file>` - load map TOML\n- `/map write <file>` - save map TOML\n\nUse `/help map` for the complete command reference.")
     }
 
+    fn help_with_landmarks(&self) -> MapCommandResult {
+        let mut result = self.help();
+        result.message.push_str(
+            "\n\n## Landmarks\n- `/map landmark [query]` / `/map landmarks [query]` - list landmarks\n- `/map landmark <name> <vnum> [description] [size]` - create or update a landmark\n- `/map unlandmark <name-or-pattern>` - remove matching landmarks\n\nLandmark names can be used with `/map goto`, `/map find`, and `/map run`.",
+        );
+        result
+    }
+
     fn message(&self, message: impl Into<String>) -> MapCommandResult {
         MapCommandResult {
             message: message.into(),
@@ -1089,15 +1233,21 @@ impl MapState {
             return Some(target.to_string());
         }
         let query = target.to_ascii_lowercase();
-        self.rooms
+        self.landmarks
             .values()
-            .find(|room| room.name.to_ascii_lowercase() == query)
-            .map(|room| room.id.clone())
+            .find(|landmark| landmark.name.to_ascii_lowercase() == query)
+            .map(|landmark| landmark.room.clone())
             .or_else(|| {
                 self.rooms
                     .values()
-                    .find(|room| room.name.to_ascii_lowercase().contains(&query))
+                    .find(|room| room.name.to_ascii_lowercase() == query)
                     .map(|room| room.id.clone())
+                    .or_else(|| {
+                        self.rooms
+                            .values()
+                            .find(|room| room.name.to_ascii_lowercase().contains(&query))
+                            .map(|room| room.id.clone())
+                    })
             })
     }
 
@@ -1318,6 +1468,32 @@ pub fn is_movement_command(command: &str) -> Option<String> {
 
 fn required<'a>(value: Option<&'a str>, usage: &str) -> Result<&'a str, String> {
     value.ok_or_else(|| usage.to_string())
+}
+
+fn resolve_file_path(base_path: Option<&Path>, value: &str) -> PathBuf {
+    let path = PathBuf::from(value);
+    if path.is_absolute() {
+        return path;
+    }
+    base_path.map(|base| base.join(&path)).unwrap_or(path)
+}
+
+fn wildcard_match(value: &str, pattern: &str) -> bool {
+    fn matches(value: &[u8], pattern: &[u8]) -> bool {
+        match pattern.split_first() {
+            None => value.is_empty(),
+            Some((b'*', rest)) => {
+                matches(value, rest) || (!value.is_empty() && matches(&value[1..], pattern))
+            }
+            Some((b'?', rest)) => !value.is_empty() && matches(&value[1..], rest),
+            Some((character, rest)) => {
+                !value.is_empty()
+                    && character.eq_ignore_ascii_case(&value[0])
+                    && matches(&value[1..], rest)
+            }
+        }
+    }
+    matches(value.as_bytes(), pattern.as_bytes())
 }
 
 fn parse_toggle(value: Option<&str>) -> Option<bool> {
@@ -1624,7 +1800,78 @@ mod tests {
         assert!(result.message.starts_with("# Map Commands\n"));
         assert!(result.message.contains("## Display"));
         assert!(result.message.contains("- `/map map`"));
+        assert!(result.message.contains("/map landmarks"));
         assert!(!result.show_map);
+    }
+
+    #[test]
+    fn landmarks_can_be_created_listed_and_used_for_paths() {
+        let mut map = MapState::default();
+        map.create();
+        map.move_direction("n").unwrap();
+
+        map.execute("landmark Town 2 Town Square large").unwrap();
+
+        let listing = map.execute("landmarks town").unwrap();
+        assert!(listing.message.contains("Town"));
+        assert!(listing.message.contains("Town Square"));
+        assert_eq!(
+            map.execute("goto Town").unwrap().message,
+            "Map location set to Unnamed (2)."
+        );
+        assert_eq!(map.shortest_path_to("Town"), Some(Vec::new()));
+    }
+
+    #[test]
+    fn landmarks_support_updates_wildcard_removal_and_room_cleanup() {
+        let mut map = MapState::default();
+        map.create();
+        map.move_direction("n").unwrap();
+        map.execute("landmark NorthGate 2").unwrap();
+        map.execute("landmark NorthHall 2").unwrap();
+
+        let removed = map.execute("unlandmark North*").unwrap();
+        assert_eq!(removed.message, "Removed 2 landmarks.");
+        assert!(map.landmarks.is_empty());
+
+        map.execute("landmark Keep 2").unwrap();
+        map.execute("delete 2").unwrap();
+        assert!(map.landmarks.is_empty());
+    }
+
+    #[test]
+    fn landmarks_round_trip_through_map_files() {
+        let path =
+            std::env::temp_dir().join(format!("mud-client-landmarks-{}.toml", std::process::id()));
+        let mut map = MapState::default();
+        map.create();
+        map.execute("landmark Home 1 compact My Home").unwrap();
+        map.write_to_path(&path).unwrap();
+
+        let mut loaded = MapState::default();
+        loaded.read_from_path(&path).unwrap();
+        assert_eq!(loaded.landmarks, map.landmarks);
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn interactive_file_commands_resolve_relative_to_config_directory() {
+        let root = std::env::temp_dir().join(format!("mud-client-map-base-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let mut map = MapState::default();
+        map.create();
+
+        map.execute_with_base_path("write maps/test.toml", Some(&root))
+            .unwrap();
+        assert!(root.join("maps/test.toml").is_file());
+
+        let mut loaded = MapState::default();
+        loaded
+            .execute_with_base_path("read maps/test.toml", Some(&root))
+            .unwrap();
+        assert_eq!(loaded.rooms, map.rooms);
+
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

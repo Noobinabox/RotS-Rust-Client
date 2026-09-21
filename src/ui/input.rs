@@ -71,13 +71,18 @@ fn render_completion_popup(
     }
     Clear.render(area, buf);
     let visible = area.height.saturating_sub(2) as usize;
+    let selected = completion
+        .selected
+        .min(completion.matches.len().saturating_sub(1));
+    let first = selected.saturating_sub(visible.saturating_sub(1));
     let lines = completion
         .matches
         .iter()
         .enumerate()
+        .skip(first)
         .take(visible)
         .map(|(index, value)| {
-            let style = if index == completion.selected {
+            let style = if index == selected {
                 Style::new()
                     .fg(theme.background_safe_foreground())
                     .bg(theme.accent)

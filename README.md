@@ -144,6 +144,9 @@ Common commands:
 /map roomflag fog;void on
 /map exitflag e block on
 /map list scrubland
+/map landmark Home 1
+/map landmarks
+/map unlandmark Home
 /map find 12
 /map run 12
 /map undo
@@ -574,7 +577,7 @@ The Opponent pane uses a compact fixed-height layout with a full-width health ga
 
 MUD output scrolling stops at the oldest full visible page, so the pane does not scroll beyond retained text into mostly blank space.
 - `F2`: cycle styled, plain, and debug output views; the mode indicator appears briefly in the output title
-- `Ctrl-C`: clear non-empty command input; quit when the input is empty
+- `Ctrl-C`: clear the command input; use `/quit` to exit
 - `/help`: show local client commands and help topics
 - `/help map`, `/help alias`, `/help path`: show topic-specific help
 - `/help trigger`, `/help highlight`: show scripting and styling help

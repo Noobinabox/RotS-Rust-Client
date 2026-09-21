@@ -52,6 +52,10 @@ When multiple mapped rooms resolve to the same display position, the map keeps t
 /map roomflag [<avoid|block|curved|fog|hide|invis|leave|noglobal|static|void>[;...] [on|off|get <variable>]]
 /map exitflag <dir> <avoid|block|hide|invis|teleport> [on|off]
 /map list [query]
+/map landmark [query]
+/map landmarks [query]
+/map landmark <name> <vnum> [description] [size]
+/map unlandmark <name-or-pattern>
 /map find <vnum|name>
 /map run <vnum|name>
 /map write <file>
@@ -68,6 +72,9 @@ When multiple mapped rooms resolve to the same display position, the map keeps t
 | `/map map` | Append a full MUD-output-pane map snapshot to scrollback. |
 | `/map get` / `/map info` | Show current room id, name, coordinates, area, terrain, weight, and exits. |
 | `/map list [query]` | List up to 12 mapped rooms matching id, name, area, description, note, or terrain. |
+| `/map landmark [query]` / `/map landmarks [query]` | List landmarks, optionally filtered by name. |
+| `/map landmark <name> <vnum> [description] [size]` | Create or update a named landmark pointing to a mapped room. |
+| `/map unlandmark <name-or-pattern>` | Remove landmarks matching an exact name or `*`/`?` wildcard pattern. |
 | `/map create` | Clear in-memory map data and create room `1`. |
 | `/map goto <vnum|name> [dig]` | Select an existing room; `dig` creates it if missing. |
 | `/map move <dir>` | Move only the local mapper. |
@@ -233,4 +240,4 @@ path = "maps/rots.toml"
 save_on_exit = false
 ```
 
-Relative persistence paths resolve beside the active `config.toml`.
+Relative map file paths, including interactive `/map read` and `/map write` paths, resolve beside the active `config.toml`. Absolute paths remain unchanged. If no config file path is active, relative paths use the current working directory.

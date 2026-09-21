@@ -629,7 +629,10 @@ impl App {
         }
         if command == "map" || command.starts_with("map ") {
             let map_command = command.strip_prefix("map").unwrap_or_default();
-            match self.state.map.execute(map_command.trim()) {
+            match self.state.map.execute_with_base_path(
+                map_command.trim(),
+                self.config_path.as_deref().and_then(Path::parent),
+            ) {
                 Ok(result) => {
                     if let Some((name, value)) = result.variable {
                         let mut variable_failed = false;
@@ -1840,6 +1843,12 @@ fn help_text(topic: &str) -> Option<&'static str> {
         "map run" => Some(
             "# /map run\n\n## Usage\n- `/map run <vnum|name>`\n\n## Description\nFinds the lowest-cost known path using room weights and sends each movement command to the MUD.",
         ),
+        "map landmark" | "map landmarks" => Some(
+            "# /map landmark\n\n## Usage\n- `/map landmark [query]`\n- `/map landmarks [query]`\n- `/map landmark <name> <vnum> [description] [size]`\n\n## Description\nLists or updates persisted TinTin++-style landmarks. Landmark names can be used with `/map goto`, `/map find`, and `/map run`.\n\nUse `/map unlandmark <name-or-pattern>` to remove landmarks.",
+        ),
+        "map unlandmark" => Some(
+            "# /map unlandmark\n\n## Usage\n- `/map unlandmark <name-or-pattern>`\n\n## Description\nRemoves landmarks matching an exact name or `*`/`?` wildcard pattern.",
+        ),
         "map flag" => Some(
             "# /map flag\n\n## Usage\n- `/map flag <name> [on|off]`\n\n## Description\nToggles mapper-wide behavior.\n\n## Flags\n- `static` - prevent automatic room creation\n- `nofollow` - stop movement commands from moving the mapper\n- `direction` - toggle direction arrow behavior\n- `unicode` - toggle unicode map rendering\n- `asciigraphics` - disable unicode map graphics\n- `asciivnums` - toggle vnum display",
         ),
@@ -1895,7 +1904,7 @@ fn help_text(topic: &str) -> Option<&'static str> {
             "# Output Help\n\n## Scrollback\n- Mouse wheel over MUD output - scroll output\n- Drag a large-layout side divider - resize that pane\n- Drag the Map/MUD Output boundary in mobile or tablet layouts - resize their heights\n- `PageUp` / `PageDown` - scroll output\n- `Ctrl-Up` / `Ctrl-Down` - scroll one line\n- `Ctrl-E` - follow newest output\n- `/clear` - clear output\n\n## Search and Modes\n- `Ctrl-F` - search output\n- `Ctrl-N` / `Ctrl-P` - next or previous search match\n- `F2` - cycle styled, plain, and debug views; the mode indicator appears briefly in the output title\n\n## Automation\n- `/help trigger` - configured output reactions\n- `/help highlight` - configured output styling",
         ),
         "input" | "keys" => Some(
-            "# Input Help\n\n## Command Editing\n- `Enter` - send command, or send a blank line when input is empty\n- `;` - separate multiple MUD commands in one input\n- `#<count> {command}` - repeat one command or braced command group\n- `Enter` on highlighted last command - resend it\n- Typing while last command is highlighted - replace it\n- `Tab` - complete the current word from recent MUD output\n- `Shift-Tab` - cycle to the previous completion\n- `Up` / `Down` - command history; typed text filters history by prefix\n- `Left` / `Right` / `Home` / `End` - edit input\n- `Ctrl-C` - clear the input line when it contains text; quit when it is empty\n\n## Examples\n- `#10 {kill orc}` sends `kill orc` ten times\n- `#2 {look;score};rest` sends `look`, `score`, `look`, `score`, then `rest` once",
+            "# Input Help\n\n## Command Editing\n- `Enter` - send command, or send a blank line when input is empty\n- `;` - separate multiple MUD commands in one input\n- `#<count> {command}` - repeat one command or braced command group\n- `Enter` on highlighted last command - resend it\n- Typing while last command is highlighted - replace it\n- `Tab` - complete the current word from recent MUD output\n- `Shift-Tab` - cycle to the previous completion\n- `Up` / `Down` - command history; typed text filters history by prefix\n- `Left` / `Right` / `Home` / `End` - edit input\n- `Ctrl-C` - clear the input line; use `/quit` to exit\n\n## Examples\n- `#10 {kill orc}` sends `kill orc` ten times\n- `#2 {look;score};rest` sends `look`, `score`, `look`, `score`, then `rest` once",
         ),
         "config" => Some(
             "# Config Help\n\nRuntime config is loaded from the platform config path when present.\n\n## Commands\n- `/reload` - reload config from disk and report validation errors in the output pane\n- `/reconnect` - request a network reconnect\n\n## Notes\n- The repository `config.toml` is the parse-tested default example.\n- The default endpoint is `rotsmud.org:3791`.\n- `--local` forces `localhost:3791` even when config points elsewhere.\n- `layout.breakpoints` selects display profiles from terminal-cell dimensions.\n- `layout.mobile` and `layout.tablet` configure stacked map/status behavior.\n- `layout.full_hd` configures the classic sidebar position and width.\n- `layout.ultrawide` configures top, left, and right pane roles and dimensions.\n- Map, MUD output, and command input are required in every display profile.\n- `map.persistence` can load a map file at startup and save it on graceful exit.\n- `panels.*` controls optional panel title, enabled state, minimum size, priority, and responsive visibility.\n- `social.scrollback_lines` controls retained Social panel messages.\n- `variables`, `aliases`, `triggers`, `events`, and `highlights` are loaded from config at startup and reload.\n- `logging.level` controls tracing filters; `logging.raw_protocol` is reserved for protocol diagnostics and should stay off unless debugging.\n- `layout.show_group`, `layout.show_opponent`, and `layout.show_social` control optional panels at startup.\n- `/toggle group|opponent|social [on|off]` changes those optional panels in memory for the current session.",
