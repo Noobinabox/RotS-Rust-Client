@@ -46,7 +46,7 @@ pub async fn run_connection(
     }
     let _ = network_tx.send(NetworkEvent::Connected).await;
     let mut parser = TelnetParser::default();
-    let mut output_buffer = OutputAccumulator::default();
+    let mut output_buffer = OutputAccumulator::new(config.msdp.utf_8);
     let mut buffer = [0_u8; 4096];
 
     loop {
@@ -72,7 +72,7 @@ pub async fn run_connection(
             command = command_rx.recv() => {
                 match command {
                     Some(ClientCommand::SendText(text)) => {
-                        let mut bytes = text.into_bytes();
+                        let mut bytes = encode_mud_text(&text, config.msdp.utf_8);
                         bytes.extend_from_slice(config.connection.line_ending.as_bytes());
                         if let Err(error) = writer.write_all(&bytes).await {
                             let _ = network_tx.send(NetworkEvent::Error(error.to_string())).await;
@@ -163,18 +163,29 @@ async fn write_naws_size(
     writer.write_all(&naws_frame(width, height)).await
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct OutputAccumulator {
     pending: String,
     emitted_prompt: Option<String>,
     control: ControlState,
     control_buffer: String,
+    prefer_utf8: bool,
 }
 
 impl OutputAccumulator {
+    fn new(prefer_utf8: bool) -> Self {
+        Self {
+            pending: String::new(),
+            emitted_prompt: None,
+            control: ControlState::default(),
+            control_buffer: String::new(),
+            prefer_utf8,
+        }
+    }
+
     fn push_bytes(&mut self, bytes: &[u8]) -> Vec<NetworkEvent> {
         let mut events = Vec::new();
-        let decoded = String::from_utf8_lossy(bytes);
+        let decoded = decode_mud_text(bytes, self.prefer_utf8);
         let mut chars = decoded.chars().peekable();
 
         while let Some(ch) = chars.next() {
@@ -278,6 +289,38 @@ impl OutputAccumulator {
     }
 }
 
+impl Default for OutputAccumulator {
+    fn default() -> Self {
+        Self::new(true)
+    }
+}
+
+fn decode_mud_text(bytes: &[u8], prefer_utf8: bool) -> String {
+    if prefer_utf8 && let Ok(text) = std::str::from_utf8(bytes) {
+        return text.to_string();
+    }
+    bytes
+        .iter()
+        .map(|&byte| char::from_u32(byte as u32).unwrap_or('\u{FFFD}'))
+        .collect()
+}
+
+fn encode_mud_text(text: &str, prefer_utf8: bool) -> Vec<u8> {
+    if prefer_utf8 {
+        return text.as_bytes().to_vec();
+    }
+
+    text.chars()
+        .map(|character| {
+            if (character as u32) <= u8::MAX as u32 {
+                character as u8
+            } else {
+                b'?'
+            }
+        })
+        .collect()
+}
+
 #[derive(Debug, Default)]
 enum ControlState {
     #[default]
@@ -304,6 +347,27 @@ mod tests {
         assert_eq!(
             output.push_bytes(b"a room.\r\n"),
             vec![NetworkEvent::Text("You see a room.".to_string())]
+        );
+    }
+
+    #[test]
+    fn output_accumulator_decodes_latin1_text_without_replacement_characters() {
+        let mut output = OutputAccumulator::new(false);
+
+        assert_eq!(
+            output.push_bytes(b"You are Jeggred the b\xE1stard\r\n"),
+            vec![NetworkEvent::Text(
+                "You are Jeggred the b\u{e1}stard".to_string()
+            )]
+        );
+    }
+
+    #[test]
+    fn latin1_commands_are_encoded_without_utf8_mojibake() {
+        assert_eq!(encode_mud_text("the áastard", false), b"the \xE1astard");
+        assert_eq!(
+            encode_mud_text("the áastard", true),
+            "the áastard".as_bytes()
         );
     }
 

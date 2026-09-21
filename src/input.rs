@@ -25,7 +25,12 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) -> InputAction {
 
     match key.code {
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            InputAction::Command(ClientCommand::Quit)
+            if state.submitted_input_selected || !state.input.is_empty() {
+                clear_current_input(state);
+                InputAction::None
+            } else {
+                InputAction::Command(ClientCommand::Quit)
+            }
         }
         KeyCode::Esc => InputAction::None,
         KeyCode::Enter => submit_input(state),
@@ -219,6 +224,14 @@ fn clear_selected_submission(state: &mut AppState) {
     }
 }
 
+fn clear_current_input(state: &mut AppState) {
+    state.input.clear();
+    state.cursor = 0;
+    state.submitted_input_selected = false;
+    state.clear_input_completion();
+    clear_history_navigation(state);
+}
+
 fn edit_selected_submission(state: &mut AppState) {
     if state.submitted_input_selected {
         state.input = state.submitted_input.clone().unwrap_or_default();
@@ -338,6 +351,35 @@ mod tests {
         assert!(state.submitted_input.is_none());
         assert!(!state.submitted_input_selected);
         assert!(state.command_history.is_empty());
+    }
+
+    #[test]
+    fn ctrl_c_clears_nonempty_input_without_quitting() {
+        let mut state = AppState::new(&AppConfig::default());
+        state.input = "cast fireball".to_string();
+        state.cursor = state.input.len();
+
+        let action = handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+        );
+
+        assert_eq!(action, InputAction::None);
+        assert!(state.input.is_empty());
+        assert_eq!(state.cursor, 0);
+    }
+
+    #[test]
+    fn ctrl_c_quits_when_input_is_empty() {
+        let mut state = AppState::new(&AppConfig::default());
+
+        assert_eq!(
+            handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+            ),
+            InputAction::Command(ClientCommand::Quit)
+        );
     }
 
     #[test]

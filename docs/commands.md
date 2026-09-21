@@ -45,7 +45,7 @@ Examples:
 | `Shift-Tab` | Cycle completion backward. |
 | `PageUp` / `PageDown` | Scroll MUD output. |
 | Mouse wheel over output | Scroll MUD output. |
-| Drag main divider | Resize side panes for the current session when mouse mode is enabled. |
+| Drag main divider | Resize side panes for the current session when mouse mode is enabled. In mobile/tablet layouts, drag the Map/MUD Output boundary to resize their heights. |
 | `Ctrl-Up` / `Ctrl-Down` | Scroll output one line. |
 | `Ctrl-E` | Follow newest output. |
 | `Ctrl-L` | Clear output. |
@@ -54,7 +54,7 @@ Examples:
 
 MUD output scrolling clamps to the oldest full visible page instead of scrolling beyond retained text into blank space.
 | `F2` | Cycle styled, plain, and debug output views. The title indicator appears briefly. |
-| `Ctrl-C` | Quit. |
+| `Ctrl-C` | Clear non-empty command input; quit when the input is empty. |
 
 Repeat examples:
 

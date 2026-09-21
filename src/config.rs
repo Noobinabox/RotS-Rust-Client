@@ -691,7 +691,7 @@ pub struct ConnectionConfig {
 impl Default for ConnectionConfig {
     fn default() -> Self {
         Self {
-            host: "localhost".to_string(),
+            host: "rotsmud.org".to_string(),
             port: 3791,
             username: String::new(),
             password: String::new(),
@@ -1204,8 +1204,8 @@ fn default_map_terrain() -> BTreeMap<String, MapTerrainConfig> {
         ("Road", "═", "#ffffff"),
         ("Floor", "∙", "#404040"),
         ("Field", "″", "#8a8a1e"),
-        ("Forest", "♣", "#2e7d32"),
-        ("Dense_forest", "♠", "#1b5e20"),
+        ("Forest", "♣", "lightgreen"),
+        ("Dense_forest", "♠", "green"),
         ("Hills", "∩", "#8d6e63"),
         ("Mountain", "▲", "#5d4037"),
         ("Water", "≈", "#1565c0"),
@@ -1528,7 +1528,7 @@ impl Default for MsdpConfig {
             client_version: env!("CARGO_PKG_VERSION").to_string(),
             ansi_colors: true,
             xterm_256_colors: true,
-            utf_8: true,
+            utf_8: false,
             report_variables: [
                 "CHARACTER_NAME",
                 "RACE",
@@ -1764,7 +1764,8 @@ impl Default for LoggingConfig {
 }
 
 fn default_config_path() -> Option<PathBuf> {
-    ProjectDirs::from("org", "seth", "mud-client").map(|dirs| dirs.config_dir().join("config.toml"))
+    ProjectDirs::from("org", "mud-client", "mud-client")
+        .map(|dirs| dirs.config_dir().join("config.toml"))
 }
 
 #[cfg(test)]
@@ -1772,9 +1773,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn defaults_target_local_rots() {
+    fn defaults_target_rotsmud() {
         let config = AppConfig::default();
-        assert_eq!(config.connection.host, "localhost");
+        assert_eq!(config.connection.host, "rotsmud.org");
         assert_eq!(config.connection.port, 3791);
         assert!(config.msdp.report_variables.contains(&"ROOM".to_string()));
         assert!(config.msdp.report_variables.contains(&"GROUP".to_string()));
@@ -1798,6 +1799,8 @@ mod tests {
         assert_eq!(config.map.current_room_symbol, "X");
         assert_eq!(config.map.stub_symbol, "∘");
         assert_eq!(config.map.teleport.glyph, "◇");
+        assert_eq!(config.map.terrain["Forest"].color, "lightgreen");
+        assert_eq!(config.map.terrain["Dense_forest"].color, "green");
         assert_eq!(
             config
                 .map

@@ -213,7 +213,7 @@ double = false
 
 [map.terrain.Forest]
 symbol = "♣"
-color = "#2e7d32"
+color = "lightgreen"
 density = "dense"
 spread = "wide"
 fade = "fadeout"
@@ -221,7 +221,7 @@ double = false
 
 [map.terrain.Dense_forest]
 symbol = "♠"
-color = "#1b5e20"
+color = "green"
 density = "dense"
 spread = "vast"
 fade = "fadeout"
@@ -229,7 +229,7 @@ double = false
 
 [map.terrain."Dense Forest"]
 symbol = "♠"
-color = "#1b5e20"
+color = "green"
 density = "dense"
 spread = "vast"
 fade = "fadeout"
@@ -304,7 +304,7 @@ client_id = "mud-client"
 client_version = "0.1.0"
 ansi_colors = true
 xterm_256_colors = true
-utf_8 = true
+utf_8 = false
 report_variables = [
   "CHARACTER_NAME",
   "RACE",
@@ -438,13 +438,6 @@ runtime_errors_to_output = true
 [triggers]
 enabled = true
 max_commands_per_line = 8
-
-[[triggers.rules]]
-name = "login"
-match_type = "plain"
-pattern = "Account email"
-commands = ["a@a.com"]
-cooldown_ms = 1000
 
 # Example Lua trigger hooks from scripts/init.lua:
 [[triggers.rules]]

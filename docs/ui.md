@@ -56,7 +56,7 @@ Command echo is controlled by `terminal.echo_commands`. Echoed commands are appe
 
 ## Gauges
 
-Character, opponent, and group vitals use gauges. Character health and opponent health are red, mana is blue, and movement is green. Full character, opponent, and TNL gauges expand across the available panel row while keeping fixed-width numeric suffixes so value changes do not shift the layout. Compact gauges keep the configured fixed bar width. The Character sheet separates gauges from stats with a blank row, shows base stats on one row, then leaves another blank row before one class-specific detail row. Mage shows `Mana Regen`, `Spell Power`, and `Spell Pen`; Mystic shows `Willpower`, `Spirits`, `Health Regen`, and `Movement Regen`.
+Character, opponent, and group vitals use gauges. Character health and opponent health are red, mana is blue, and movement is green. Full character, opponent, and TNL gauges expand across the available panel row while keeping fixed-width numeric suffixes so value changes do not shift the layout. Compact gauges keep the configured fixed bar width. The Character sheet separates gauges from stats with a blank row, shows base stats on one row, then leaves another blank row before one class-specific detail row. Mage shows `Mana Regen`, `Spell Power`, and `Spell Pen`; Mystic shows `Willpower`, `Spirits`, `Health Regen`, and `Movement Regen`. Class-specific metrics wrap between complete label/value pairs when the pane is narrow.
 
 Group display uses a richer layout for small groups and a compact layout for large groups so more members remain visible.
 
@@ -66,7 +66,7 @@ The World pane shows MSDP time and weather. Time text is trimmed at `AM` or `PM`
 
 ## Mouse Resize
 
-When mouse support is enabled, dragging the main side divider changes pane width for the current session. Config reload restores configured dimensions unless the runtime layout keeps the current resize override.
+When mouse support is enabled, dragging the main side divider changes pane width for the current session. In mobile and tablet layouts, drag the horizontal boundary between Map and MUD Output to change their heights. The output and map retain their configured minimum sizes, and resize overrides are session-only. Config reload clears runtime resize overrides.
 
 ## Colors
 

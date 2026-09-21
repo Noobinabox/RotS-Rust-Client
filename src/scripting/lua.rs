@@ -7,6 +7,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use directories::ProjectDirs;
 use mlua::{Error as LuaError, Function, HookTriggers, Lua, Table, Value, VmState};
 
 use crate::{
@@ -367,6 +368,10 @@ fn lua_entrypoint_path(config: &LuaConfig, config_path: Option<&Path>) -> PathBu
         script_dir
     } else if let Some(parent) = config_path.and_then(Path::parent) {
         parent.join(script_dir)
+    } else if let Some(config_dir) = ProjectDirs::from("org", "mud-client", "mud-client")
+        .map(|dirs| dirs.config_dir().to_path_buf())
+    {
+        config_dir.join(script_dir)
     } else {
         script_dir
     };
@@ -1138,7 +1143,7 @@ mod tests {
         state::AppState,
     };
 
-    use super::{LuaAction, LuaEngine, LuaHookContext};
+    use super::{LuaAction, LuaEngine, LuaHookContext, lua_entrypoint_path};
 
     #[test]
     fn lua_hook_collects_client_actions() {
@@ -1179,6 +1184,18 @@ end
             result.actions[3],
             LuaAction::EmitEvent("Ready".to_string(), Some("lua-test".to_string()))
         );
+    }
+
+    #[test]
+    fn relative_lua_scripts_without_config_path_use_platform_config_directory() {
+        let config = LuaConfig::default();
+        let expected_base = directories::ProjectDirs::from("org", "mud-client", "mud-client")
+            .expect("test platform should provide a config directory")
+            .config_dir()
+            .join("scripts")
+            .join("init.lua");
+
+        assert_eq!(lua_entrypoint_path(&config, None), expected_base);
     }
 
     #[test]

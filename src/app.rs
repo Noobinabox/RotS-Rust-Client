@@ -79,6 +79,7 @@ pub struct App {
     last_terminal_area: Rect,
     full_hd_overrides: LayoutOverrides,
     ultrawide_overrides: LayoutOverrides,
+    stacked_overrides: LayoutOverrides,
     active_divider: Option<Divider>,
     dispatching_handler_commands: bool,
     mud_ansi_colors: AnsiColorState,
@@ -146,6 +147,7 @@ impl App {
             last_terminal_area: Rect::default(),
             full_hd_overrides: LayoutOverrides::default(),
             ultrawide_overrides: LayoutOverrides::default(),
+            stacked_overrides: LayoutOverrides::default(),
             active_divider: None,
             dispatching_handler_commands: false,
             mud_ansi_colors: AnsiColorState::default(),
@@ -748,6 +750,7 @@ impl App {
         self.config = config;
         self.full_hd_overrides = LayoutOverrides::default();
         self.ultrawide_overrides = LayoutOverrides::default();
+        self.stacked_overrides = LayoutOverrides::default();
         Ok("# Config Reloaded\n\nConfiguration was reloaded from disk. Session panel toggles were preserved.".to_string())
     }
 
@@ -1538,13 +1541,13 @@ impl App {
                 let layout = self.resolved_layout(self.last_terminal_area);
                 self.active_divider = divider_at(mouse, &layout);
                 if let Some(divider) = self.active_divider {
-                    self.resize_pane_from_mouse(divider, mouse.column);
+                    self.resize_pane_from_mouse(divider, mouse.column, mouse.row);
                     return true;
                 }
             }
             MouseEventKind::Drag(MouseButton::Left) if self.active_divider.is_some() => {
                 if let Some(divider) = self.active_divider {
-                    self.resize_pane_from_mouse(divider, mouse.column);
+                    self.resize_pane_from_mouse(divider, mouse.column, mouse.row);
                     return true;
                 }
             }
@@ -1585,11 +1588,38 @@ impl App {
         false
     }
 
-    fn resize_pane_from_mouse(&mut self, divider: Divider, column: u16) {
+    fn resize_pane_from_mouse(&mut self, divider: Divider, column: u16, row: u16) {
         let layout = self.resolved_layout(self.last_terminal_area);
+        if divider == Divider::MapOutput {
+            let (UiMode::Mobile | UiMode::Tablet) = layout.mode else {
+                return;
+            };
+            let available = self
+                .last_terminal_area
+                .height
+                .saturating_sub(layout.input.height)
+                .saturating_sub(layout.compact_status.map_or(0, |status| status.height));
+            let maximum = available.saturating_sub(
+                self.config
+                    .panels
+                    .output
+                    .min_height
+                    .min(available.saturating_sub(1)),
+            );
+            let minimum = self.config.panels.map.min_height.max(1);
+            if maximum >= minimum {
+                self.layout_overrides_mut(layout.mode).stacked_map_height = Some(
+                    row.saturating_sub(self.last_terminal_area.y)
+                        .saturating_add(1)
+                        .clamp(minimum, maximum),
+                );
+            }
+            return;
+        }
         let opposite_width = match divider {
             Divider::Left => layout.right.map_or(0, |pane| pane.area.width),
             Divider::Right => layout.left.map_or(0, |pane| pane.area.width),
+            Divider::MapOutput => return,
         };
         let overrides = match layout.mode {
             UiMode::FullHd => &mut self.full_hd_overrides,
@@ -1608,6 +1638,7 @@ impl App {
             Divider::Right => layout.right.map_or(MIN_CENTER_WIDTH, |pane| {
                 pane_min_width(pane.role, &self.config)
             }),
+            Divider::MapOutput => return,
         };
         if max_width < minimum_width {
             return;
@@ -1630,6 +1661,15 @@ impl App {
                     .clamp(minimum_width, max_width);
                 overrides.right_width = Some(width);
             }
+            Divider::MapOutput => {}
+        }
+    }
+
+    fn layout_overrides_mut(&mut self, mode: UiMode) -> &mut LayoutOverrides {
+        match mode {
+            UiMode::FullHd => &mut self.full_hd_overrides,
+            UiMode::Ultrawide => &mut self.ultrawide_overrides,
+            UiMode::Mobile | UiMode::Tablet => &mut self.stacked_overrides,
         }
     }
 
@@ -1649,7 +1689,7 @@ impl App {
         match mode_for(area, &self.config.layout.breakpoints) {
             UiMode::FullHd => self.full_hd_overrides,
             UiMode::Ultrawide => self.ultrawide_overrides,
-            UiMode::Mobile | UiMode::Tablet => LayoutOverrides::default(),
+            UiMode::Mobile | UiMode::Tablet => self.stacked_overrides,
         }
     }
 
@@ -1852,13 +1892,13 @@ fn help_text(topic: &str) -> Option<&'static str> {
             "# Social Help\n\n## Description\nThe ultrawide Social panel copies RoTS tells, chats, says, narrates, group-says, yells, and sings out of the main output. It uses local machine `HH:MM` timestamps, extracts the text inside RoTS single quotes, wraps long messages, and scrolls independently with the mouse wheel over the panel.\n\n## Format\n- `[HH:MM](tell) from Name - Text`\n- `[HH:MM](tell) to Name - Text`\n- `[HH:MM](say) Name - Text`\n- `[HH:MM](say) Text` for your own message\n\nYour own chat, narrate, sing, yell, say, and group-say messages omit the name prefix.",
         ),
         "output" | "scrollback" | "search" => Some(
-            "# Output Help\n\n## Scrollback\n- Mouse wheel over MUD output - scroll output\n- Drag a large-layout side divider - resize that pane\n- `PageUp` / `PageDown` - scroll output\n- `Ctrl-Up` / `Ctrl-Down` - scroll one line\n- `Ctrl-E` - follow newest output\n- `/clear` - clear output\n\n## Search and Modes\n- `Ctrl-F` - search output\n- `Ctrl-N` / `Ctrl-P` - next or previous search match\n- `F2` - cycle styled, plain, and debug views; the mode indicator appears briefly in the output title\n\n## Automation\n- `/help trigger` - configured output reactions\n- `/help highlight` - configured output styling",
+            "# Output Help\n\n## Scrollback\n- Mouse wheel over MUD output - scroll output\n- Drag a large-layout side divider - resize that pane\n- Drag the Map/MUD Output boundary in mobile or tablet layouts - resize their heights\n- `PageUp` / `PageDown` - scroll output\n- `Ctrl-Up` / `Ctrl-Down` - scroll one line\n- `Ctrl-E` - follow newest output\n- `/clear` - clear output\n\n## Search and Modes\n- `Ctrl-F` - search output\n- `Ctrl-N` / `Ctrl-P` - next or previous search match\n- `F2` - cycle styled, plain, and debug views; the mode indicator appears briefly in the output title\n\n## Automation\n- `/help trigger` - configured output reactions\n- `/help highlight` - configured output styling",
         ),
         "input" | "keys" => Some(
-            "# Input Help\n\n## Command Editing\n- `Enter` - send command, or send a blank line when input is empty\n- `;` - separate multiple MUD commands in one input\n- `#<count> {command}` - repeat one command or braced command group\n- `Enter` on highlighted last command - resend it\n- Typing while last command is highlighted - replace it\n- `Tab` - complete the current word from recent MUD output\n- `Shift-Tab` - cycle to the previous completion\n- `Up` / `Down` - command history; typed text filters history by prefix\n- `Left` / `Right` / `Home` / `End` - edit input\n- `Ctrl-C` - quit\n\n## Examples\n- `#10 {kill orc}` sends `kill orc` ten times\n- `#2 {look;score};rest` sends `look`, `score`, `look`, `score`, then `rest` once",
+            "# Input Help\n\n## Command Editing\n- `Enter` - send command, or send a blank line when input is empty\n- `;` - separate multiple MUD commands in one input\n- `#<count> {command}` - repeat one command or braced command group\n- `Enter` on highlighted last command - resend it\n- Typing while last command is highlighted - replace it\n- `Tab` - complete the current word from recent MUD output\n- `Shift-Tab` - cycle to the previous completion\n- `Up` / `Down` - command history; typed text filters history by prefix\n- `Left` / `Right` / `Home` / `End` - edit input\n- `Ctrl-C` - clear the input line when it contains text; quit when it is empty\n\n## Examples\n- `#10 {kill orc}` sends `kill orc` ten times\n- `#2 {look;score};rest` sends `look`, `score`, `look`, `score`, then `rest` once",
         ),
         "config" => Some(
-            "# Config Help\n\nRuntime config is loaded from the platform config path when present.\n\n## Commands\n- `/reload` - reload config from disk and report validation errors in the output pane\n- `/reconnect` - request a network reconnect\n\n## Notes\n- The repository `config.toml` is the parse-tested default example.\n- The default endpoint is `localhost:3791`.\n- `--local` forces `localhost:3791` even when config points elsewhere.\n- `layout.breakpoints` selects display profiles from terminal-cell dimensions.\n- `layout.mobile` and `layout.tablet` configure stacked map/status behavior.\n- `layout.full_hd` configures the classic sidebar position and width.\n- `layout.ultrawide` configures top, left, and right pane roles and dimensions.\n- Map, MUD output, and command input are required in every display profile.\n- `map.persistence` can load a map file at startup and save it on graceful exit.\n- `panels.*` controls optional panel title, enabled state, minimum size, priority, and responsive visibility.\n- `social.scrollback_lines` controls retained Social panel messages.\n- `variables`, `aliases`, `triggers`, `events`, and `highlights` are loaded from config at startup and reload.\n- `logging.level` controls tracing filters; `logging.raw_protocol` is reserved for protocol diagnostics and should stay off unless debugging.\n- `layout.show_group`, `layout.show_opponent`, and `layout.show_social` control optional panels at startup.\n- `/toggle group|opponent|social [on|off]` changes those optional panels in memory for the current session.",
+            "# Config Help\n\nRuntime config is loaded from the platform config path when present.\n\n## Commands\n- `/reload` - reload config from disk and report validation errors in the output pane\n- `/reconnect` - request a network reconnect\n\n## Notes\n- The repository `config.toml` is the parse-tested default example.\n- The default endpoint is `rotsmud.org:3791`.\n- `--local` forces `localhost:3791` even when config points elsewhere.\n- `layout.breakpoints` selects display profiles from terminal-cell dimensions.\n- `layout.mobile` and `layout.tablet` configure stacked map/status behavior.\n- `layout.full_hd` configures the classic sidebar position and width.\n- `layout.ultrawide` configures top, left, and right pane roles and dimensions.\n- Map, MUD output, and command input are required in every display profile.\n- `map.persistence` can load a map file at startup and save it on graceful exit.\n- `panels.*` controls optional panel title, enabled state, minimum size, priority, and responsive visibility.\n- `social.scrollback_lines` controls retained Social panel messages.\n- `variables`, `aliases`, `triggers`, `events`, and `highlights` are loaded from config at startup and reload.\n- `logging.level` controls tracing filters; `logging.raw_protocol` is reserved for protocol diagnostics and should stay off unless debugging.\n- `layout.show_group`, `layout.show_opponent`, and `layout.show_social` control optional panels at startup.\n- `/toggle group|opponent|social [on|off]` changes those optional panels in memory for the current session.",
         ),
         "diagnostic" | "diagnostics" | "logging" => Some(
             "# Diagnostics Help\n\n## Commands\n- `/msdp` - inspect stored MSDP values\n- `/reload` - reload config and display validation errors\n- `/reconnect` - request a network reconnect\n\n## Config\n- `logging.level` - tracing filter, for example `mud_client=debug`\n- `logging.raw_protocol` - reserved raw protocol diagnostics flag\n\n## Notes\nRaw protocol logging can be noisy and may expose game text. Leave it disabled unless actively troubleshooting.",
@@ -2814,6 +2854,45 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn mouse_drag_resizes_stacked_mud_output_boundary() {
+        let mut app = App::new(AppConfig::default());
+        app.last_terminal_area = Rect::new(0, 0, 70, 24);
+        let (tx, _rx) = mpsc::channel(4);
+        let initial = app.resolved_layout(app.last_terminal_area);
+        let divider_row = initial
+            .map_output_divider
+            .expect("stacked layout should expose map/output divider")
+            .y;
+
+        app.handle_terminal_event(
+            TerminalEvent::Mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                column: 20,
+                row: divider_row,
+                modifiers: KeyModifiers::NONE,
+            }),
+            &tx,
+        )
+        .await;
+        app.handle_terminal_event(
+            TerminalEvent::Mouse(MouseEvent {
+                kind: MouseEventKind::Drag(MouseButton::Left),
+                column: 20,
+                row: divider_row.saturating_add(3),
+                modifiers: KeyModifiers::NONE,
+            }),
+            &tx,
+        )
+        .await;
+
+        let resized = app.resolved_layout(app.last_terminal_area);
+        assert!(app.stacked_overrides.stacked_map_height.is_some());
+        assert!(resized.map.height > initial.map.height);
+        assert!(resized.output.height >= crate::ui::layout::MIN_OUTPUT_HEIGHT);
+        assert_eq!(resized.input.height, crate::ui::layout::COMMAND_HEIGHT);
+    }
+
+    #[tokio::test]
     async fn dragging_full_hd_divider_preserves_minimum_output_width() {
         let mut app = App::new(AppConfig::default());
         app.last_terminal_area = Rect::new(0, 0, 160, 32);
@@ -2852,7 +2931,7 @@ mod tests {
         app.last_terminal_area = Rect::new(0, 0, 120, 40);
         app.full_hd_overrides.right_width = Some(151);
 
-        app.resize_pane_from_mouse(Divider::Right, 94);
+        app.resize_pane_from_mouse(Divider::Right, 94, 10);
 
         assert_eq!(app.full_hd_overrides.right_width, Some(26));
         let layout = app.resolved_layout(app.last_terminal_area);

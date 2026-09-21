@@ -22,7 +22,7 @@ Or set:
 
 ```toml
 [connection]
-host = "localhost"
+host = "rotsmud.org"
 port = 3791
 ```
 
@@ -33,6 +33,10 @@ The client waits for the first terminal layout before normal wrapping. If wrappi
 ## Game Spacing Is Missing
 
 MUD output should preserve spacing. If formatting looks collapsed, check whether you are viewing plain/debug output mode with `F2` and verify no trigger or external terminal setting is rewriting whitespace.
+
+## Latin-1 Text Shows Replacement Characters
+
+RoTS emits raw ISO-8859-1 bytes. The client defaults to `[msdp] utf_8 = false`, which decodes incoming text and encodes outgoing commands as Latin-1. If an existing config has `utf_8 = true`, change it to `false` before reconnecting; otherwise text such as `Ã...` may be sent to the server.
 
 ## Colors Bleed Between Commands
 
@@ -58,7 +62,7 @@ Check:
 /lua reload
 ```
 
-Confirm `[lua] enabled = true`, the hook function exists in `scripts/init.lua`, and the alias, trigger, or event handler has `lua = "function_name"`.
+Confirm `[lua] enabled = true`, the hook function exists in the configured `script_dir` relative to the active config directory (normally `~/.config/mud-client/scripts/init.lua`), and the alias, trigger, or event handler has `lua = "function_name"`.
 
 ## Lua Editor Completion Is Missing
 
@@ -74,4 +78,3 @@ mouse = true
 ```
 
 Some terminal multiplexers also need mouse mode enabled.
-

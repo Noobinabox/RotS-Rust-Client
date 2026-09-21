@@ -29,6 +29,7 @@ pub fn render(frame: &mut Frame, config: &AppConfig, state: &AppState, theme: &T
         LayoutOverrides {
             left_width: None,
             right_width: None,
+            stacked_map_height: None,
         },
     );
 }

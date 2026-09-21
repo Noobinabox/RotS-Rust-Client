@@ -979,7 +979,9 @@ fn render_character_panel(
         gauges,
     );
 
-    Paragraph::new(character_sheet_lines(state, theme)).render(rows[4], buf);
+    Paragraph::new(character_sheet_lines(state, theme))
+        .wrap(Wrap { trim: false })
+        .render(rows[4], buf);
     render_gauge(rows[5], buf, GaugeKind::Tnl, tnl(state), theme, gauges);
 }
 
@@ -1063,7 +1065,7 @@ fn character_sheet_lines<'a>(state: &AppState, theme: &Theme) -> Vec<Line<'a>> {
 
 fn class_specific_lines<'a>(state: &AppState, theme: &Theme) -> Option<Vec<Line<'a>>> {
     match highest_class(state) {
-        Some(CharacterClass::Mage) => Some(vec![metric_line(
+        Some(CharacterClass::Mage) => Some(vec![metric_line_nonbreaking(
             &[
                 ("Mana Regen", state.character.stamina_regeneration),
                 ("Spell Power", state.character.spell_power),
@@ -1071,7 +1073,7 @@ fn class_specific_lines<'a>(state: &AppState, theme: &Theme) -> Option<Vec<Line<
             ],
             theme,
         )]),
-        Some(CharacterClass::Mystic) => Some(vec![metric_line(
+        Some(CharacterClass::Mystic) => Some(vec![metric_line_nonbreaking(
             &[
                 ("Willpower", state.character.willpower),
                 ("Spirits", state.character.spirit),
@@ -1108,13 +1110,30 @@ fn highest_class(state: &AppState) -> Option<CharacterClass> {
 }
 
 fn metric_line<'a>(values: &[(&str, Option<i64>)], theme: &Theme) -> Line<'a> {
+    metric_line_with_separator(values, theme, " ")
+}
+
+fn metric_line_nonbreaking<'a>(values: &[(&str, Option<i64>)], theme: &Theme) -> Line<'a> {
+    metric_line_with_separator(values, theme, "\u{a0}")
+}
+
+fn metric_line_with_separator<'a>(
+    values: &[(&str, Option<i64>)],
+    theme: &Theme,
+    value_separator: &str,
+) -> Line<'a> {
     let mut spans = Vec::new();
     for (index, (label, value)) in values.iter().enumerate() {
         if index > 0 {
             spans.push(Span::raw("  "));
         }
+        let label = if value_separator == "\u{a0}" {
+            label.replace(' ', "\u{a0}")
+        } else {
+            (*label).to_string()
+        };
         spans.push(Span::styled(
-            format!("{label} "),
+            format!("{label}{value_separator}"),
             Style::new().fg(theme.muted),
         ));
         spans.push(Span::styled(
@@ -1568,6 +1587,45 @@ mod tests {
         assert!(!lines.iter().any(|line| line.contains("Mana Regen")));
     }
 
+    #[test]
+    fn character_class_specific_stats_wrap_in_narrow_panes() {
+        let mut state = AppState::new(&crate::config::AppConfig::default());
+        state.character.health = Some(465);
+        state.character.health_max = Some(465);
+        state.character.mana = Some(71);
+        state.character.mana_max = Some(71);
+        state.character.movement = Some(176);
+        state.character.movement_max = Some(176);
+        state.character.level = Some(57);
+        state.character.mage_level = Some(57);
+        state.character.mystic_level = Some(20);
+        state.character.warrior_level = Some(30);
+        state.character.ranger_level = Some(25);
+        state.character.stamina_regeneration = Some(9);
+        state.character.spell_power = Some(7);
+        state.character.spell_pen = Some(3);
+        let area = Rect::new(0, 0, 40, 16);
+        let mut buffer = Buffer::empty(area);
+
+        render_character_panel(
+            area,
+            &mut buffer,
+            &state,
+            &theme(),
+            &GaugeConfig::default(),
+            "Character",
+        );
+
+        let lines = buffer_lines(&buffer, area);
+        let normalized = lines
+            .iter()
+            .map(|line| line.replace('\u{a0}', " "))
+            .collect::<Vec<_>>();
+        assert!(normalized.iter().any(|line| line.contains("Mana Regen 9")));
+        assert!(normalized.iter().any(|line| line.contains("Spell Power 7")));
+        assert!(normalized.iter().any(|line| line.contains("Spell Pen 3")));
+    }
+
     fn buffer_lines(buffer: &Buffer, area: Rect) -> Vec<String> {
         (area.y..area.y + area.height)
             .map(|y| {
@@ -1578,7 +1636,8 @@ mod tests {
                             .map(|cell| cell.symbol().chars().next().unwrap_or(' '))
                             .unwrap_or(' ')
                     })
-                    .collect()
+                    .collect::<String>()
+                    .replace('\u{a0}', " ")
             })
             .collect()
     }

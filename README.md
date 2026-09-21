@@ -4,7 +4,7 @@ Terminal MUD client for Return of the Shadow.
 
 The current implementation includes:
 
-- Connects asynchronously to `localhost:3791` by default.
+- Connects asynchronously to `rotsmud.org:3791` by default.
 - Uses Ratatui/Crossterm with raw mode and the alternate screen.
 - Renders MUD output, command input, map, and responsive info, opponent, group, and character panels.
 - Negotiates MSDP over Telnet and requests RoTS status reports.
@@ -33,13 +33,13 @@ cargo run -- --help
 
 ## Configuration
 
-The repository includes a default `config.toml`. At runtime, the client reads TOML configuration from the platform config directory for `org/seth/mud-client/config.toml` when present. Missing configuration uses safe defaults.
+The repository includes a default `config.toml`. At runtime, the client reads TOML configuration from the platform config directory, normally `~/.config/mud-client/config.toml` on Linux, when present. Missing configuration uses safe defaults.
 
 Important defaults:
 
 ```toml
 [connection]
-host = "localhost"
+host = "rotsmud.org"
 port = 3791
 line_ending = "\r\n"
 
@@ -55,7 +55,7 @@ show_social = true
 client_id = "mud-client"
 ansi_colors = true
 xterm_256_colors = true
-utf_8 = true
+utf_8 = false
 ```
 
 The default MSDP reports use RoTS variable names, including `MOVEMENT`, `MOVEMENT_MAX`, combat bonuses, character stats, magic stats, `SPIRIT`, `EXPERIENCE`, `EXPERIENCE_MAX`, and `GROUP`.
@@ -485,7 +485,7 @@ event = "LowHealth"
 lua = "low_health"
 ```
 
-Lua hooks are named functions loaded from `scripts/init.lua` relative to the active config file, or relative to the current directory when no config file path is used. The repository includes an example `scripts/init.lua` with `smart_kill`, `enemy_arrives`, `low_health`, and `remember_room` hooks. Filesystem, OS, process, package, and debug globals are removed from the Lua environment. Hooks cannot mutate state directly; they enqueue actions through the safe `client` API and Rust applies those actions through the existing command, output, event, variable, map, and UI paths.
+Lua hooks are named functions loaded from `scripts/init.lua` relative to the active config file. When the default config is used, relative script paths resolve from the platform config directory, normally `~/.config/mud-client`, rather than the current working directory. The repository includes an example `scripts/init.lua` with `smart_kill`, `enemy_arrives`, `low_health`, and `remember_room` hooks. Filesystem, OS, process, package, and debug globals are removed from the Lua environment. Hooks cannot mutate state directly; they enqueue actions through the safe `client` API and Rust applies those actions through the existing command, output, event, variable, map, and UI paths.
 
 ```lua
 function enemy_arrives(ctx)
@@ -550,7 +550,7 @@ The Opponent, Group, and Social panels are optional. Group is off by default. Se
 /toggle social
 ```
 
-The Opponent pane uses a compact fixed-height layout with a full-width health gauge. The Character pane separates the resource gauges from the stat sheet with a blank row, renders base stats (`Str`, `Int`, `Wil`, `Dex`, `Con`, `Lea`) on one row, then leaves another blank row before a single class-specific detail row. If Mage is the highest class level, it shows `Mana Regen`, `Spell Power`, and `Spell Pen`. If Mystic is highest, it shows `Willpower`, `Spirits`, `Health Regen`, and `Movement Regen`. The Group pane adapts to group size. Small groups use the richer two-line gauge layout, while larger groups switch to compact multi-column rows so more member vitals remain visible in the fixed sidebar space.
+The Opponent pane uses a compact fixed-height layout with a full-width health gauge. The Character pane separates the resource gauges from the stat sheet with a blank row, renders base stats (`Str`, `Int`, `Wil`, `Dex`, `Con`, `Lea`) on one row, then leaves another blank row before a single class-specific detail row. If Mage is the highest class level, it shows `Mana Regen`, `Spell Power`, and `Spell Pen`. If Mystic is highest, it shows `Willpower`, `Spirits`, `Health Regen`, and `Movement Regen`; these metrics wrap between complete label/value pairs in narrow panes. The Group pane adapts to group size. Small groups use the richer two-line gauge layout, while larger groups switch to compact multi-column rows so more member vitals remain visible in the fixed sidebar space.
 
 ## Keys
 
@@ -574,7 +574,7 @@ The Opponent pane uses a compact fixed-height layout with a full-width health ga
 
 MUD output scrolling stops at the oldest full visible page, so the pane does not scroll beyond retained text into mostly blank space.
 - `F2`: cycle styled, plain, and debug output views; the mode indicator appears briefly in the output title
-- `Ctrl-C`: quit
+- `Ctrl-C`: clear non-empty command input; quit when the input is empty
 - `/help`: show local client commands and help topics
 - `/help map`, `/help alias`, `/help path`: show topic-specific help
 - `/help trigger`, `/help highlight`: show scripting and styling help

@@ -4,7 +4,7 @@
 
 - Stable Rust toolchain.
 - A terminal with Unicode support. True color is optional but recommended.
-- A RoTS-compatible MUD endpoint. The checked-in default connects to `localhost:3791`.
+- A RoTS-compatible MUD endpoint. The checked-in default connects to `rotsmud.org:3791`.
 
 ## Run From Source
 
@@ -40,7 +40,7 @@ The repository includes `config.toml` as a complete default example. At runtime 
 ~/.config/mud-client/config.toml
 ```
 
-If no config file exists, built-in defaults are used. The default repository config connects to `localhost` on port `3791`.
+If no config file exists, built-in defaults are used. The default repository config connects to `rotsmud.org` on port `3791`.
 
 Reload the active config without restarting:
 
@@ -58,7 +58,7 @@ The default connection config does not store credentials:
 
 ```toml
 [connection]
-host = "localhost"
+host = "rotsmud.org"
 port = 3791
 username = ""
 password = ""
@@ -70,4 +70,3 @@ password = ""
 - Learn local slash commands in [Command Reference](commands.md).
 - Learn mapper behavior in [Mapper](mapping.md).
 - Add aliases, triggers, events, and Lua hooks with [Scripting](scripting.md).
-

@@ -42,6 +42,7 @@ pub enum UiMode {
 pub enum Divider {
     Left,
     Right,
+    MapOutput,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -54,6 +55,7 @@ pub struct AssignedPane {
 pub struct LayoutOverrides {
     pub left_width: Option<u16>,
     pub right_width: Option<u16>,
+    pub stacked_map_height: Option<u16>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -68,6 +70,7 @@ pub struct ResolvedLayout {
     pub right: Option<AssignedPane>,
     pub left_divider: Option<Rect>,
     pub right_divider: Option<Rect>,
+    pub map_output_divider: Option<Rect>,
 }
 
 pub fn mode_for(area: Rect, breakpoints: &DisplayBreakpointsConfig) -> UiMode {
@@ -91,13 +94,19 @@ pub fn resolve_layout(
 ) -> ResolvedLayout {
     let mode = mode_for(area, &config.breakpoints);
     let resolved = match mode {
-        UiMode::Mobile => resolve_stacked(area, mode, minimums, &config.mobile),
-        UiMode::Tablet => resolve_stacked(area, mode, minimums, &config.tablet),
+        UiMode::Mobile => resolve_stacked(area, mode, minimums, &config.mobile, overrides),
+        UiMode::Tablet => resolve_stacked(area, mode, minimums, &config.tablet, overrides),
         UiMode::FullHd => resolve_full_hd(area, &config.full_hd, minimums, overrides),
         UiMode::Ultrawide => resolve_large(area, mode, &config.ultrawide, minimums, overrides),
     };
     if (resolved.map.width == 0 || resolved.map.height == 0) && area.width > 0 && area.height > 0 {
-        resolve_stacked(area, mode, minimums, &StackedLayoutConfig::default())
+        resolve_stacked(
+            area,
+            mode,
+            minimums,
+            &StackedLayoutConfig::default(),
+            overrides,
+        )
     } else {
         resolved
     }
@@ -108,17 +117,20 @@ fn resolve_stacked(
     mode: UiMode,
     minimums: LayoutMinimums,
     config: &StackedLayoutConfig,
+    overrides: LayoutOverrides,
 ) -> ResolvedLayout {
     let input_height = minimums.input_height.min(area.height);
     let content_height = area.height.saturating_sub(input_height);
     let status_height = u16::from(config.show_status && content_height >= 15);
     let available = content_height.saturating_sub(status_height);
-    let target_map_height = config.map_height.max(minimums.map_height);
     let reserved_output = minimums.output_height.min(available.saturating_sub(1));
     let map_height = if available == 0 {
         0
     } else {
-        target_map_height
+        overrides
+            .stacked_map_height
+            .unwrap_or(config.map_height.max(minimums.map_height))
+            .max(minimums.map_height)
             .min(available.saturating_sub(reserved_output))
             .max(1)
     };
@@ -155,6 +167,12 @@ fn resolve_stacked(
         right: None,
         left_divider: None,
         right_divider: None,
+        map_output_divider: (map_height > 0 && output_height > 0).then_some(Rect::new(
+            area.x,
+            output.y.saturating_sub(1),
+            area.width,
+            1,
+        )),
     }
 }
 
@@ -225,6 +243,7 @@ fn resolve_full_hd(
             1,
             area.height,
         )),
+        map_output_divider: None,
     }
 }
 
@@ -326,6 +345,7 @@ fn resolve_large(
         left_divider: left
             .map(|pane| Rect::new(pane.area.right().saturating_sub(1), body.y, 1, body.height)),
         right_divider: right.map(|pane| Rect::new(pane.area.x, body.y, 1, body.height)),
+        map_output_divider: None,
     }
 }
 
@@ -400,6 +420,7 @@ mod tests {
                 LayoutOverrides {
                     left_width: None,
                     right_width: None,
+                    stacked_map_height: None,
                 },
             );
             assert!(layout.map.height > 0);
@@ -455,6 +476,7 @@ mod tests {
             LayoutOverrides {
                 left_width: None,
                 right_width: None,
+                stacked_map_height: None,
             },
         );
 
@@ -483,6 +505,7 @@ mod tests {
             LayoutOverrides {
                 left_width: Some(30),
                 right_width: Some(30),
+                stacked_map_height: None,
             },
         );
 

@@ -8,8 +8,8 @@ Colors accept named terminal colors, bright color names such as `lightred`, inde
 
 | Option | Meaning |
 |---|---|
-| `host` | MUD host name or IP address. Default example uses `localhost`. |
-| `port` | MUD TCP port. RoTS test default is `3791`. |
+| `host` | MUD host name or IP address. The default is `rotsmud.org`. |
+| `port` | MUD TCP port. RoTS uses `3791`. |
 | `username` | Optional stored login username. Empty string disables stored username behavior. |
 | `password` | Optional stored password. Avoid committing real credentials. |
 | `auto_reconnect` | Whether disconnects should request reconnect behavior. |
@@ -215,7 +215,7 @@ Terrain also controls path weight for `/map find` and `/map run`: Floor `1`, Roa
 | `client_version` | Client version sent during MSDP negotiation. |
 | `ansi_colors` | Requests ANSI color support. |
 | `xterm_256_colors` | Requests 256-color support. |
-| `utf_8` | Requests UTF-8 support. |
+| `utf_8` | Requests UTF-8 and encodes outgoing commands as UTF-8 when `true`. The RoTS default is `false` because the server emits raw ISO-8859-1; use `true` for a server that actually speaks UTF-8. |
 | `report_variables` | MSDP variable names to request from the server. Required mapped variables are added automatically if omitted. |
 
 ### msdp.mapping
@@ -268,7 +268,7 @@ An alias must define at least one `commands` entry or `lua` hook.
 | Option | Meaning |
 |---|---|
 | `enabled` | Enables Lua runtime loading and Lua hooks. |
-| `script_dir` | Directory containing Lua scripts, relative to the config file when possible. |
+| `script_dir` | Directory containing Lua scripts. Relative paths resolve beside the active config file, or from the platform config directory (normally `~/.config/mud-client`) when the default config is used. |
 | `entrypoint` | Lua file loaded from `script_dir`, usually `init.lua`. |
 | `instruction_budget` | Hook instruction limit to stop runaway scripts. Must be greater than zero. |
 | `max_actions_per_hook` | Maximum actions a hook may enqueue. Must be greater than zero. |

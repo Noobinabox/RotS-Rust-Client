@@ -14,6 +14,12 @@ pub(super) fn divider_at(mouse: MouseEvent, layout: &ResolvedLayout) -> Option<D
     {
         return Some(Divider::Left);
     }
+    if layout
+        .map_output_divider
+        .is_some_and(|area| rect_contains(area, mouse.column, mouse.row))
+    {
+        return Some(Divider::MapOutput);
+    }
     layout
         .right_divider
         .filter(|area| rect_contains(*area, mouse.column, mouse.row))
