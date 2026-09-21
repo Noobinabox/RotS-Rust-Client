@@ -100,7 +100,7 @@ impl App {
         Self::new_with_config_source(config, None, config_load_options)
     }
 
-    fn new_with_config_source(
+    pub fn new_with_config_source(
         config: AppConfig,
         config_path: Option<PathBuf>,
         config_load_options: ConfigLoadOptions,
@@ -669,6 +669,53 @@ impl App {
                     if result.show_map {
                         self.push_full_output_map();
                     } else {
+                        push_output_lines(&mut self.state, result.message, OutputCategory::System);
+                    }
+                }
+                Err(error) => push_output_lines(&mut self.state, error, OutputCategory::Error),
+            }
+            return true;
+        }
+        if command == "path" || command.starts_with("path ") {
+            let path_command = command.strip_prefix("path").unwrap_or_default();
+            let variables = self
+                .variables
+                .entries()
+                .unwrap_or_default()
+                .into_iter()
+                .map(|entry| (entry.name, entry.value))
+                .collect();
+            match self.state.path.execute(path_command.trim(), &variables) {
+                Ok(result) => {
+                    if let Some((name, value)) = result.variable {
+                        match self.variables.with_runtime(&name, &value) {
+                            Ok(updated) => {
+                                if let Err(error) = self.apply_variables(updated) {
+                                    push_output_lines(
+                                        &mut self.state,
+                                        error,
+                                        OutputCategory::Error,
+                                    );
+                                    return true;
+                                }
+                            }
+                            Err(error) => {
+                                push_output_lines(
+                                    &mut self.state,
+                                    error.to_string(),
+                                    OutputCategory::Error,
+                                );
+                                return true;
+                            }
+                        }
+                    }
+                    for command in result.commands {
+                        self.send_mud_text_command_without_path_recording(&command, command_tx)
+                            .await;
+                    }
+                    if result.show_map {
+                        self.push_full_output_map();
+                    } else if !result.message.is_empty() {
                         push_output_lines(&mut self.state, result.message, OutputCategory::System);
                     }
                 }
@@ -1265,6 +1312,19 @@ impl App {
     }
 
     async fn send_mud_text_command(
+        &mut self,
+        command: &str,
+        command_tx: &mpsc::Sender<ClientCommand>,
+    ) {
+        for command in self.state.map.mud_commands_for_movement(command) {
+            self.state.path.record(&command);
+            self.track_movement_command(&command);
+            self.echo_mud_command(&command);
+            let _ = command_tx.send(ClientCommand::SendText(command)).await;
+        }
+    }
+
+    async fn send_mud_text_command_without_path_recording(
         &mut self,
         command: &str,
         command_tx: &mpsc::Sender<ClientCommand>,
@@ -1868,7 +1928,7 @@ fn help_text(topic: &str) -> Option<&'static str> {
             "# /map write\n\n## Usage\n- `/map write <file>`\n\n## Description\nWrites the current map state to a TOML map file, creating parent directories when needed.",
         ),
         "path" | "paths" | "pathing" => Some(
-            "# Path Help\n\n## Commands\n- `/map find <vnum|name>` - show optimized weighted path\n- `/map run <vnum|name>` - send each movement command in the optimized weighted path\n- `/map undo` - undo the last mapper-created move\n\n## Map Flags\n- `/map flag static on|off` - prevent mapper auto-digging\n- `/map flag nofollow on|off` - stop movement commands from moving the mapper",
+            "# Path Help\n\n## Commands\n- `/path create|destroy|start|stop` - manage movement recording\n- `/path insert <forward> [backward]` - add a path step\n- `/path delete` / `/path undo` - remove the last step\n- `/path describe` - show path length, position, and mapping state\n- `/path get <length|position>` - return path metadata\n- `/path goto <start|end|position>` - select a path position\n- `/path move [forward|backward] [number]` - move the path position without sending a command\n- `/path walk [forward|backward]` - send one path step\n- `/path run` - send the remaining path steps\n- `/path swap` - reverse the path and its directions\n- `/path zip` / `/path unzip <speedwalk>` - convert direction steps\n- `/path map` - show the current map\n- `/path save <forward|backward|both> <variable>` - save steps to a runtime variable\n- `/path load <variable>` - load steps from a runtime variable\n\n`/map find <vnum|name>` and `/map run <vnum|name>` remain the weighted destination-routing commands.",
         ),
         "alias" | "aliases" => Some(
             "# Alias Help\n\n## Commands\n- `/alias` - list aliases currently loaded in memory\n- `/alias {pattern} {command} [{command}...]` - add or replace an in-memory alias\n- `/alias unset {pattern}` - remove one runtime alias\n- `/alias clear` - remove all runtime aliases\n\n## Parameters\nUse `{1}` in an alias command to pass the text after the alias pattern.\n\n## Examples\n- `/alias {k} {kill {1}}`\n- `/alias {rr} {recall} {look}`\n- `/alias unset {k}`\n- `/alias clear`\n\nAliases from `config.toml` are loaded at startup. Runtime alias commands only remove session aliases; remove configured aliases from `config.toml` and run `/reload`.",

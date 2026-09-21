@@ -8,6 +8,7 @@ pub mod events;
 pub mod input;
 pub mod map;
 pub mod network;
+pub mod path;
 pub mod scripting;
 pub mod state;
 pub mod terminal;

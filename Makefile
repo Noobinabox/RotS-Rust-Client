@@ -1,10 +1,11 @@
-.PHONY: help run local build check fmt fmt-check lint test ci clean
+.PHONY: help run local build check fmt fmt-check lint test ci install clean
 
 help:
 	@printf '%s\n' \
 		'Targets:' \
 		'  make run        Run the client with configured connection settings' \
 		'  make local      Run the client against localhost:3791' \
+		'  make install    Install the release binary with cargo' \
 		'  make build      Build the project' \
 		'  make check      Run cargo check' \
 		'  make fmt        Format Rust code' \
@@ -40,6 +41,9 @@ test:
 
 ci: fmt-check lint test
 	git diff --check
+
+install:
+	cargo install --path . --locked
 
 clean:
 	cargo clean

@@ -167,6 +167,8 @@ save_on_exit = false
 
 `/map map` appends a snapshot centered on the current room and sizes it to the MUD output content area's current dimensions. The snapshot preserves the map panel's configured room, terrain, link, door, header, and theme colors. Bare `/map` displays structured Markdown-style command help.
 
+The client also provides a TinTin++-style local path recorder. Use `/path create` or `/path start` before moving to record directions, then use `/path describe`, `/path walk`, `/path run`, `/path swap`, `/path zip`, and `/path unzip` to inspect and replay the recorded path. `/path save` and `/path load` use the existing runtime variable system. `/map find` and `/map run` remain the weighted destination-routing commands.
+
 Normal movement commands are sent to the MUD without moving the local mapper. The map position and room links are synced from fresh RoTS MSDP `ROOM` table updates, which provide the current room vnum and destination vnums. The latest MSDP `ROOM_EXITS` array is used only to label those destination vnums with directions, matching the TinTin++ RoTS mapping script behavior.
 
 RoTS MSDP room values are mapped with:

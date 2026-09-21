@@ -24,6 +24,7 @@ pub(super) fn is_recognized_local_command(text: &str) -> bool {
                 | "event"
                 | "toggle"
                 | "map"
+                | "path"
         )
     )
 }

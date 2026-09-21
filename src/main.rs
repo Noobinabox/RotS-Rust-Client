@@ -1,6 +1,6 @@
 use mud_client::{
     app::App,
-    config::{AppConfig, ConfigLoadOptions},
+    config::{AppConfig, ConfigLoadOptions, default_config_path},
     error::{MudClientError, Result},
 };
 
@@ -14,10 +14,11 @@ async fn main() -> Result<()> {
     let load_options = ConfigLoadOptions {
         local_test_endpoint: options.local,
     };
-    let config = AppConfig::load_with_options(None, load_options)?;
+    let config_path = default_config_path();
+    let config = AppConfig::load_with_options(config_path.clone(), load_options)?;
     config.init_logging();
 
-    let mut app = App::new_with_options(config, load_options);
+    let mut app = App::new_with_config_source(config, config_path, load_options);
     app.run().await
 }
 

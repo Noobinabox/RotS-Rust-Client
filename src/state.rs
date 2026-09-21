@@ -4,6 +4,7 @@ use crate::{
     config::{AppConfig, MsdpMapping},
     map::{MapState, parse_room_exit_updates, parse_room_exits, parse_room_id},
     network::msdp::{MsdpFrame, MsdpValue},
+    path::PathState,
 };
 
 pub const OUTPUT_STATUS_VISIBLE_TICKS: u8 = 30;
@@ -263,6 +264,7 @@ pub struct AppState {
     pub world: WorldState,
     pub social: SocialState,
     pub map: MapState,
+    pub path: PathState,
     pub raw_msdp: HashMap<String, MsdpValue>,
     pub script_events: Vec<ScriptEventRecord>,
     pub last_error: Option<String>,
@@ -289,6 +291,7 @@ impl AppState {
             world: WorldState::default(),
             social: SocialState::new(config.social.scrollback_lines),
             map: MapState::default(),
+            path: PathState::default(),
             raw_msdp: HashMap::new(),
             script_events: Vec::new(),
             last_error: None,

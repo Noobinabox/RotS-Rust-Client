@@ -12,6 +12,14 @@
 cargo run
 ```
 
+Install the release binary into Cargo's user binary directory:
+
+```sh
+make install
+```
+
+This installs `mud-client`; it does not overwrite the optional runtime configuration at `~/.config/mud-client/config.toml`.
+
 Force the local test endpoint even when an installed config points elsewhere:
 
 ```sh

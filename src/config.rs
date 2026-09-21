@@ -1763,7 +1763,7 @@ impl Default for LoggingConfig {
     }
 }
 
-fn default_config_path() -> Option<PathBuf> {
+pub fn default_config_path() -> Option<PathBuf> {
     ProjectDirs::from("org", "mud-client", "mud-client")
         .map(|dirs| dirs.config_dir().join("config.toml"))
 }
