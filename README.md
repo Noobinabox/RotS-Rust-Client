@@ -10,6 +10,8 @@ The current implementation includes:
 - Negotiates MSDP over Telnet and requests RoTS status reports.
 - Parses nested MSDP strings, arrays, and tables, including the RoTS `GROUP` table.
 - Maps RoTS `HEALTH`, `MANA`, and `MOVEMENT` values to terminal gauges.
+- Executes configurable key macros through the command pipeline; see [macros](docs/commands/macro.md). Try `/macro {F5} {look}` and press F5.
+- Supports dedicated numpad macros such as `/macro {Numpad8} {north}` on terminals that report keypad identity, without capturing top-row digits.
 
 ## Run
 

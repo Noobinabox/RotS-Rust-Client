@@ -4,6 +4,10 @@ The active config file is normally `~/.config/mud-client/config.toml`. The repos
 
 Colors accept named terminal colors, bright color names such as `lightred`, indexed colors such as `index:17`, or RGB values such as `#7aa2f7`.
 
+## macros
+
+See [key macro configuration](commands/macro.md#persistent-configuration): `[[macros.rules]]` accepts `key`, `command`, `enabled`, `override_builtin`, and `allow_repeat`. No macros are installed by default. Printable-key mode is session-only and starts off.
+
 ## connection
 
 | Option | Meaning |

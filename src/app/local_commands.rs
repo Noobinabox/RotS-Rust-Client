@@ -8,6 +8,7 @@ pub(super) fn is_recognized_local_command(text: &str) -> bool {
         command.split_whitespace().next(),
         Some(
             "help"
+                | "macro"
                 | "msdp"
                 | "echo"
                 | "clear"
@@ -34,7 +35,7 @@ pub(super) fn preserves_variable_templates(text: &str) -> bool {
     let command = text.trim_start().strip_prefix('/').unwrap_or_default();
     matches!(
         command.split_whitespace().next(),
-        Some("alias" | "trigger" | "triggers" | "handler" | "variable")
+        Some("alias" | "trigger" | "triggers" | "handler" | "variable" | "macro")
     )
 }
 

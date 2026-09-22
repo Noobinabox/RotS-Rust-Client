@@ -1,3 +1,15 @@
+# Optional key macros (none enabled by default); /help macro for details.
+# [[macros.rules]]
+# key = "F5"
+# command = "look"
+# enabled = true
+# override_builtin = false
+# allow_repeat = false
+# Dedicated keypad example (requires a terminal that reports keypad identity):
+# [[macros.rules]]
+# key = "Numpad8"
+# command = "north"
+
 [connection]
 host = "localhost"
 port = 3791

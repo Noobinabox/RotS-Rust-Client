@@ -15,6 +15,8 @@ Every local command starts with `/` and is handled by the client instead of bein
 
 ## Scripting commands
 
+- [`/macro`](commands/macro.md) — bind keys to immediate commands.
+
 - [`/variable`](commands/variable.md) — inspect and modify runtime variables.
 - [`/alias`](commands/alias.md) — define command aliases.
 - [`/triggers`](commands/triggers.md) — react to incoming text.

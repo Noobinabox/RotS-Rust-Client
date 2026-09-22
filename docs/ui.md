@@ -43,12 +43,20 @@ The Social pane mirrors the RoTS C++ communication output for incoming and outgo
 
 The output pane preserves MUD spacing and ANSI styling. It supports styled, plain, and debug display modes. Use `F2` to cycle modes; the mode indicator appears briefly in the title.
 
+Rendering borrows scrollback and builds text spans only for visible lines. Styled mode scans earlier ANSI sequences only back to the most recent output reset boundary to preserve inherited colors; without a boundary it scans retained history. Plain and debug modes read only visible lines. Map panes lazily index incoming road/city links once per render when a visible route marker needs them.
+
+To measure output rendering locally, run `cargo test --release output_render_timing -- --ignored --nocapture`. This optional timing probe renders 200 frames over 10,000 retained lines in each display mode, with and without periodic style boundaries; it has no timing assertions.
+
+Local before/after measurements for this probe (milliseconds per 200 frames): styled output without boundaries fell from 591 to 253, styled output with boundaries from 795 to 12, and plain/debug output from 258–401 to 12–16. These synthetic renderer measurements vary by machine and workload; they do not measure total client frame time or network latency.
+
 Scrolling:
 
 - `PageUp` and `PageDown` scroll by page.
-- `Ctrl-Up` and `Ctrl-Down` scroll by one line.
+- `Ctrl-Up` and `Ctrl-Down` scroll by one displayed row, including within wrapped paragraphs.
 - Mouse wheel scrolls when `[terminal] mouse = true`.
 - `Ctrl-E` follows newest output.
+
+`/help` and `/help <topic>` open at the beginning of the requested help, even on a fresh session. Scroll down to read the rest, or use `Ctrl-E` to resume following newest output. Wrapped paragraphs remain fully reachable even when the retained history contains fewer logical lines than the output panel's height.
 
 Scrolling stops at the oldest full output page, so the output pane does not show a mostly empty viewport above the first retained line.
 

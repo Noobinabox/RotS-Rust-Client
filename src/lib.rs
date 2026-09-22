@@ -6,6 +6,7 @@ pub mod config;
 pub mod error;
 pub mod events;
 pub mod input;
+pub mod macros;
 pub mod map;
 pub mod network;
 pub mod path;

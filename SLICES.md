@@ -693,3 +693,54 @@ Scope:
 - Keep commands after the closing brace separate unless they have their own repeat prefix.
 - Run repeated commands through aliases, local commands, door-aware movement, command echo, and network sending.
 - Update in-client help, markdown docs, and regression coverage.
+
+### 49. Rendering Performance
+
+Status: `Done`
+
+Reduce scrollback and map rendering work without changing displayed content.
+
+Scope:
+
+- Borrow scrollback and render only visible text spans.
+- Preserve inherited ANSI styles by replaying from the latest reset boundary (or the start of retained history when no boundary exists).
+- Use binary search for sorted output search matches.
+- Lazily index incoming route links once per map pane, only when needed.
+- Add regression coverage and a repeatable output timing probe.
+
+Validation: 381 tests passed; the optional timing probe passed separately. Formatting and diff checks passed. Thranduil, Magus, and Sauron completed review; resolved unnecessary eager map indexing and redundant output bounds checks. Strict Clippy remains blocked by four pre-existing warnings: a derivable default in `src/map.rs`, a collapsible conditional and redundant closure in `src/scripting/lua.rs`, and the existing eight-argument marker helper in `src/ui/map.rs`.
+
+### 50. Key Macros
+
+Status: `Done`
+
+- Bind single key presses and modifier chords to the existing command pipeline.
+- Preserve command drafts and history, protect search editing and Ctrl+C, and require explicit overrides for built-in shortcuts.
+- Provide opt-in printable-key mode and reported-repeat handling.
+- Add persistent TOML definitions, runtime management, reload preservation, docs, and deterministic tests.
+- Complete Thranduil/Magus/Sauron subagent reviews.
+
+Validation: 393 tests passed (including 12 macro tests); one optional performance probe remains ignored. Formatting and diff checks passed. Thranduil, Magus, and Sauron completed separate subagent reviews. Fixed shifted Alt-key normalization and clarified inherited slash-command semicolon behavior. Strict Clippy still reports the four pre-existing warnings documented in slice 49. Terminal-dependent chord reporting and held-key behavior are documented in the macro reference.
+
+### 51. Dedicated Numpad Bindings
+
+Status: `Done`
+
+- Distinguish numpad digits, operators, Enter, and Num Lock navigation aliases from ordinary keys.
+- Preserve generic binding fallback while allowing dedicated numpad macros outside printable-key mode.
+- Enable enhanced keyboard reporting on supported terminals and restore it on exit.
+- Cover key identity, modifiers, repeats, reload, draft preservation, and terminal lifecycle.
+- Document terminal/backend limitations and complete subagent review.
+
+Validation: 399 tests passed; one optional timing probe ignored. PTY checks passed with enhanced keypad sequences and legacy input, including top-row/main-Enter separation, modifiers, preserved drafts, and terminal restoration. Formatting/diff checks passed; the four existing Clippy warnings remain. Thranduil, Magus, and Sauron completed reviews; fixed the blocking capability probe and lost Shift on enhanced Ctrl-letter events. Dedicated bindings require terminal-reported keypad identity; native Windows support remains limited by the current input backend.
+
+### 52. First-Use Help and Wrapped Scrollback
+
+Status: `Done`
+
+- Open `/help` at the requested heading instead of showing only its tail.
+- Track logical-line anchors plus wrapped-row offsets, allowing every displayed row to be reached even with little retained history.
+- Keep rendering and scroll calculations bounded to relevant logical lines (with existing ANSI-prefix replay as needed).
+- Cover first/repeated macro help, bidirectional scrolling, display modes, narrow/empty geometry, resizing, snapshots, and ordinary appended output.
+
+Validation: 403 tests passed; optional timing probe passed separately. Formatting and diff checks passed. Thranduil, Magus, and Sauron completed separate reviews; removed unnecessary anchor rendering for zero row offsets and repaired the scrolling-controls list. Strict Clippy still reports the four existing warnings from slice 49. Sauron noted pre-existing paused-anchor drift during snapshot batches, prompt removal, and scrollback eviction; broader anchor lifecycle changes and dedicated regression coverage are deferred outside this help/wrapping fix.

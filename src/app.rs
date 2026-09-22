@@ -13,6 +13,7 @@ use tokio::{sync::mpsc, task::JoinHandle, time::timeout};
 
 mod formatting;
 mod local_commands;
+mod macros;
 mod mouse;
 mod rendering;
 mod social;
@@ -73,6 +74,7 @@ pub struct App {
     state: AppState,
     theme: Theme,
     aliases: AliasEngine,
+    macros: crate::macros::MacroEngine,
     triggers: TriggerEngine,
     events: EventEngine,
     variables: VariableStore,
@@ -142,6 +144,13 @@ impl App {
             HighlightEngine::disabled()
         });
         let lua = LuaEngine::new(&config.lua, config_path.as_deref(), &state, &variables);
+        let macros = crate::macros::MacroEngine::new(&config.macros).unwrap_or_else(|error| {
+            state.push_output(
+                format!("Macro setup failed: {error}"),
+                OutputCategory::Error,
+            );
+            crate::macros::MacroEngine::default()
+        });
         let animations = AnimationScheduler::new(&config.animation);
         Self {
             config,
@@ -150,6 +159,7 @@ impl App {
             state,
             theme,
             aliases,
+            macros,
             triggers,
             events,
             variables,
@@ -473,6 +483,22 @@ impl App {
             let topic = command.strip_prefix("help").unwrap_or_default().trim();
             if let Some(message) = help_text(topic) {
                 push_output_lines(&mut self.state, message, OutputCategory::System);
+                let first_line = self
+                    .state
+                    .output
+                    .len()
+                    .saturating_sub(message.lines().count());
+                let output = self.resolved_layout(self.last_terminal_area).output;
+                let (offset, rows) = crate::ui::output::position_for_line(
+                    &self.state,
+                    output.height.saturating_sub(2) as usize,
+                    output.width.saturating_sub(2) as usize,
+                    &self.theme,
+                    first_line,
+                );
+                self.state.output_view.scroll_offset = offset;
+                self.state.output_view.wrapped_row_offset = rows;
+                self.state.output_view.follow_newest = (offset, rows) == (0, 0);
             } else {
                 push_output_lines(
                     &mut self.state,
@@ -503,6 +529,13 @@ impl App {
                 .handle_timer_command(command.strip_prefix("timer").unwrap_or_default())
                 .await
             {
+                Ok(message) => push_output_lines(&mut self.state, message, OutputCategory::System),
+                Err(error) => push_output_lines(&mut self.state, error, OutputCategory::Error),
+            }
+            return true;
+        }
+        if command == "macro" || command.starts_with("macro ") {
+            match self.handle_macro_command(command.strip_prefix("macro").unwrap_or_default()) {
                 Ok(message) => push_output_lines(&mut self.state, message, OutputCategory::System),
                 Err(error) => push_output_lines(&mut self.state, error, OutputCategory::Error),
             }
@@ -792,6 +825,10 @@ impl App {
             .with_config(&config.variables)
             .map_err(|error| format!("Config reload failed: {error}"))?;
         let runtime_aliases = self.aliases.runtime_configs();
+        let macros = self
+            .macros
+            .with_config(&config.macros)
+            .map_err(|error| format!("Config reload failed: {error}"))?;
         let runtime_triggers = self.triggers.runtime_configs();
         let runtime_handlers = self.events.runtime_configs();
         let runtime_highlights = self.highlights.runtime_configs();
@@ -849,6 +886,7 @@ impl App {
             self.state.script_events.drain(..excess_events);
         }
         self.config = config;
+        self.macros = macros;
         self.full_hd_overrides = LayoutOverrides::default();
         self.ultrawide_overrides = LayoutOverrides::default();
         self.stacked_overrides = LayoutOverrides::default();
@@ -1694,39 +1732,63 @@ impl App {
         command_tx: &mpsc::Sender<ClientCommand>,
     ) -> bool {
         match event {
-            TerminalEvent::Key(key) => match handle_key(&mut self.state, key) {
-                InputAction::None => false,
-                InputAction::Command(command) => self.handle_command(command, command_tx).await,
-                InputAction::ClearOutput => {
-                    self.state.clear_output();
-                    self.mud_ansi_colors.reset();
-                    false
+            TerminalEvent::Key(key) => {
+                if key.kind == crossterm::event::KeyEventKind::Release {
+                    return false;
                 }
-                InputAction::FollowOutput => {
-                    self.state.follow_output();
-                    false
+                if key
+                    .modifiers
+                    .contains(crossterm::event::KeyModifiers::CONTROL)
+                    && matches!(key.code, crossterm::event::KeyCode::Char('c' | 'C'))
+                {
+                    self.macros.printable_mode = false;
                 }
-                InputAction::ScrollOutputDown(amount) => {
-                    self.scroll_output_down(amount);
-                    false
+                if let Some(action) = self
+                    .macros
+                    .action(key, self.state.output_view.search_active)
+                {
+                    let command = match action {
+                        crate::macros::MacroAction::Execute(command) => command.to_string(),
+                        crate::macros::MacroAction::SuppressRepeat => return false,
+                    };
+                    return self
+                        .handle_command(ClientCommand::SendText(command), command_tx)
+                        .await;
                 }
-                InputAction::ScrollOutputUp(amount) => {
-                    self.scroll_output_up(amount);
-                    false
+                match handle_key(&mut self.state, key) {
+                    InputAction::None => false,
+                    InputAction::Command(command) => self.handle_command(command, command_tx).await,
+                    InputAction::ClearOutput => {
+                        self.state.clear_output();
+                        self.mud_ansi_colors.reset();
+                        false
+                    }
+                    InputAction::FollowOutput => {
+                        self.state.follow_output();
+                        false
+                    }
+                    InputAction::ScrollOutputDown(amount) => {
+                        self.scroll_output_down(amount);
+                        false
+                    }
+                    InputAction::ScrollOutputUp(amount) => {
+                        self.scroll_output_up(amount);
+                        false
+                    }
+                    InputAction::SearchNext => {
+                        self.state.move_search_match(SearchDirection::Next);
+                        false
+                    }
+                    InputAction::SearchPrevious => {
+                        self.state.move_search_match(SearchDirection::Previous);
+                        false
+                    }
+                    InputAction::ToggleOutputDisplayMode => {
+                        self.state.toggle_output_display_mode();
+                        false
+                    }
                 }
-                InputAction::SearchNext => {
-                    self.state.move_search_match(SearchDirection::Next);
-                    false
-                }
-                InputAction::SearchPrevious => {
-                    self.state.move_search_match(SearchDirection::Previous);
-                    false
-                }
-                InputAction::ToggleOutputDisplayMode => {
-                    self.state.toggle_output_display_mode();
-                    false
-                }
-            },
+            }
             TerminalEvent::Mouse(mouse) => {
                 if self.handle_mouse_event(mouse) {
                     self.send_mud_window_size(command_tx).await;
@@ -1927,28 +1989,38 @@ impl App {
     }
 
     fn scroll_output_up(&mut self, amount: usize) {
-        self.state.scroll_output_up(amount);
-        self.clamp_output_scroll();
+        self.scroll_output_rows(amount, true);
     }
 
     fn scroll_output_down(&mut self, amount: usize) {
-        self.clamp_output_scroll();
-        self.state.scroll_output_down(amount);
+        self.scroll_output_rows(amount, false);
     }
 
-    fn clamp_output_scroll(&mut self) {
-        let max_offset = self.output_scroll_max();
-        self.state.output_view.scroll_offset = self.state.output_view.scroll_offset.min(max_offset);
-        self.state.output_view.follow_newest = self.state.output_view.scroll_offset == 0;
+    fn scroll_output_rows(&mut self, amount: usize, up: bool) {
+        let output = self.resolved_layout(self.last_terminal_area).output;
+        let (offset, rows) = crate::ui::output::scroll_position(
+            &self.state,
+            output.height.saturating_sub(2) as usize,
+            output.width.saturating_sub(2) as usize,
+            &self.theme,
+            amount,
+            up,
+        );
+        self.state.output_view.scroll_offset = offset;
+        self.state.output_view.wrapped_row_offset = rows;
+        self.state.output_view.follow_newest = (offset, rows) == (0, 0);
     }
 
+    #[cfg(test)]
     fn output_scroll_max(&self) -> usize {
         let output = self.resolved_layout(self.last_terminal_area).output;
-        let content_height = output.height.saturating_sub(2) as usize;
-        if content_height == 0 {
-            return self.state.output.len().saturating_sub(1);
-        }
-        self.state.output.len().saturating_sub(content_height)
+        crate::ui::output::max_scroll_position(
+            &self.state,
+            output.height.saturating_sub(2) as usize,
+            output.width.saturating_sub(2) as usize,
+            &self.theme,
+        )
+        .0
     }
 
     fn mud_window_size(&self) -> Option<(u16, u16)> {
@@ -1980,8 +2052,9 @@ impl App {
 
 fn help_text(topic: &str) -> Option<&'static str> {
     match topic.trim().to_ascii_lowercase().as_str() {
+        "macro" | "macros" => Some(include_str!("../docs/commands/macro.md")),
         "" | "commands" => Some(
-            "# Mud Client Help\n\n## Local Commands\n- `/help [topic]` - show client help\n- `/clear` - clear output\n- `/quit` - quit the client\n- `/reload` - reload config from disk\n- `/reconnect` - request a network reconnect\n- `/msdp` - show stored MSDP values\n- `/lua [status|reload|call <function>]` - inspect and run Lua hooks\n- `/echo [--fg <color>] [--bg <color>] <text>` - write styled local output\n- `/variable` - list, set, or unset script variables\n- `/alias` - list, add, unset, or clear runtime aliases\n- `/triggers` - list, add, unset, or clear runtime text/color triggers\n- `/highlight` - list, add, unset, or clear runtime highlights\n- `/handler` - list, add, unset, or clear runtime event handlers\n- `/event` - inspect or manually emit script events\n- `/toggle group|opponent|social [on|off]` - toggle optional panels for this session\n- `/map <command>` - mapper commands\n\n## Topics\n- `msdp` - stored MSDP values\n- `lua` - Lua scripting hooks and client API\n- `echo` - local styled output\n- `variable` - configured and runtime script variables\n- `map` - room mapping commands\n- `alias` - alias configuration\n- `trigger` - configured output reactions\n- `event` - script event dispatch and handlers\n- `highlight` - configured and runtime output styling\n- `animation` - animation timing and reduced motion\n- `diagnostics` - logging and troubleshooting\n- `toggle` - optional panel toggles\n- `social` - captured communication panel\n- `path` - path finding and path running\n- `output` - scrollback, search, triggers, and highlights\n- `input` - command input controls\n- `config` - runtime configuration notes",
+            "# Mud Client Help\n\n## Local Commands\n- `/help [topic]` - show client help\n- `/clear` - clear output\n- `/quit` - quit the client\n- `/reload` - reload config from disk\n- `/reconnect` - request a network reconnect\n- `/msdp` - show stored MSDP values\n- `/lua [status|reload|call <function>]` - inspect and run Lua hooks\n- `/echo [--fg <color>] [--bg <color>] <text>` - write styled local output\n- `/variable` - list, set, or unset script variables\n- `/macro` - bind keys to commands; `/help macro` for details\n- `/alias` - list, add, unset, or clear runtime aliases\n- `/triggers` - list, add, unset, or clear runtime text/color triggers\n- `/highlight` - list, add, unset, or clear runtime highlights\n- `/handler` - list, add, unset, or clear runtime event handlers\n- `/event` - inspect or manually emit script events\n- `/toggle group|opponent|social [on|off]` - toggle optional panels for this session\n- `/map <command>` - mapper commands\n\n## Topics\n- `msdp` - stored MSDP values\n- `lua` - Lua scripting hooks and client API\n- `echo` - local styled output\n- `variable` - configured and runtime script variables\n- `map` - room mapping commands\n- `alias` - alias configuration\n- `trigger` - configured output reactions\n- `event` - script event dispatch and handlers\n- `highlight` - configured and runtime output styling\n- `animation` - animation timing and reduced motion\n- `diagnostics` - logging and troubleshooting\n- `toggle` - optional panel toggles\n- `social` - captured communication panel\n- `path` - path finding and path running\n- `output` - scrollback, search, triggers, and highlights\n- `input` - command input controls\n- `config` - runtime configuration notes",
         ),
         "msdp" => Some(
             "# MSDP Help\n\n## Usage\n- `/msdp`\n\n## Description\nShows every MSDP variable currently stored by the client. Values are sorted by variable name and reflect the latest MSDP frames received from the MUD.",
@@ -5103,6 +5176,29 @@ enabled = true
                 .iter()
                 .any(|line| line.normalized.contains("Linked e to 12."))
         );
+    }
+
+    #[tokio::test]
+    async fn first_macro_help_opens_at_its_heading_and_can_resume_following() {
+        let mut app = App::new(AppConfig::default());
+        app.last_terminal_area = Rect::new(0, 0, 100, 30);
+        let (tx, mut rx) = mpsc::channel(4);
+        for _ in 0..2 {
+            app.handle_command(ClientCommand::SendText("/help macro".into()), &tx)
+                .await;
+            let area = app.resolved_layout(app.last_terminal_area).output;
+            let mut buffer = ratatui::buffer::Buffer::empty(area);
+            crate::ui::output::render_output(area, &mut buffer, &app.state, &app.theme, "Output");
+            let first_row = (area.x + 1..area.right() - 1)
+                .map(|x| buffer[(x, area.y + 1)].symbol())
+                .collect::<String>();
+            assert!(first_row.starts_with("Macro Help"), "{first_row:?}");
+            assert!(!app.state.output_view.follow_newest);
+            app.scroll_output_down(usize::MAX);
+            assert!(app.state.output_view.follow_newest);
+            assert_eq!(app.state.output_view.wrapped_row_offset, 0);
+        }
+        assert!(rx.try_recv().is_err());
     }
 
     #[tokio::test]

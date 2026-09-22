@@ -37,7 +37,10 @@ pub enum OutputDisplayMode {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OutputView {
+    /// Complete logical lines hidden below the viewport.
     pub scroll_offset: usize,
+    /// Wrapped rows hidden at the bottom of the last included logical line.
+    pub wrapped_row_offset: usize,
     pub follow_newest: bool,
     pub display_mode: OutputDisplayMode,
     pub status_ticks_remaining: u8,
@@ -53,6 +56,7 @@ impl Default for OutputView {
     fn default() -> Self {
         Self {
             scroll_offset: 0,
+            wrapped_row_offset: 0,
             follow_newest: true,
             display_mode: OutputDisplayMode::Styled,
             status_ticks_remaining: 0,
@@ -454,8 +458,7 @@ impl AppState {
 
     pub fn clear_output(&mut self) {
         self.output.clear();
-        self.output_view.scroll_offset = 0;
-        self.output_view.follow_newest = true;
+        self.follow_output();
         self.refresh_search_matches();
     }
 
@@ -641,6 +644,7 @@ impl AppState {
     }
 
     pub fn scroll_output_up(&mut self, amount: usize) {
+        self.output_view.wrapped_row_offset = 0;
         let max_offset = self.output.len().saturating_sub(1);
         self.output_view.scroll_offset = self
             .output_view
@@ -651,12 +655,14 @@ impl AppState {
     }
 
     pub fn scroll_output_down(&mut self, amount: usize) {
+        self.output_view.wrapped_row_offset = 0;
         self.output_view.scroll_offset = self.output_view.scroll_offset.saturating_sub(amount);
         self.output_view.follow_newest = self.output_view.scroll_offset == 0;
     }
 
     pub fn follow_output(&mut self) {
         self.output_view.scroll_offset = 0;
+        self.output_view.wrapped_row_offset = 0;
         self.output_view.follow_newest = true;
     }
 
@@ -822,6 +828,7 @@ impl AppState {
     fn after_output_changed(&mut self, appended_line: bool) {
         if self.output_view.follow_newest {
             self.output_view.scroll_offset = 0;
+            self.output_view.wrapped_row_offset = 0;
         } else if appended_line {
             self.output_view.scroll_offset = self
                 .output_view
@@ -863,6 +870,7 @@ impl AppState {
             return;
         };
         self.output_view.scroll_offset = self.output.len().saturating_sub(line_index + 1);
+        self.output_view.wrapped_row_offset = 0;
         self.output_view.follow_newest = self.output_view.scroll_offset == 0;
     }
 }

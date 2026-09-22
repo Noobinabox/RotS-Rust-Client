@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, VecDeque};
+use std::{
+    cell::OnceCell,
+    collections::{BTreeMap, HashMap, VecDeque},
+};
 
 use ratatui::{
     layout::Rect,
@@ -95,6 +98,7 @@ fn nearby_map_lines<'a>(
     let mut cells = vec![vec![' '; width]; height];
     let mut styles: BTreeMap<(usize, usize), Color> = BTreeMap::new();
     let positions = visible_positions(map, current_id);
+    let markers = MapMarkers::new(map);
 
     for (room_id, (room_x, room_y)) in &positions {
         if room_x.abs() > max_x || room_y.abs() > max_y {
@@ -111,7 +115,7 @@ fn nearby_map_lines<'a>(
         draw_room_marker_without_vertical_indicators(
             &mut cells,
             &mut styles,
-            map,
+            &markers,
             theme,
             config,
             room_id,
@@ -233,6 +237,7 @@ fn map_lines<'a>(
     let mut styles: BTreeMap<(usize, usize), Color> = BTreeMap::new();
     let mut exit_overlays = BTreeMap::new();
     let positions = visible_positions(map, current_id);
+    let markers = MapMarkers::new(map);
     let center_x = (width / 2) as i32;
     let center_y = (height / 2) as i32;
 
@@ -353,7 +358,7 @@ fn map_lines<'a>(
             draw_room_marker(
                 &mut cells,
                 &mut styles,
-                map,
+                &markers,
                 theme,
                 config,
                 room_id,
@@ -368,7 +373,7 @@ fn map_lines<'a>(
         draw_room_marker(
             &mut cells,
             &mut styles,
-            map,
+            &markers,
             theme,
             config,
             current_id,
@@ -434,37 +439,42 @@ fn map_header(current: &crate::map::Room) -> String {
 fn draw_room_marker(
     cells: &mut [Vec<char>],
     styles: &mut BTreeMap<(usize, usize), Color>,
-    map: &MapState,
+    markers: &MapMarkers<'_>,
     theme: &Theme,
     config: &MapRenderConfig,
     room_id: &str,
     position: (i32, i32),
 ) {
-    draw_room_marker_internal(cells, styles, map, theme, config, room_id, position, true);
+    draw_room_marker_internal(
+        cells, styles, markers, theme, config, room_id, position, true,
+    );
 }
 
 fn draw_room_marker_without_vertical_indicators(
     cells: &mut [Vec<char>],
     styles: &mut BTreeMap<(usize, usize), Color>,
-    map: &MapState,
+    markers: &MapMarkers<'_>,
     theme: &Theme,
     config: &MapRenderConfig,
     room_id: &str,
     position: (i32, i32),
 ) {
-    draw_room_marker_internal(cells, styles, map, theme, config, room_id, position, false);
+    draw_room_marker_internal(
+        cells, styles, markers, theme, config, room_id, position, false,
+    );
 }
 
 fn draw_room_marker_internal(
     cells: &mut [Vec<char>],
     styles: &mut BTreeMap<(usize, usize), Color>,
-    map: &MapState,
+    markers: &MapMarkers<'_>,
     theme: &Theme,
     config: &MapRenderConfig,
     room_id: &str,
     position: (i32, i32),
     show_vertical_indicators: bool,
 ) {
+    let map = markers.map;
     let Some(room) = map.rooms.get(room_id) else {
         return;
     };
@@ -497,7 +507,7 @@ fn draw_room_marker_internal(
             .map(|style| style.color)
             .unwrap_or(theme.foreground);
         (
-            route_symbol(map, room_id).to_string(),
+            markers.route_symbol(room_id).to_string(),
             room_flag_color(config, theme, room).unwrap_or(color),
         )
     } else if let Some(style) = terrain_style(config, &room.terrain) {
@@ -565,49 +575,80 @@ fn route_terrain(terrain: &str) -> bool {
     )
 }
 
-fn route_symbol(map: &MapState, room_id: &str) -> char {
-    const NESW_LINE: [char; 16] = [
-        '∘', '╹', '╺', '┗', '╻', '┃', '┏', '┣', '╸', '┛', '━', '┻', '┓', '┫', '┳', '╋',
-    ];
-    let Some(room) = map.rooms.get(room_id) else {
-        return NESW_LINE[0];
-    };
-    let outgoing_mask = room
-        .exits
-        .values()
-        .filter_map(|exit| {
-            let target = exit
-                .to
-                .as_ref()
-                .and_then(|target_id| map.rooms.get(target_id))?;
-            if !route_terrain(&target.terrain) || target.z != room.z {
-                return None;
+// Build incoming route connections at most once per pane, only if a visible
+// marker needs them. Borrow IDs for this frame without mutating map state.
+struct MapMarkers<'a> {
+    map: &'a MapState,
+    incoming_routes: OnceCell<HashMap<&'a str, usize>>,
+}
+
+impl<'a> MapMarkers<'a> {
+    fn new(map: &'a MapState) -> Self {
+        Self {
+            map,
+            incoming_routes: OnceCell::new(),
+        }
+    }
+
+    fn incoming_routes(&self) -> &HashMap<&'a str, usize> {
+        self.incoming_routes.get_or_init(|| {
+            let map = self.map;
+            let mut incoming_routes = HashMap::new();
+            for (source_id, source) in &map.rooms {
+                if !route_terrain(&source.terrain) {
+                    continue;
+                }
+                for exit in source.exits.values() {
+                    let Some(target_id) = exit.to.as_deref() else {
+                        continue;
+                    };
+                    let Some(target) = map.rooms.get(target_id) else {
+                        continue;
+                    };
+                    if source_id == target_id || source.z != target.z {
+                        continue;
+                    }
+                    if let Some(bit) = opposite_direction(&exit.direction).and_then(direction_bit) {
+                        *incoming_routes.entry(target_id).or_insert(0) |= bit;
+                    }
+                }
             }
-            match exit.direction.as_str() {
-                "n" => Some(1),
-                "e" => Some(2),
-                "s" => Some(4),
-                "w" => Some(8),
-                _ => None,
-            }
+            incoming_routes
         })
-        .fold(0, |mask, direction| mask | direction);
-    let incoming_mask = map
-        .rooms
-        .iter()
-        .filter(|(source_id, source)| {
-            source_id.as_str() != room_id && route_terrain(&source.terrain) && source.z == room.z
-        })
-        .flat_map(|(_, source)| source.exits.values())
-        .filter_map(|exit| {
-            if exit.to.as_deref() != Some(room_id) {
-                return None;
-            }
-            direction_bit(opposite_direction(&exit.direction)?)
-        })
-        .fold(0, |mask, direction| mask | direction);
-    let mask = outgoing_mask | incoming_mask;
-    NESW_LINE[mask]
+    }
+
+    fn route_symbol(&self, room_id: &str) -> char {
+        let map = self.map;
+        const NESW_LINE: [char; 16] = [
+            '∘', '╹', '╺', '┗', '╻', '┃', '┏', '┣', '╸', '┛', '━', '┻', '┓', '┫', '┳', '╋',
+        ];
+        let Some(room) = map.rooms.get(room_id) else {
+            return NESW_LINE[0];
+        };
+        let outgoing_mask = room
+            .exits
+            .values()
+            .filter_map(|exit| {
+                let target = exit
+                    .to
+                    .as_ref()
+                    .and_then(|target_id| map.rooms.get(target_id))?;
+                if !route_terrain(&target.terrain) || target.z != room.z {
+                    return None;
+                }
+                match exit.direction.as_str() {
+                    "n" => Some(1),
+                    "e" => Some(2),
+                    "s" => Some(4),
+                    "w" => Some(8),
+                    _ => None,
+                }
+            })
+            .fold(0, |mask, direction| mask | direction);
+        let incoming_mask = self.incoming_routes().get(room_id).copied().unwrap_or(0);
+        let mask = outgoing_mask | incoming_mask;
+        NESW_LINE[mask]
+    }
 }
 
 fn direction_bit(direction: &str) -> Option<usize> {
@@ -1585,7 +1626,7 @@ mod tests {
             },
         );
 
-        assert_eq!(route_symbol(&map, "1"), '╋');
+        assert_eq!(MapMarkers::new(&map).route_symbol("1"), '╋');
     }
 
     #[test]
@@ -1827,6 +1868,44 @@ mod tests {
     }
 
     #[test]
+    fn incoming_route_index_preserves_direction_and_layer_rules() {
+        let mut map = MapState::default();
+        map.rooms
+            .insert("target".into(), room("target", "", 0, 0, []));
+        for (id, direction, terrain, z) in [
+            ("north", "south", "Road", 0),
+            ("east", "w", "City", 0),
+            ("forest", "n", "Forest", 0),
+            ("upper", "e", "Road", 1),
+            ("vertical", "u", "Road", 0),
+        ] {
+            map.rooms.insert(
+                id.into(),
+                Room {
+                    terrain: terrain.into(),
+                    z,
+                    ..room(id, "", 0, 0, [(direction, "target")])
+                },
+            );
+        }
+        map.rooms.insert(
+            "self".into(),
+            Room {
+                terrain: "Road".into(),
+                ..room("self", "", 0, 0, [("n", "self"), ("e", "missing")])
+            },
+        );
+        let markers = MapMarkers::new(&map);
+        assert!(markers.incoming_routes.get().is_none());
+        assert_eq!(markers.route_symbol("target"), '┗');
+        assert_eq!(markers.incoming_routes().get("target"), Some(&3));
+        assert!(!markers.incoming_routes().contains_key("self"));
+        assert!(!markers.incoming_routes().contains_key("missing"));
+        assert_eq!(markers.route_symbol("self"), '╹');
+        assert_eq!(markers.route_symbol("missing"), '∘');
+    }
+
+    #[test]
     fn route_line_symbols_ignore_non_route_and_other_z_rooms() {
         let mut map = MapState::default();
         map.current_room = Some("1".to_string());
@@ -1874,7 +1953,7 @@ mod tests {
             },
         );
 
-        assert_eq!(route_symbol(&map, "1"), '╻');
+        assert_eq!(MapMarkers::new(&map).route_symbol("1"), '╻');
     }
 
     #[test]

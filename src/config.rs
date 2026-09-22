@@ -27,6 +27,7 @@ pub struct AppConfig {
     pub map: MapRenderConfig,
     pub msdp: MsdpConfig,
     pub aliases: AliasConfig,
+    pub macros: crate::macros::MacroConfig,
     pub triggers: TriggerConfig,
     pub events: EventConfig,
     pub lua: LuaConfig,
@@ -73,6 +74,7 @@ impl AppConfig {
     }
 
     pub fn validate(&self) -> Result<()> {
+        crate::macros::MacroEngine::new(&self.macros).map_err(MudClientError::ConfigValidation)?;
         if self.connection.host.trim().is_empty() {
             return Err(MudClientError::ConfigValidation(
                 "connection.host must not be empty".to_string(),
