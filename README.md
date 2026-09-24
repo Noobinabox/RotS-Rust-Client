@@ -4,6 +4,8 @@ Terminal MUD client for Return of the Shadow.
 
 The current implementation includes:
 
+- Optional Vim-style command editing with modes, operators, text objects, selection, registers, undo, and repeat; see [`/help vim`](docs/commands/vim.md).
+
 - Connects asynchronously to `rotsmud.org:3791` by default.
 - Uses Ratatui/Crossterm with raw mode and the alternate screen.
 - Renders MUD output, command input, map, and responsive info, opponent, group, and character panels.
@@ -536,14 +538,16 @@ enabled = true
 reduced_motion = false
 low_performance = false
 map_fps = 12
-weather_fps = 10
+weather_fps = 2
 
 [weather]
 enabled = true
 show_info_marker = true
 ```
 
-Use `/help animation` for the in-client field reference.
+The World pane animates markers for all six RoTS weather states: clear, cloudy,
+rain, lightning, snow, and blizzard. Reduced motion retains static symbols.
+Use `/help animation` or `/help weather` for the [reference and examples](docs/commands/animation.md).
 
 Use `;` to send multiple MUD commands from one input:
 

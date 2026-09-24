@@ -2,7 +2,7 @@
 
 ## Active Slice
 
-None. Slice 57 (Word-Based Input Editing) is complete and reviewed.
+None. Vim editing milestones 64–66 are complete and reviewed. Standard input remains the default; opt in with `[terminal] input_mode = "vim"` and see `/help vim`.
 
 ## Next Slice: 58. Configurable Built-In Shortcuts
 

@@ -136,6 +136,7 @@ impl App {
             }
         };
         if changed {
+            self.state.vim.reset();
             self.lua_timers.clear();
             self.state.path = Default::default();
             self.state.script_events.clear();
@@ -186,6 +187,8 @@ impl App {
         self.state.path = Default::default();
         self.state.script_events.clear();
         self.theme = Theme::from_config(&self.config.colors);
+        self.state.input_mode = self.config.terminal.input_mode;
+        self.state.vim.reset();
         self.animations.configure(&self.config.animation);
         self.panel_cache.clear();
         self.full_hd_overrides = Default::default();

@@ -121,25 +121,32 @@ impl AnimationScheduler {
             .map(|effect| effect.snapshot(now))
             .collect()
     }
+
+    pub fn frame(&self, name: &str, now: Instant) -> Option<usize> {
+        self.effects.get(name).map(|effect| effect.frame(now))
+    }
 }
 
 impl RunningAnimation {
     fn snapshot(&self, now: Instant) -> AnimationSnapshot {
+        AnimationSnapshot {
+            name: self.definition.name.clone(),
+            frame: self.frame(now),
+            complete: self.complete,
+            paused: self.paused_at.is_some(),
+        }
+    }
+
+    fn frame(&self, now: Instant) -> usize {
         let elapsed = self.elapsed(now);
         let frame_duration = frame_duration(self.definition.frame_rate_fps);
-        let frame = if self.definition.frames <= 1 {
+        if self.definition.frames <= 1 {
             0
         } else if self.complete && !self.definition.looping {
             self.definition.frames - 1
         } else {
             ((elapsed.as_millis() / frame_duration.as_millis().max(1)) as usize)
                 % self.definition.frames
-        };
-        AnimationSnapshot {
-            name: self.definition.name.clone(),
-            frame,
-            complete: self.complete,
-            paused: self.paused_at.is_some(),
         }
     }
 

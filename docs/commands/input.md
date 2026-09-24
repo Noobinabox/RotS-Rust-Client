@@ -1,5 +1,7 @@
 # Input and keyboard behavior
 
+Optional [Vim-style editing](vim.md) adds Insert/Normal modes, operators, visual selection, registers, undo, and repeat. Enable `[terminal] input_mode = "vim"`; `/help vim` provides examples. The standard-mode shortcuts below remain the default.
+
 ## Submission
 
 - `Enter` sends the current input; empty input sends a blank line.

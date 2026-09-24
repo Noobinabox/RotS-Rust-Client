@@ -1,5 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
+pub mod vim;
 mod word_edit;
 use word_edit::WordEdit;
 
@@ -21,7 +22,10 @@ pub fn insert_paste(state: &mut AppState, text: &str, multiline: bool) -> Result
     if text.len() > MAX_PASTE_BYTES {
         return Err("Paste rejected: maximum size is 64 KiB.");
     }
-    let preserve_lines = multiline && !state.output_view.search_active;
+    let preserve_lines = multiline
+        && !state.output_view.search_active
+        && !(state.input_mode == crate::config::InputMode::Vim
+            && state.vim.history_search_active());
     let mut normalized = String::with_capacity(text.len());
     let mut chars = text.chars().peekable();
     while let Some(ch) = chars.next() {
@@ -42,6 +46,12 @@ pub fn insert_paste(state: &mut AppState, text: &str, multiline: bool) -> Result
     }
     if normalized.is_empty() {
         return Ok(());
+    }
+    if state.input_mode == crate::config::InputMode::Vim && !state.output_view.search_active {
+        let mut editor = std::mem::take(&mut state.vim);
+        let result = editor.paste_checked(state, &normalized);
+        state.vim = editor;
+        return result;
     }
     let current = if state.output_view.search_active {
         state.output_view.search_input.as_str()
@@ -90,6 +100,23 @@ pub enum InputAction {
 }
 
 pub fn handle_key(state: &mut AppState, key: KeyEvent) -> InputAction {
+    let recovery = key.modifiers.contains(KeyModifiers::CONTROL)
+        && matches!(key.code, KeyCode::Char('c' | 'C'));
+    if state.input_mode == crate::config::InputMode::Vim
+        && (!state.output_view.search_active || recovery)
+    {
+        if recovery && state.output_view.search_active {
+            state.cancel_output_search();
+        }
+        let mut editor = std::mem::take(&mut state.vim);
+        let action = editor.key(state, key);
+        state.vim = editor;
+        return action;
+    }
+    handle_standard_key(state, key)
+}
+
+fn handle_standard_key(state: &mut AppState, key: KeyEvent) -> InputAction {
     if let Some(edit) = WordEdit::from_key(key) {
         if state.output_view.search_active {
             edit.apply(

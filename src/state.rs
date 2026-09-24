@@ -168,6 +168,7 @@ pub struct GroupMember {
 pub struct WorldState {
     pub time: Option<String>,
     pub weather: Option<String>,
+    pub weather_frame: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -251,6 +252,8 @@ impl SocialState {
 
 #[derive(Debug, Clone)]
 pub struct AppState {
+    pub input_mode: crate::config::InputMode,
+    pub vim: crate::input::vim::VimEditor,
     pub connection: ConnectionStatus,
     pub output: VecDeque<OutputLine>,
     pub input: String,
@@ -278,6 +281,8 @@ pub struct AppState {
 impl AppState {
     pub fn new(config: &AppConfig) -> Self {
         Self {
+            input_mode: config.terminal.input_mode,
+            vim: crate::input::vim::VimEditor::default(),
             connection: ConnectionStatus::Disconnected,
             output: VecDeque::with_capacity(config.layout.scrollback_lines.min(1024)),
             input: String::new(),

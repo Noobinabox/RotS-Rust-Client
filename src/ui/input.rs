@@ -22,12 +22,24 @@ pub fn render_input(
     let inner = block.inner(area);
     block.render(area, buf);
     // Keep one cell free for the insertion cursor, including right-aligned text.
+    let label = mode_label(state, inner.width);
+    let label_width = label.width() as u16;
+    Paragraph::new(label)
+        .style(Style::new().fg(theme.accent))
+        .render(
+            Rect {
+                x: inner.right().saturating_sub(label_width),
+                width: label_width,
+                ..inner
+            },
+            buf,
+        );
     let text_area = Rect {
-        width: inner.width.saturating_sub(1),
+        width: inner.width.saturating_sub(1 + label_width),
         ..inner
     };
     let viewport = input_viewport(state, text_area.width as usize);
-    let content = if state.output_view.search_active {
+    let content = if state.output_view.search_active || state.vim.history_search_active() {
         Line::from(Span::styled(viewport.text, Style::new().fg(theme.warning)))
     } else if state.submitted_input_selected {
         Line::from(Span::styled(
@@ -37,6 +49,15 @@ pub fn render_input(
                 .bg(theme.accent)
                 .add_modifier(Modifier::BOLD),
         ))
+    } else if let Some(selection) = viewport.selection {
+        Line::from(vec![
+            Span::raw(viewport.text[..selection.start].to_owned()),
+            Span::styled(
+                viewport.text[selection.clone()].to_owned(),
+                Style::new().add_modifier(Modifier::REVERSED),
+            ),
+            Span::raw(viewport.text[selection.end..].to_owned()),
+        ])
     } else {
         Line::from(Span::styled(
             viewport.text,
@@ -54,6 +75,23 @@ pub fn render_input(
 struct InputViewport {
     text: String,
     cursor_width: usize,
+    selection: Option<std::ops::Range<usize>>,
+}
+
+fn mode_label(state: &AppState, width: u16) -> String {
+    if state.input_mode != crate::config::InputMode::Vim || width == 0 {
+        return String::new();
+    }
+    let mode = if state.output_view.search_active {
+        "SEARCH"
+    } else {
+        state.vim.label()
+    };
+    if width > mode.len() as u16 + 4 {
+        format!(" [{mode}]")
+    } else {
+        mode.chars().take(1).collect()
+    }
 }
 
 const NEWLINE_MARKER: &str = "↵";
@@ -64,6 +102,8 @@ fn input_viewport(state: &AppState, width: usize) -> InputViewport {
             format!("/{}", state.output_view.search_input),
             state.output_view.search_cursor.saturating_add(1),
         )
+    } else if let Some((query, cursor, prefix)) = state.vim.history_search_prompt() {
+        (format!("{prefix}{query}"), cursor + 1)
     } else if state.submitted_input_selected {
         let text = state.submitted_input.clone().unwrap_or_default();
         let cursor = text.len();
@@ -77,6 +117,20 @@ fn input_viewport(state: &AppState, width: usize) -> InputViewport {
     while !text.is_char_boundary(cursor) {
         cursor -= 1;
     }
+    let selection = if state.input_mode == crate::config::InputMode::Vim
+        && !state.output_view.search_active
+        && !state.vim.history_search_active()
+        && !state.submitted_input_selected
+    {
+        state.vim.selection(&text, cursor).map(|range| {
+            let translate = |at| {
+                at + text[..at].bytes().filter(|&b| b == b'\n').count() * (NEWLINE_MARKER.len() - 1)
+            };
+            translate(range.start)..translate(range.end)
+        })
+    } else {
+        None
+    };
     let cursor = cursor
         + text[..cursor].bytes().filter(|&byte| byte == b'\n').count()
             * (NEWLINE_MARKER.len() - '\n'.len_utf8());
@@ -114,6 +168,12 @@ fn input_viewport(state: &AppState, width: usize) -> InputViewport {
         used += grapheme_width;
     }
     InputViewport {
+        selection: selection.and_then(|range| {
+            let offset: usize = graphemes[..start].iter().map(|g| g.symbol.len()).sum();
+            let start = range.start.saturating_sub(offset).min(displayed.len());
+            let end = range.end.saturating_sub(offset).min(displayed.len());
+            (start < end).then_some(start..end)
+        }),
         text: displayed,
         cursor_width,
     }
@@ -127,7 +187,14 @@ pub(crate) fn input_cursor_position(
     if area.width < 3 || area.height < 3 {
         return None;
     }
-    let width = area.width.saturating_sub(3) as usize;
+    let label_width = mode_label(state, area.width.saturating_sub(2)).width();
+    if label_width >= area.width.saturating_sub(2) as usize {
+        return None;
+    }
+    let width = area
+        .width
+        .saturating_sub(3)
+        .saturating_sub(label_width as u16) as usize;
     let viewport = input_viewport(state, width);
     let padding = match theme.alignment {
         ratatui::layout::Alignment::Left => 0,
@@ -300,6 +367,141 @@ mod tests {
             let position = input_cursor_position(area, &state, &theme).unwrap();
             assert_eq!(position, (18, 1));
             assert_eq!(buf[position].symbol(), " ");
+        }
+    }
+
+    #[test]
+    fn history_query_renders_without_changing_the_draft() {
+        use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+        let mut config = AppConfig::default();
+        config.terminal.input_mode = crate::config::InputMode::Vim;
+        let mut state = AppState::new(&config);
+        state.input = "untouched".into();
+        state.cursor = 2;
+        state.vim.mode = crate::input::vim::Mode::Normal;
+        crate::input::handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE),
+        );
+        crate::input::insert_paste(&mut state, "猫", false).unwrap();
+        let theme = Theme::from_config(&config.colors);
+        let area = Rect::new(0, 0, 30, 3);
+        let mut buf = Buffer::empty(area);
+        render_input(area, &mut buf, &state, &theme, "Input");
+        assert_eq!(buf[(1, 1)].symbol(), "/");
+        assert_eq!(buf[(2, 1)].symbol(), "猫");
+        assert_eq!(input_cursor_position(area, &state, &theme), Some((4, 1)));
+        let row: String = (0..30).map(|x| buf[(x, 1)].symbol()).collect();
+        assert!(row.contains("H-SEARCH"));
+        assert!(!row.contains("untouched"));
+        assert_eq!(state.input, "untouched");
+        assert_eq!(state.cursor, 2);
+        crate::input::insert_paste(&mut state, &"猫".repeat(30), false).unwrap();
+        for width in 4..40 {
+            let area = Rect { width, ..area };
+            let mut buf = Buffer::empty(area);
+            render_input(area, &mut buf, &state, &theme, "Input");
+            let (x, y) = input_cursor_position(area, &state, &theme).unwrap();
+            assert!(x < area.right() - 1 - mode_label(&state, width - 2).width() as u16);
+            assert_eq!(buf[(x, y)].symbol(), " ");
+        }
+    }
+
+    #[test]
+    fn vim_indicator_stays_right_without_shifting_input_or_cursor() {
+        let mut config = AppConfig::default();
+        config.terminal.input_mode = crate::config::InputMode::Vim;
+        let mut state = AppState::new(&config);
+        state.input = "look".into();
+        state.cursor = 2;
+        let area = Rect::new(3, 2, 30, 3);
+        for border in [
+            crate::config::PanelBorderStyle::None,
+            crate::config::PanelBorderStyle::Rounded,
+        ] {
+            let mut theme = Theme::from_config(&config.colors);
+            theme.border_style = border;
+            for mode in [
+                crate::input::vim::Mode::Insert,
+                crate::input::vim::Mode::Normal,
+            ] {
+                state.vim.mode = mode;
+                let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
+                render_input(area, &mut buf, &state, &theme, "Input");
+                assert_eq!(buf[(area.x + 1, area.y + 1)].symbol(), "l");
+                assert_eq!(
+                    input_cursor_position(area, &state, &theme),
+                    Some((area.x + 3, area.y + 1))
+                );
+                assert_eq!(buf[(area.right() - 2, area.y + 1)].symbol(), "]");
+            }
+            state.input = "long command with Unicode 猫 and more text".into();
+            state.cursor = state.input.len();
+            for alignment in [
+                ratatui::layout::Alignment::Left,
+                ratatui::layout::Alignment::Center,
+                ratatui::layout::Alignment::Right,
+            ] {
+                theme.alignment = alignment;
+                for width in 4..40 {
+                    let area = Rect { width, ..area };
+                    let mut buf = Buffer::empty(Rect::new(0, 0, 50, 8));
+                    render_input(area, &mut buf, &state, &theme, "Input");
+                    let (x, y) = input_cursor_position(area, &state, &theme).unwrap();
+                    let label_start =
+                        area.right() - 1 - mode_label(&state, width - 2).width() as u16;
+                    assert!(x < label_start);
+                    assert_eq!(buf[(x, y)].symbol(), " ");
+                }
+            }
+            state.input = "look".into();
+            state.cursor = 2;
+        }
+    }
+
+    #[test]
+    fn vim_mode_and_selection_render_with_small_and_borderless_panes() {
+        use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+        let mut config = AppConfig::default();
+        config.terminal.input_mode = crate::config::InputMode::Vim;
+        let mut state = AppState::new(&config);
+        state.input = "abc 猫 e\u{301}".into();
+        state.cursor = 0;
+        state.vim.mode = crate::input::vim::Mode::Normal;
+        for ch in "vl".chars() {
+            crate::input::handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE),
+            );
+        }
+        for border in [
+            crate::config::PanelBorderStyle::None,
+            crate::config::PanelBorderStyle::Rounded,
+        ] {
+            for alignment in [
+                ratatui::layout::Alignment::Left,
+                ratatui::layout::Alignment::Center,
+                ratatui::layout::Alignment::Right,
+            ] {
+                let mut theme = Theme::from_config(&config.colors);
+                theme.border_style = border;
+                theme.alignment = alignment;
+                for width in 0..40 {
+                    let area = Rect::new(0, 0, width, 3);
+                    let mut buf = Buffer::empty(area);
+                    render_input(area, &mut buf, &state, &theme, "Input");
+                    if let Some((x, y)) = input_cursor_position(area, &state, &theme) {
+                        assert!(x < area.right() - 1 && y < area.bottom());
+                    }
+                    if width >= 20 {
+                        let row: String = (0..width).map(|x| buf[(x, 1)].symbol()).collect();
+                        assert!(row.contains("VISUAL"));
+                        assert!(
+                            (0..width).any(|x| buf[(x, 1)].modifier.contains(Modifier::REVERSED))
+                        );
+                    }
+                }
+            }
         }
     }
 }

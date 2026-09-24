@@ -852,6 +852,31 @@ Bug-fix follow-up to slice 52, not a missing feature.
 - Handle scrollback eviction predictably when the anchored content is removed.
 - Add regression tests covering these mutations, resizing, and return to follow mode.
 
+### 64. Vim Modes and Input Routing
+
+Status: `Done`
+
+- Opt-in `terminal.input_mode = "vim"`, Insert/Normal modes, motions, history navigation, and visible mode indicators.
+- Protect editor keys from macros while retaining function/keypad macros and existing search/submission behavior.
+- Preserve drafts and reset transient editing on configuration/profile changes.
+
+### 65. Vim Operators and Undo
+
+Status: `Done`
+
+- Counts, delete/change/yank operators, character searches, replacement, and linewise operations.
+- Bounded draft-local undo/redo, grouped insertion sessions, and deterministic cancellation.
+
+### 66. Vim Objects, Selection, Registers, and Repeat
+
+Status: `Done`
+
+- Word/delimiter objects, characterwise/linewise visual selection, and internal named/unnamed registers.
+- Literal paste, frozen insertion results for dot-repeat, and bounded replay work without command execution.
+- Regression coverage, documentation/examples, and Thranduil/Magus/Sauron reviews.
+
+Validation for milestones 64–66: 487 tests passed; one optional timing probe ignored. Formatting/diff checks passed. Thranduil, Magus, and Sauron completed reviews; fixed Unicode visual replacement, single-character change-word behavior, final-line deletion/change boundaries, visual register puts, insertion repeat anchoring, and atomic bounded replay. Standard mode remains unchanged. Strict Clippy retains only the four existing warnings. Terminal-dependent reporting, scalar Unicode editing, and the bounded Vim subset are documented in `/help vim`.
+
 ## Intentionally Excluded
 
 Character portraits and portrait animation were deliberately removed in slice 24. They are not unfinished work and are not scheduled for reintroduction.

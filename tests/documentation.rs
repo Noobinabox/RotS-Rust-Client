@@ -1,6 +1,24 @@
 use mud_client::config::AppConfig;
 
 #[test]
+fn vim_example_enables_opt_in_editing() {
+    let guide = include_str!("../docs/commands/vim.md");
+    let snippet = guide
+        .split("```toml\n")
+        .nth(1)
+        .unwrap()
+        .split("```")
+        .next()
+        .unwrap();
+    let config: AppConfig = toml::from_str(snippet).unwrap();
+    config.validate().unwrap();
+    assert_eq!(
+        config.terminal.input_mode,
+        mud_client::config::InputMode::Vim
+    );
+}
+
+#[test]
 fn multiline_input_example_enables_the_documented_option() {
     let guide = include_str!("../docs/commands/input.md");
     let snippet = guide

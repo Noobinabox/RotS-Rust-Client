@@ -782,6 +782,7 @@ impl Default for ConnectionConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default)]
 pub struct TerminalConfig {
+    pub input_mode: InputMode,
     pub multiline_input: bool,
     pub tick_rate_ms: u64,
     pub animation_fps: u64,
@@ -793,6 +794,7 @@ pub struct TerminalConfig {
 impl Default for TerminalConfig {
     fn default() -> Self {
         Self {
+            input_mode: InputMode::Standard,
             multiline_input: false,
             tick_rate_ms: 100,
             animation_fps: 15,
@@ -801,6 +803,14 @@ impl Default for TerminalConfig {
             echo_commands: true,
         }
     }
+}
+
+#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum InputMode {
+    #[default]
+    Standard,
+    Vim,
 }
 
 impl TerminalConfig {
@@ -1160,7 +1170,7 @@ impl Default for AnimationConfig {
             reduced_motion: false,
             low_performance: false,
             map_fps: 12,
-            weather_fps: 10,
+            weather_fps: 2,
         }
     }
 }

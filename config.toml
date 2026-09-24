@@ -19,6 +19,7 @@ auto_reconnect = true
 line_ending = "\r\n"
 
 [terminal]
+input_mode = "vim"
 multiline_input = false
 tick_rate_ms = 100
 animation_fps = 30
@@ -84,7 +85,7 @@ enabled = true
 reduced_motion = false
 low_performance = false
 map_fps = 12
-weather_fps = 10
+weather_fps = 2
 
 [weather]
 enabled = true

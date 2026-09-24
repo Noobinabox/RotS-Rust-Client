@@ -21,6 +21,8 @@ mod paste_tests;
 mod rendering;
 mod runtime_settings;
 mod social;
+#[cfg(test)]
+mod vim_tests;
 
 pub use self::rendering::render;
 use self::{
@@ -88,6 +90,7 @@ pub struct App {
     highlights: HighlightEngine,
     lua: LuaEngine,
     animations: AnimationScheduler,
+    weather_playback: crate::animation::weather_playback::WeatherPlayback,
     last_terminal_area: Rect,
     panel_cache: crate::ui::panels::PanelCache,
     runtime_store: crate::persistence::RuntimeStore,
@@ -221,6 +224,7 @@ impl App {
             highlights,
             lua,
             animations,
+            weather_playback: Default::default(),
             last_terminal_area: Rect::default(),
             panel_cache: crate::ui::panels::PanelCache::default(),
             runtime_store,
@@ -271,6 +275,7 @@ impl App {
 
         while !should_quit {
             if needs_draw {
+                self.update_weather_animation(Instant::now());
                 terminal.draw(|frame| {
                     self.last_terminal_area = frame.area();
                     self.render(frame);
@@ -974,6 +979,8 @@ impl App {
             self.state.script_events.drain(..excess_events);
         }
         self.config = config;
+        self.state.input_mode = self.config.terminal.input_mode;
+        self.state.vim.reset();
         self.macros = macros;
         self.full_hd_overrides = LayoutOverrides::default();
         self.ultrawide_overrides = LayoutOverrides::default();
@@ -1858,11 +1865,21 @@ impl App {
                 if key.kind == crossterm::event::KeyEventKind::Release {
                     return false;
                 }
+                if self.state.input_mode == crate::config::InputMode::Vim
+                    && self.state.vim.suppress_history_enter_repeat(key)
+                {
+                    return false;
+                }
                 if self.config.terminal.multiline_input
                     && !self.state.output_view.search_active
                     && key.code == crossterm::event::KeyCode::Enter
                     && key.modifiers == crossterm::event::KeyModifiers::ALT
                 {
+                    if self.state.input_mode == crate::config::InputMode::Vim
+                        && self.state.vim.mode != crate::input::vim::Mode::Insert
+                    {
+                        return false;
+                    }
                     if key.kind != crossterm::event::KeyEventKind::Repeat
                         && let Err(error) = crate::input::insert_paste(&mut self.state, "\n", true)
                     {
@@ -1877,9 +1894,14 @@ impl App {
                 {
                     self.macros.printable_mode = false;
                 }
-                if let Some(action) = self
-                    .macros
-                    .action(key, self.state.output_view.search_active)
+                let vim_owns = self.state.input_mode == crate::config::InputMode::Vim
+                    && !self.state.output_view.search_active
+                    && (self.state.vim.history_search_active()
+                        || crate::input::vim::VimEditor::owns(key));
+                if !vim_owns
+                    && let Some(action) = self
+                        .macros
+                        .action(key, self.state.output_view.search_active)
                 {
                     let command = match action {
                         crate::macros::MacroAction::Execute(command) => command.to_string(),
@@ -2194,6 +2216,19 @@ impl App {
         }
     }
 
+    fn update_weather_animation(&mut self, now: Instant) {
+        let kind = crate::animation::weather::WeatherKind::classify(
+            self.state.world.weather.as_deref().unwrap_or(""),
+        );
+        self.state.world.weather_frame = self.weather_playback.update(
+            kind,
+            &self.config.weather,
+            &self.config.animation,
+            &mut self.animations,
+            now,
+        );
+    }
+
     fn render(&self, frame: &mut Frame) {
         render_with_overrides(
             frame,
@@ -2208,6 +2243,7 @@ impl App {
 
 fn help_text(topic: &str) -> Option<&'static str> {
     match topic.trim().to_ascii_lowercase().as_str() {
+        "vim" => Some(include_str!("../docs/commands/vim.md")),
         "save" => Some(include_str!("../docs/commands/save.md")),
         "panels" => Some(include_str!("../docs/commands/panels.md")),
         "macro" | "macros" => Some(include_str!("../docs/commands/macro.md")),
@@ -2322,9 +2358,9 @@ fn help_text(topic: &str) -> Option<&'static str> {
         "highlight" => Some(
             "# Highlight Help\n\n## Commands\n- `/highlight` - list configured and runtime highlights\n- `/highlight [plain|regex] {pattern} {foreground|none} [background|none] [styles]` - add or replace a runtime highlight\n- `/highlight unset {pattern}` - remove one runtime highlight\n- `/highlight clear` - remove all runtime highlights\n\nStyles are comma- or space-separated values chosen from `bold`, `dim`, `italic`, `underline`, and `reverse`.\n\n## Examples\n- `/highlight {You are hit} {red}`\n- `/highlight regex {You receive \\\\d+ gold} {yellow} {none} {bold}`\n- `/highlight plain {IMPORTANT} {white} {red} {bold underline}`\n- `/highlight unset {You are hit}`\n- `/highlight clear`\n\n## Config\n- `[highlights]` controls whether configured highlights are enabled\n- `[[highlights.rules]]` defines persistent highlights\n\n## Rule Fields\n- `name` - unique highlight name\n- `match_type` - `plain` or `regex`\n- `pattern` - text or regular expression to match\n- `foreground` / `background` - named color or hex color\n- `bold`, `dim`, `italic`, `underline`, `reverse` - style toggles\n- `categories` - optional output category filter\n\nRuntime highlight removal only affects session highlights. Remove configured highlights from `config.toml` and run `/reload`.",
         ),
-        "animation" | "animations" => Some(
-            "# Animation Help\n\n## Description\nAnimations are driven by a shared scheduler that uses elapsed time instead of render-count assumptions.\n\n## Config\n- `animation.enabled` - master animation flag for future effects\n- `animation.reduced_motion` - skip event-triggered motion effects\n- `animation.low_performance` - use cheaper event-effect defaults\n- `animation.map_fps` - map animation frame rate\n- `animation.weather_fps` - weather animation frame rate\n- `weather.show_info_marker` - show compact animated weather markers in the info pane",
-        ),
+        "animation" | "animations" | "weather" => {
+            Some(include_str!("../docs/commands/animation.md"))
+        }
         "toggle" | "toggles" => Some(
             "# Toggle Help\n\n## Commands\n- `/toggle` - show optional panel states\n- `/toggle opponent [on|off]` - toggle the Opponent panel for this session\n- `/toggle group [on|off]` - toggle the Group panel for this session\n- `/toggle social [on|off]` - toggle the Social panel for this session\n\n## Notes\nThese changes are in-memory only. Use `layout.show_opponent`, `layout.show_group`, and `layout.show_social` in config for startup defaults.",
         ),
@@ -2764,6 +2800,48 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn weather_animation_updates_read_only_world_rendering() {
+        let mut app = App::new(AppConfig::default());
+        app.state.world.weather = Some("Rain falls heavily on the fields.".into());
+        let now = Instant::now();
+        app.update_weather_animation(now);
+        let area = Rect::new(0, 0, 40, 6);
+        let mut first = ratatui::buffer::Buffer::empty(area);
+        crate::ui::character::render_info(
+            area,
+            &mut first,
+            &app.state,
+            &app.theme,
+            &app.config.panels,
+            &app.config.weather,
+        );
+        app.update_weather_animation(now + Duration::from_millis(500));
+        assert_eq!(app.state.world.weather_frame, 1);
+        let mut next = ratatui::buffer::Buffer::empty(area);
+        crate::ui::character::render_info(
+            area,
+            &mut next,
+            &app.state,
+            &app.theme,
+            &app.config.panels,
+            &app.config.weather,
+        );
+        assert_ne!(first, next);
+        app.config.animation.reduced_motion = true;
+        app.update_weather_animation(now + Duration::from_millis(600));
+        let mut still = ratatui::buffer::Buffer::empty(area);
+        crate::ui::character::render_info(
+            area,
+            &mut still,
+            &app.state,
+            &app.theme,
+            &app.config.panels,
+            &app.config.weather,
+        );
+        assert_eq!(first, still);
+    }
 
     #[test]
     fn every_display_profile_renders_map_output_and_command() {

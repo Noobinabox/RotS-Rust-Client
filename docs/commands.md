@@ -66,5 +66,6 @@ Examples that add aliases, macros, triggers, or handlers change session behavior
 - [`/help panels`](commands/panels.md) — panel appearance and refresh configuration (help topic, not a `/panels` command).
 
 - [`Input and keyboard behavior`](commands/input.md) — editing, history, completion, scrolling, repeat syntax, and terminal controls.
+- [`/help vim`](commands/vim.md) — opt-in modal command editing, examples, and compatibility limits.
 
 Commands without `/` pass through variable expansion, aliases, triggers, movement tracking, command echo, and the network pipeline. `Ctrl-C` clears the current input; `/quit` is the exit command.

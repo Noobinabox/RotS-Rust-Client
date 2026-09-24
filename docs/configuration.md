@@ -32,6 +32,7 @@ See [key macro configuration](commands/macro.md#persistent-configuration): `[[ma
 | `mouse` | Enables mouse events such as output scrolling and pane resizing. |
 | `true_color` | Enables RGB color output when the terminal supports it. |
 | `echo_commands` | Appends sent MUD commands as local output lines without a prompt prefix. |
+| `input_mode` | `"standard"` (default) or opt-in `"vim"`. Reloadable and character-profile-aware; see [Vim editing](commands/vim.md). |
 | `multiline_input` | Defaults to `false`: pasted newlines become spaces. When `true`, preserve pasted newlines and use Alt+Enter to add a line; Enter submits nonblank lines in order. See [input examples](commands/input.md#paste-and-multiline-editing). |
 
 ## layout
@@ -113,14 +114,19 @@ These are the global Tokyo Night themed defaults used by panels and widgets unle
 | `reduced_motion` | Prefer less motion while keeping static indicators visible. |
 | `low_performance` | Reduces animation work for slower terminals. |
 | `map_fps` | Target map animation frames per second. Must be greater than zero. |
-| `weather_fps` | Target weather animation frames per second. Must be greater than zero. |
+| `weather_fps` | Target weather animation frames per second. Default: 2 (one change every 500 ms). Must be greater than zero. |
 
 ## weather
 
 | Option | Meaning |
 |---|---|
-| `enabled` | Enables weather display and weather-related animation. |
-| `show_info_marker` | Shows weather in the World pane when MSDP provides it. |
+| `enabled` | Enables the World pane weather marker and its animation; server weather text remains visible when false. |
+| `show_info_marker` | Shows the compact marker beside MSDP weather text. |
+
+See [weather types and animation examples](commands/animation.md). All six RoTS
+sky states are recognized. Disabled animation or reduced motion retains a static
+marker; low-performance mode caps weather motion at 2 FPS. Visible motion is
+limited by terminal ticks and the World pane's configured refresh interval.
 
 ## panels
 
