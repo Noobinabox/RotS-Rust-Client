@@ -12,6 +12,7 @@ The current implementation includes:
 - Maps RoTS `HEALTH`, `MANA`, and `MOVEMENT` values to terminal gauges.
 - Executes configurable key macros through the command pipeline; see [macros](docs/commands/macro.md). Try `/macro {F5} {look}` and press F5.
 - Supports dedicated numpad macros such as `/macro {Numpad8} {north}` on terminals that report keypad identity, without capturing top-row digits.
+- Supports per-panel borders, text alignment, theme overrides, and refresh intervals; see [panel configuration](docs/configuration.md#panels) or `/help panels`.
 
 ## Run
 

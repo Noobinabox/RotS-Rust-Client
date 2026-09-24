@@ -172,6 +172,37 @@ impl AppConfig {
             ));
         }
         for (name, panel) in self.panels.iter() {
+            if panel.refresh_ms > 60_000 || (name == "input" && panel.refresh_ms != 0) {
+                return Err(MudClientError::ConfigValidation(format!(
+                    "panels.{name}.refresh_ms must be 0..=60000 (input must be 0)"
+                )));
+            }
+            for (key, value) in &panel.theme {
+                if ![
+                    "background",
+                    "foreground",
+                    "border",
+                    "title",
+                    "accent",
+                    "success",
+                    "warning",
+                    "danger",
+                    "muted",
+                    "player",
+                    "enemy",
+                ]
+                .contains(&key.as_str())
+                {
+                    return Err(MudClientError::ConfigValidation(format!(
+                        "unknown panel theme color panels.{name}.theme.{key}"
+                    )));
+                }
+                if parse_color(value).is_none() {
+                    return Err(MudClientError::ConfigValidation(format!(
+                        "invalid color panels.{name}.theme.{key}: {value}"
+                    )));
+                }
+            }
             if panel.title.trim().is_empty() {
                 return Err(MudClientError::ConfigValidation(format!(
                     "panels.{name}.title must not be empty"
@@ -945,6 +976,12 @@ pub struct PanelOptions {
     pub min_height: u16,
     pub priority: i32,
     pub visible_modes: Vec<PanelMode>,
+    pub border_style: PanelBorderStyle,
+    pub alignment: PanelAlignment,
+    /// Minimum interval between content refreshes; zero renders every frame.
+    pub refresh_ms: u64,
+    /// Partial overrides of the global colors; validated against ThemeConfig keys.
+    pub theme: BTreeMap<String, String>,
 }
 
 impl PanelOptions {
@@ -956,6 +993,10 @@ impl PanelOptions {
             min_height,
             priority,
             visible_modes: Vec::new(),
+            border_style: PanelBorderStyle::Plain,
+            alignment: PanelAlignment::Left,
+            refresh_ms: 0,
+            theme: BTreeMap::new(),
         }
     }
 }
@@ -964,6 +1005,26 @@ impl Default for PanelOptions {
     fn default() -> Self {
         Self::new("", 1, 1, 0)
     }
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PanelBorderStyle {
+    #[default]
+    Plain,
+    Rounded,
+    Double,
+    Thick,
+    None,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PanelAlignment {
+    #[default]
+    Left,
+    Center,
+    Right,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -1773,6 +1834,39 @@ pub fn default_config_path() -> Option<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn panel_customization_defaults_and_round_trip() {
+        let config: AppConfig = toml::from_str("[panels.output]\ntitle = 'Output'\nborder_style = 'rounded'\nalignment = 'right'\nrefresh_ms = 250\n[panels.output.theme]\nforeground = 'index:123'\nbackground = '#123456'\n").unwrap();
+        config.validate().unwrap();
+        assert_eq!(config.panels.output.border_style, PanelBorderStyle::Rounded);
+        assert_eq!(config.panels.output.alignment, PanelAlignment::Right);
+        assert_eq!(config.panels.map.refresh_ms, 0);
+        assert!(config.panels.map.theme.is_empty());
+        let restored: AppConfig = toml::from_str(&toml::to_string(&config).unwrap()).unwrap();
+        assert_eq!(restored, config);
+    }
+
+    #[test]
+    fn panel_customization_rejects_invalid_values() {
+        for text in [
+            "border_style = 'dotted'",
+            "alignment = 'top'",
+            "refresh_ms = -1",
+        ] {
+            assert!(toml::from_str::<AppConfig>(&format!("[panels.output]\n{text}")).is_err());
+        }
+        for (panel, text) in [
+            ("output", "refresh_ms = 60001"),
+            ("input", "refresh_ms = 1"),
+            ("output.theme", "foreground = 'invalid'"),
+            ("output.theme", "typo = 'red'"),
+        ] {
+            let config: AppConfig = toml::from_str(&format!("[panels.{panel}]\n{text}")).unwrap();
+            let error = config.validate().unwrap_err().to_string();
+            assert!(error.contains(&format!("panels.{panel}")), "{error}");
+        }
+    }
 
     #[test]
     fn defaults_target_rotsmud() {

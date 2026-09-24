@@ -4,6 +4,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Clear, Paragraph, Widget},
 };
+use unicode_width::UnicodeWidthStr;
 
 use crate::{
     state::AppState,
@@ -17,14 +18,20 @@ pub fn render_input(
     theme: &Theme,
     title: &str,
 ) {
+    let block = panel(title, theme);
+    let inner = block.inner(area);
+    block.render(area, buf);
+    // Keep one cell free for the insertion cursor, including right-aligned text.
+    let text_area = Rect {
+        width: inner.width.saturating_sub(1),
+        ..inner
+    };
+    let viewport = input_viewport(state, text_area.width as usize);
     let content = if state.output_view.search_active {
-        Line::from(Span::styled(
-            format!("/{}", state.output_view.search_input),
-            Style::new().fg(theme.warning),
-        ))
+        Line::from(Span::styled(viewport.text, Style::new().fg(theme.warning)))
     } else if state.submitted_input_selected {
         Line::from(Span::styled(
-            state.submitted_input.clone().unwrap_or_default(),
+            viewport.text,
             Style::new()
                 .fg(theme.background_safe_foreground())
                 .bg(theme.accent)
@@ -32,16 +39,96 @@ pub fn render_input(
         ))
     } else {
         Line::from(Span::styled(
-            state.input.clone(),
+            viewport.text,
             Style::new().fg(theme.foreground),
         ))
     };
 
     Paragraph::new(content)
+        .alignment(theme.alignment)
         .style(Style::new().fg(theme.foreground))
-        .block(panel(title, theme))
-        .render(area, buf);
+        .render(text_area, buf);
     render_completion_popup(area, buf, state, theme);
+}
+
+struct InputViewport {
+    text: String,
+    cursor_width: usize,
+}
+
+fn input_viewport(state: &AppState, width: usize) -> InputViewport {
+    let (text, cursor) = if state.output_view.search_active {
+        (
+            format!("/{}", state.output_view.search_input),
+            state.output_view.search_cursor.saturating_add(1),
+        )
+    } else if state.submitted_input_selected {
+        let text = state.submitted_input.clone().unwrap_or_default();
+        let cursor = text.len();
+        (text, cursor)
+    } else {
+        (state.input.clone(), state.cursor)
+    };
+    // Use the same graphemes as Ratatui, so combining marks and emoji sequences
+    // are never split or measured as unrelated scalar characters.
+    let span = Span::raw(text.as_str());
+    let graphemes = span.styled_graphemes(Style::default()).collect::<Vec<_>>();
+    let mut bytes = 0;
+    let mut cursor_width = 0usize;
+    for grapheme in &graphemes {
+        bytes += grapheme.symbol.len();
+        if bytes > cursor {
+            break;
+        }
+        cursor_width += grapheme.symbol.width();
+    }
+    let mut start = 0;
+    // Scroll horizontally only when necessary to keep the cursor in view.
+    for (index, grapheme) in graphemes.iter().enumerate() {
+        if cursor_width <= width {
+            break;
+        }
+        cursor_width = cursor_width.saturating_sub(grapheme.symbol.width());
+        start = index + 1;
+    }
+    let mut displayed = String::new();
+    let mut used = 0;
+    for grapheme in &graphemes[start..] {
+        let grapheme_width = grapheme.symbol.width();
+        if used + grapheme_width > width {
+            break;
+        }
+        displayed.push_str(grapheme.symbol);
+        used += grapheme_width;
+    }
+    InputViewport {
+        text: displayed,
+        cursor_width,
+    }
+}
+
+pub(crate) fn input_cursor_position(
+    area: Rect,
+    state: &AppState,
+    theme: &Theme,
+) -> Option<(u16, u16)> {
+    if area.width < 3 || area.height < 3 {
+        return None;
+    }
+    let width = area.width.saturating_sub(3) as usize;
+    let viewport = input_viewport(state, width);
+    let padding = match theme.alignment {
+        ratatui::layout::Alignment::Left => 0,
+        // Match Paragraph's centering convention, including odd/even widths.
+        ratatui::layout::Alignment::Center => (width / 2).saturating_sub(viewport.text.width() / 2),
+        ratatui::layout::Alignment::Right => width.saturating_sub(viewport.text.width()),
+    };
+    Some((
+        area.x
+            .saturating_add(1)
+            .saturating_add((padding + viewport.cursor_width).min(width) as u16),
+        area.y.saturating_add(1),
+    ))
 }
 
 fn render_completion_popup(
@@ -96,4 +183,96 @@ fn render_completion_popup(
     Paragraph::new(lines)
         .block(panel("Complete", theme))
         .render(area, buf);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::AppConfig;
+    use ratatui::{buffer::Buffer, layout::Alignment};
+
+    #[test]
+    fn aligned_cursor_matches_rendered_text_for_parities_unicode_and_end() {
+        for width in [7, 8, 79, 80] {
+            for alignment in [Alignment::Left, Alignment::Center, Alignment::Right] {
+                for text in [
+                    "abc",
+                    "abcd",
+                    "é界!",
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa界",
+                ] {
+                    for cursor in [0, text.len()] {
+                        let mut state = AppState::new(&AppConfig::default());
+                        state.input = text.into();
+                        state.cursor = cursor;
+                        let mut theme = Theme::from_config(&AppConfig::default().colors);
+                        theme.alignment = alignment;
+                        let area = Rect::new(0, 0, width, 3);
+                        let mut buf = Buffer::empty(area);
+                        render_input(area, &mut buf, &state, &theme, "Input");
+                        let (x, y) = input_cursor_position(area, &state, &theme).unwrap();
+                        assert!(x > 0 && x < area.right() - 1);
+                        if cursor == 0 {
+                            assert_eq!(
+                                buf[(x, y)].symbol(),
+                                &text[..text.chars().next().unwrap().len_utf8()],
+                                "{width} {alignment:?} {text}"
+                            );
+                        } else {
+                            assert_eq!(
+                                buf[(x, y)].symbol(),
+                                " ",
+                                "End: {width} {alignment:?} {text}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn viewport_keeps_combining_marks_and_joined_emoji_intact() {
+        let mut state = AppState::new(&AppConfig::default());
+        for (text, width, expected) in [
+            ("👨‍👩‍👧‍👦", 3, "👨‍👩‍👧‍👦"),
+            ("xxxxx👨‍👩‍👧‍👦", 3, "x👨‍👩‍👧‍👦"),
+            ("abcde\u{301}", 1, "e\u{301}"),
+        ] {
+            state.input = text.into();
+            state.cursor = text.len();
+            let viewport = input_viewport(&state, width);
+            assert_eq!(viewport.text, expected);
+            assert_eq!(viewport.cursor_width, expected.width());
+            let area = Rect::new(0, 0, width as u16 + 3, 3);
+            let mut buf = Buffer::empty(area);
+            let mut theme = Theme::from_config(&AppConfig::default().colors);
+            theme.alignment = ratatui::layout::Alignment::Right;
+            render_input(area, &mut buf, &state, &theme, "Input");
+            let position = input_cursor_position(area, &state, &theme).unwrap();
+            assert_eq!(buf[position].symbol(), " ");
+            assert_eq!(state.input, text);
+        }
+    }
+
+    #[test]
+    fn search_and_selected_submission_reserve_an_end_cursor_cell() {
+        let mut state = AppState::new(&AppConfig::default());
+        let mut theme = Theme::from_config(&AppConfig::default().colors);
+        theme.alignment = ratatui::layout::Alignment::Right;
+        let area = Rect::new(0, 0, 20, 3);
+        state.output_view.search_active = true;
+        state.output_view.search_input = "é界".into();
+        state.output_view.search_cursor = "é界".len();
+        for search in [true, false] {
+            state.output_view.search_active = search;
+            state.submitted_input_selected = !search;
+            state.submitted_input = Some("é界".into());
+            let mut buf = Buffer::empty(area);
+            render_input(area, &mut buf, &state, &theme, "Input");
+            let position = input_cursor_position(area, &state, &theme).unwrap();
+            assert_eq!(position, (18, 1));
+            assert_eq!(buf[position].symbol(), " ");
+        }
+    }
 }

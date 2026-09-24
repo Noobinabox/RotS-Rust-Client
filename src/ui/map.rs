@@ -1219,6 +1219,7 @@ mod tests {
             muted: Color::DarkGray,
             player: Color::Cyan,
             enemy: Color::Red,
+            ..Theme::from_config(&crate::config::ThemeConfig::default())
         };
 
         let lines = map_lines(Rect::new(0, 0, 32, 5), &map, &theme, &map_config());
@@ -2131,6 +2132,7 @@ mod tests {
             muted: Color::DarkGray,
             player: Color::Cyan,
             enemy: Color::Red,
+            ..Theme::from_config(&crate::config::ThemeConfig::default())
         }
     }
 

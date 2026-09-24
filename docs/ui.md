@@ -62,6 +62,10 @@ Scrolling stops at the oldest full output page, so the output pane does not show
 
 Command echo is controlled by `terminal.echo_commands`. Echoed commands are appended as local output lines without a prompt prefix.
 
+## Panel Appearance
+
+Panel borders, text alignment, local colors, and refresh intervals are configurable under `panels.*`; see [panel configuration](configuration.md#panels). These settings apply across responsive layouts without changing their placement rules. Input remains immediate, and borderless panels preserve the same content inset.
+
 ## Gauges
 
 Character, opponent, and group vitals use gauges. Character health and opponent health are red, mana is blue, and movement is green. Full character, opponent, and TNL gauges expand across the available panel row while keeping fixed-width numeric suffixes so value changes do not shift the layout. Compact gauges keep the configured fixed bar width. The Character sheet separates gauges from stats with a blank row, shows base stats on one row, then leaves another blank row before one class-specific detail row. Mage shows `Mana Regen`, `Spell Power`, and `Spell Pen`; Mystic shows `Willpower`, `Spirits`, `Health Regen`, and `Movement Regen`. Class-specific metrics wrap between complete label/value pairs when the pane is narrow.

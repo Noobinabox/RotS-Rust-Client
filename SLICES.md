@@ -744,3 +744,102 @@ Status: `Done`
 - Cover first/repeated macro help, bidirectional scrolling, display modes, narrow/empty geometry, resizing, snapshots, and ordinary appended output.
 
 Validation: 403 tests passed; optional timing probe passed separately. Formatting and diff checks passed. Thranduil, Magus, and Sauron completed separate reviews; removed unnecessary anchor rendering for zero row offsets and repaired the scrolling-controls list. Strict Clippy still reports the four existing warnings from slice 49. Sauron noted pre-existing paused-anchor drift during snapshot batches, prompt removal, and scrollback eviction; broader anchor lifecycle changes and dedicated regression coverage are deferred outside this help/wrapping fix.
+
+### 53. Persistent Runtime Settings
+
+Status: `Next`
+
+- Save in-game macros, aliases, triggers, and highlights for reuse after restart.
+- Define how saved overrides merge with configured rules, including removal and reload behavior.
+- Preserve unrelated configuration; use atomic writes and actionable save errors.
+- Test save/load round trips, conflicts, invalid data, and failed writes; document the workflow.
+
+### 54. Persistent Command History
+
+Status: `Planned`
+
+- Restore bounded command history across sessions while retaining prefix navigation.
+- Provide clear/disable controls and a policy to exclude sensitive input.
+- Test restart behavior, history limits, and missing or malformed history files.
+
+### 55. Character and Server Profiles
+
+Status: `Planned`
+
+- Select character/server-specific connections, automation, and settings.
+- Add explicit CLI configuration selection and define shared defaults versus profile overrides.
+- Keep history and saved runtime settings isolated by profile; test selection and invalid profiles.
+
+### 56. Paste Handling and Multiline Input
+
+Status: `Planned`
+
+- Handle bracketed paste as text instead of dispatching pasted characters as shortcuts or macros.
+- Support configurable multiline editing with explicit submission behavior.
+- Prevent accidental command execution from pasted newlines; test Unicode, size limits, and terminal fallback behavior.
+
+### 57. Word-Based Input Editing
+
+Status: `Planned`
+
+- Add word movement and word deletion shortcuts.
+- Preserve Unicode boundaries, command drafts, completion, and history behavior.
+- Document terminal chord limitations and test empty input and cursor boundaries.
+
+### 58. Configurable Built-In Shortcuts
+
+Status: `Planned`
+
+- Bind editing, navigation, search, and other client actions through a general keybinding configuration.
+- Define precedence between built-in actions and macros, with protected recovery controls.
+- Validate conflicts and reload behavior; retain existing default shortcuts.
+
+### 59. Session Transcripts and Output Export
+
+Status: `Planned`
+
+- Provide opt-in gameplay transcripts and retained-output export, separate from diagnostic logging.
+- Define timestamp and plain-text/ANSI options, file-size limits, and sensitive-input exclusions.
+- Keep disk writes off the UI/network paths and test file errors and shutdown flushing.
+
+### 60. Full Panel Customization
+
+Status: `Done`
+
+- Extend existing panel settings with border styles, alignment, refresh rates, and per-panel themes.
+- Define how these options interact with responsive layouts and global defaults.
+- Validate configuration and test tiny layouts, reload, and rendering consistency.
+
+Implemented `border_style`, `alignment`, `refresh_ms`, and partial panel theme overrides, with `/help panels` and configuration examples. Refresh caches are per visible panel instance; interaction/reload/layout changes invalidate them. Input stays immediate, borderless geometry is preserved, and aligned input uses a grapheme-aware viewport with a reserved insertion-cursor cell.
+
+Validation: 414 tests passed, one optional timing probe ignored; formatting and diff checks passed. Thranduil, Magus, and Sauron completed review. Fixed cursor centering/truncation, end-cursor placement, combined-grapheme clipping, duplicate panel cache collisions, and help-topic discoverability. Strict Clippy remains blocked only by the four pre-existing warnings recorded in slice 49. Explicit ANSI/highlight/map/gauge colors retain precedence over generic panel foreground; map geometry and full-width gauges do not shift with text alignment. Refresh intervals are serviced on application draws, not independent timers.
+
+### 61. Dedicated Help Browser
+
+Status: `Planned`
+
+- Provide searchable help with its own scroll position, independent of incoming MUD output.
+- Reuse command documentation and preserve the command draft when opening or closing help.
+- Test navigation, resizing, topic changes, and live output arriving while help is open.
+
+### 62. Unified Automation Stop
+
+Status: `Planned`
+
+- Provide one protected action to suspend triggers, timers, and automated movement without disconnecting.
+- Define handling for queued actions and explicit resume behavior; do not silently replay stale commands.
+- Show suspension state and test cancellation boundaries and manual command availability.
+
+### 63. Paused Scrollback Anchor Stability
+
+Status: `Planned`
+
+Bug-fix follow-up to slice 52, not a missing feature.
+
+- Preserve paused logical-line and wrapped-row anchors during snapshot batches and prompt removal/replacement.
+- Handle scrollback eviction predictably when the anchored content is removed.
+- Add regression tests covering these mutations, resizing, and return to follow mode.
+
+## Intentionally Excluded
+
+Character portraits and portrait animation were deliberately removed in slice 24. They are not unfinished work and are not scheduled for reintroduction.

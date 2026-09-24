@@ -82,6 +82,7 @@ pub struct App {
     lua: LuaEngine,
     animations: AnimationScheduler,
     last_terminal_area: Rect,
+    panel_cache: crate::ui::panels::PanelCache,
     full_hd_overrides: LayoutOverrides,
     ultrawide_overrides: LayoutOverrides,
     stacked_overrides: LayoutOverrides,
@@ -167,6 +168,7 @@ impl App {
             lua,
             animations,
             last_terminal_area: Rect::default(),
+            panel_cache: crate::ui::panels::PanelCache::default(),
             full_hd_overrides: LayoutOverrides::default(),
             ultrawide_overrides: LayoutOverrides::default(),
             stacked_overrides: LayoutOverrides::default(),
@@ -861,6 +863,7 @@ impl App {
                 .map_err(|error| format!("Config reload failed: {error}"))?;
         }
         self.theme = Theme::from_config(&config.colors);
+        self.panel_cache.clear();
         self.aliases = aliases;
         self.triggers = triggers;
         self.events = events;
@@ -1731,6 +1734,8 @@ impl App {
         event: TerminalEvent,
         command_tx: &mpsc::Sender<ClientCommand>,
     ) -> bool {
+        // User interaction must never wait for a configured panel refresh.
+        self.panel_cache.clear();
         match event {
             TerminalEvent::Key(key) => {
                 if key.kind == crossterm::event::KeyEventKind::Release {
@@ -2046,16 +2051,19 @@ impl App {
             &self.state,
             &self.theme,
             self.layout_overrides(frame.area()),
+            Some(&self.panel_cache),
         );
     }
 }
 
 fn help_text(topic: &str) -> Option<&'static str> {
     match topic.trim().to_ascii_lowercase().as_str() {
+        "panels" => Some(include_str!("../docs/commands/panels.md")),
         "macro" | "macros" => Some(include_str!("../docs/commands/macro.md")),
-        "" | "commands" => Some(
+        "" | "commands" => Some(concat!(
             "# Mud Client Help\n\n## Local Commands\n- `/help [topic]` - show client help\n- `/clear` - clear output\n- `/quit` - quit the client\n- `/reload` - reload config from disk\n- `/reconnect` - request a network reconnect\n- `/msdp` - show stored MSDP values\n- `/lua [status|reload|call <function>]` - inspect and run Lua hooks\n- `/echo [--fg <color>] [--bg <color>] <text>` - write styled local output\n- `/variable` - list, set, or unset script variables\n- `/macro` - bind keys to commands; `/help macro` for details\n- `/alias` - list, add, unset, or clear runtime aliases\n- `/triggers` - list, add, unset, or clear runtime text/color triggers\n- `/highlight` - list, add, unset, or clear runtime highlights\n- `/handler` - list, add, unset, or clear runtime event handlers\n- `/event` - inspect or manually emit script events\n- `/toggle group|opponent|social [on|off]` - toggle optional panels for this session\n- `/map <command>` - mapper commands\n\n## Topics\n- `msdp` - stored MSDP values\n- `lua` - Lua scripting hooks and client API\n- `echo` - local styled output\n- `variable` - configured and runtime script variables\n- `map` - room mapping commands\n- `alias` - alias configuration\n- `trigger` - configured output reactions\n- `event` - script event dispatch and handlers\n- `highlight` - configured and runtime output styling\n- `animation` - animation timing and reduced motion\n- `diagnostics` - logging and troubleshooting\n- `toggle` - optional panel toggles\n- `social` - captured communication panel\n- `path` - path finding and path running\n- `output` - scrollback, search, triggers, and highlights\n- `input` - command input controls\n- `config` - runtime configuration notes",
-        ),
+            "\n- `panels` - panel borders, alignment, themes, and refresh intervals",
+        )),
         "msdp" => Some(
             "# MSDP Help\n\n## Usage\n- `/msdp`\n\n## Description\nShows every MSDP variable currently stored by the client. Values are sorted by variable name and reflect the latest MSDP frames received from the MUD.",
         ),
@@ -5292,6 +5300,11 @@ port = 3791
 
 [panels.output]
 title = "Game"
+border_style = "double"
+alignment = "right"
+refresh_ms = 500
+[panels.output.theme]
+border = "red"
 "##,
         )
         .expect("reload config should be written");
@@ -5316,6 +5329,19 @@ title = "Game"
             })
         );
         assert_eq!(app.config.panels.output.title, "Game");
+        assert_eq!(
+            app.config.panels.output.border_style,
+            crate::config::PanelBorderStyle::Double
+        );
+        assert_eq!(
+            app.config.panels.output.alignment,
+            crate::config::PanelAlignment::Right
+        );
+        assert_eq!(app.config.panels.output.refresh_ms, 500);
+        assert_eq!(
+            app.theme.for_panel(&app.config.panels.output).border,
+            ratatui::style::Color::Red
+        );
         assert!(!app.config.layout.show_group);
         assert!(
             app.state

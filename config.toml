@@ -92,6 +92,9 @@ show_info_marker = true
 [social]
 scrollback_lines = 500
 
+# Every panels.* table also supports border_style = "plain", alignment = "left",
+# refresh_ms = 0, and [panels.<name>.theme] color overrides. Input refresh_ms must
+# remain 0. See docs/configuration.md#panels or /help panels for examples.
 [panels.info]
 enabled = true
 title = "World"

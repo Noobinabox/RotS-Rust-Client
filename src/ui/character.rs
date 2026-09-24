@@ -17,7 +17,7 @@ use crate::{
         gauges::{GaugeKind, GaugeValue, compact_gauge, compact_line, render_gauge, status_line},
         layout::UiMode,
         map::{render_map, render_nearby_map},
-        panels::panel,
+        panels::{PanelCache, PanelId, PanelRenderer, panel},
         theme::Theme,
     },
 };
@@ -43,6 +43,7 @@ fn render_info_panel(
     ])];
     lines.extend(weather_lines(weather, marker, inner.width as usize, theme));
     Paragraph::new(lines)
+        .alignment(theme.alignment)
         .wrap(Wrap { trim: false })
         .render(inner, buf);
 }
@@ -107,7 +108,16 @@ pub fn render_details(
         )
         .split(area);
     for (kind, row) in kinds.into_iter().zip(rows.iter().copied()) {
-        match kind {
+        let (id, options) = match kind {
+            DetailPanel::Opponent => (PanelId::Opponent, &panels.opponent),
+            DetailPanel::Group => (PanelId::Group, &panels.group),
+            DetailPanel::Character => (PanelId::Character, &panels.character),
+        };
+        PanelRenderer {
+            theme,
+            cache: config.cache,
+        }
+        .render(id, options, row, buf, |buf, theme| match kind {
             DetailPanel::Opponent => {
                 render_opponent_panel(row, buf, state, theme, gauges, &panels.opponent.title);
             }
@@ -117,7 +127,7 @@ pub fn render_details(
             DetailPanel::Character => {
                 render_character_panel(row, buf, state, theme, gauges, &panels.character.title);
             }
-        }
+        });
     }
 }
 
@@ -131,7 +141,16 @@ pub fn render_status_dashboard(
     let panels = config.panels;
     let weather = config.weather;
     for (kind, column) in dashboard_panel_areas(area, config) {
-        match kind {
+        let (id, options) = match kind {
+            DashboardPanel::World => (PanelId::Info, &panels.info),
+            DashboardPanel::Social => (PanelId::Social, &panels.social),
+            DashboardPanel::NearbyMap => (PanelId::NearbyMap, &panels.map),
+        };
+        PanelRenderer {
+            theme,
+            cache: config.cache,
+        }
+        .render(id, options, column, buf, |buf, theme| match kind {
             DashboardPanel::World => render_info(column, buf, state, theme, panels, weather),
             DashboardPanel::Social => {
                 render_social_panel(column, buf, state, theme, &panels.social.title);
@@ -139,7 +158,7 @@ pub fn render_status_dashboard(
             DashboardPanel::NearbyMap => {
                 render_nearby_map(column, buf, &state.map, theme, config.map, "Nearby Map");
             }
-        }
+        });
     }
 }
 
@@ -200,7 +219,18 @@ pub fn render_classic_sidebar(
         .constraints(kinds.iter().map(|kind| kind.sidebar_constraint(panels)))
         .split(area);
     for (kind, row) in kinds.into_iter().zip(panel_rows.iter().copied()) {
-        match kind {
+        let (id, options) = match kind {
+            ClassicSidebarPanel::Info => (PanelId::Info, &panels.info),
+            ClassicSidebarPanel::Map => (PanelId::Map, &panels.map),
+            ClassicSidebarPanel::Opponent => (PanelId::Opponent, &panels.opponent),
+            ClassicSidebarPanel::Group => (PanelId::Group, &panels.group),
+            ClassicSidebarPanel::Character => (PanelId::Character, &panels.character),
+        };
+        PanelRenderer {
+            theme,
+            cache: config.cache,
+        }
+        .render(id, options, row, buf, |buf, theme| match kind {
             ClassicSidebarPanel::Info => {
                 render_info(row, buf, state, theme, panels, config.weather);
             }
@@ -226,7 +256,7 @@ pub fn render_classic_sidebar(
                 config.gauges,
                 &panels.character.title,
             ),
-        }
+        });
     }
 }
 
@@ -238,6 +268,7 @@ pub struct ResponsivePanelConfig<'a> {
     panels: &'a PanelConfig,
     weather: &'a WeatherConfig,
     mode: UiMode,
+    cache: Option<&'a PanelCache>,
 }
 
 impl<'a> ResponsivePanelConfig<'a> {
@@ -257,7 +288,13 @@ impl<'a> ResponsivePanelConfig<'a> {
             panels,
             weather,
             mode,
+            cache: None,
         }
+    }
+
+    pub fn with_cache(mut self, cache: Option<&'a PanelCache>) -> Self {
+        self.cache = cache;
+        self
     }
 }
 
@@ -402,7 +439,9 @@ fn render_social_panel(
         state.social.scroll_offset,
         theme,
     );
-    Paragraph::new(lines).render(inner, buf);
+    Paragraph::new(lines)
+        .alignment(theme.alignment)
+        .render(inner, buf);
 }
 
 fn social_lines(
@@ -719,7 +758,9 @@ fn render_opponent_panel(
 
     if let Some(name) = &state.opponent.name {
         let name = opponent_title_line(name, state.opponent.level.as_deref(), theme);
-        Paragraph::new(name).render(inner, buf);
+        Paragraph::new(name)
+            .alignment(theme.alignment)
+            .render(inner, buf);
         if inner.height > 1 {
             let gauge_area = ratatui::layout::Rect {
                 y: inner.y.saturating_add(1),
@@ -740,7 +781,9 @@ fn render_opponent_panel(
             "No current target",
             Style::new().fg(theme.muted),
         ));
-        Paragraph::new(vec![line]).render(inner, buf);
+        Paragraph::new(vec![line])
+            .alignment(theme.alignment)
+            .render(inner, buf);
     }
 }
 
@@ -770,7 +813,9 @@ fn render_group_panel(
             gauges,
         )
     };
-    Paragraph::new(lines).render(inner, buf);
+    Paragraph::new(lines)
+        .alignment(theme.alignment)
+        .render(inner, buf);
 }
 
 fn group_lines<'a>(
@@ -980,6 +1025,7 @@ fn render_character_panel(
     );
 
     Paragraph::new(character_sheet_lines(state, theme))
+        .alignment(theme.alignment)
         .wrap(Wrap { trim: false })
         .render(rows[4], buf);
     render_gauge(rows[5], buf, GaugeKind::Tnl, tnl(state), theme, gauges);
@@ -1672,6 +1718,7 @@ mod tests {
             muted: Color::DarkGray,
             player: Color::Cyan,
             enemy: Color::Red,
+            ..Theme::from_config(&crate::config::ThemeConfig::default())
         }
     }
 }

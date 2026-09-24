@@ -33,6 +33,8 @@ Every local command starts with `/` and is handled by the client instead of bein
 
 ## Input behavior
 
+- [`/help panels`](commands/panels.md) — panel appearance and refresh configuration (help topic, not a `/panels` command).
+
 - [`Input and keyboard behavior`](commands/input.md) — editing, history, completion, scrolling, repeat syntax, and terminal controls.
 
 Commands without `/` pass through variable expansion, aliases, triggers, movement tracking, command echo, and the network pipeline. `Ctrl-C` clears the current input; `/quit` is the exit command.

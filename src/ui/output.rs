@@ -31,6 +31,7 @@ pub fn render_output(
 
     let title = output_title(state, title);
     Paragraph::new(visible)
+        .alignment(theme.alignment)
         .block(panel(&title, theme))
         .render(area, buf);
 }
@@ -118,7 +119,9 @@ fn rendered_rows(
         .into_iter()
         .zip(all_lines.range(start..end))
         .map(|(line, source)| {
-            if width < MIN_OUTPUT_WRAP_WIDTH || source.category == OutputCategory::Snapshot {
+            if source.category == OutputCategory::Snapshot {
+                vec![line.left_aligned()]
+            } else if width < MIN_OUTPUT_WRAP_WIDTH {
                 vec![line]
             } else {
                 wrap_line(line, width)

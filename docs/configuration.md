@@ -129,10 +129,43 @@ Each panel table supports the same fields:
 | `min_height` | Minimum useful height in rows. |
 | `priority` | Higher priority panels survive first when space is limited. |
 | `visible_modes` | Responsive modes where the panel may show. Empty means all applicable modes. |
+| `border_style` | `plain` (default), `rounded`, `double`, `thick`, or `none`. Borderless panels retain their title and one-cell content inset. |
+| `alignment` | Text alignment: `left` (default), `center`, or `right`. Map geometry, output map snapshots, and full-width gauge rows retain their layout. |
+| `refresh_ms` | Minimum content-refresh interval, 0–60000 ms; `0` (default) renders each frame. Input must use `0`. |
+| `theme` | Partial color overrides in `[panels.<name>.theme]`; omitted colors inherit `[colors]`. |
 
 Panel tables are `panels.info`, `panels.social`, `panels.map`, `panels.opponent`, `panels.group`, `panels.character`, `panels.output`, and `panels.input`. The `panels.info` table controls the World pane title and compact sidebar height. The `panels.social` table controls the ultrawide Social dashboard pane.
 
 Accepted `visible_modes` values are `mobile`, `tablet`, `1080p`, and `ultrawide`. Legacy aliases `tiny`, `compact`, `standard`, and `wide` are also accepted.
+
+For example, edit the existing panel table (do not duplicate it):
+
+```toml
+[panels.social]
+enabled = true
+title = "Social"
+min_width = 30
+min_height = 5
+priority = 95
+visible_modes = ["ultrawide"]
+border_style = "rounded"
+alignment = "left"
+refresh_ms = 250
+
+[panels.social.theme]
+background = "#101820"
+foreground = "#d0e8ff"
+border = "cyan"
+title = "lightcyan"
+```
+
+Theme keys are `background`, `foreground`, `border`, `title`, `accent`, `success`, `warning`, `danger`, `muted`, `player`, and `enemy`; unknown keys and invalid colors are rejected. Explicit MUD ANSI colors, highlights, map marker/terrain colors, and existing gauge-specific colors retain precedence over generic foreground overrides. The compact status strip is not a bordered panel and continues to use the global theme. Nearby Map shares `panels.map` styling and refresh settings, with its existing distinct title.
+
+Refresh intervals throttle only rendering, never networking, scripting, or state updates. A due panel refreshes on the next application draw, so the timer cadence (`terminal.tick_rate_ms`) and event traffic also affect observed refresh timing. Cached content is copied into every frame; it is not erased between refreshes. Keyboard/mouse input, resize, successful `/reload`, changed panel settings/geometry, and hiding/revealing a panel invalidate cached content. Input and completion remain immediate. Use short intervals for output or combat panels if delayed information is undesirable.
+
+Responsive layout still controls placement, dimensions, visibility, and priority. Style overrides do not force hidden panels into small layouts or change their minimum sizes. `/reload` applies changes; invalid configuration leaves the current settings active. See `/help panels` for a short in-client reference.
+
+Aligned command/search input reserves one content cell for the insertion cursor and scrolls horizontally when needed to keep it visible. Titles stay left-aligned; `alignment` affects content, not border titles.
 
 ## social
 
