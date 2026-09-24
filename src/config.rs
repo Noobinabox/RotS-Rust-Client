@@ -42,6 +42,51 @@ impl AppConfig {
     }
 
     pub fn load_with_options(path: Option<PathBuf>, options: ConfigLoadOptions) -> Result<Self> {
+        Self::load_with_character(path, None, options)
+    }
+
+    /// Character overrides share the base connection and resource-path root.
+    pub fn load_with_character(
+        path: Option<PathBuf>,
+        character_path: Option<&std::path::Path>,
+        options: ConfigLoadOptions,
+    ) -> Result<Self> {
+        if let Some(character_path) = character_path {
+            let path = path.or_else(default_config_path);
+            let mut base = match path.as_deref() {
+                Some(path) => match fs::read_to_string(path) {
+                    Ok(raw) => {
+                        toml::from_str(&raw).map_err(|source| MudClientError::ConfigParse {
+                            path: path.to_owned(),
+                            source,
+                        })?
+                    }
+                    Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                        toml::Value::Table(Default::default())
+                    }
+                    Err(error) => return Err(error.into()),
+                },
+                None => toml::Value::Table(Default::default()),
+            };
+            let overrides = crate::profiles::read_overrides(character_path)?;
+            crate::profiles::merge(&mut base, overrides);
+            let mut config: Self =
+                base.try_into()
+                    .map_err(|source| MudClientError::CharacterConfigParse {
+                        shared: path
+                            .as_deref()
+                            .map(|path| path.display().to_string())
+                            .unwrap_or_else(|| "built-in defaults".into()),
+                        character: character_path.to_owned(),
+                        source: Box::new(source),
+                    })?;
+            if options.local_test_endpoint {
+                config.use_local_test_endpoint();
+            }
+            config.normalize();
+            config.validate()?;
+            return Ok(config);
+        }
         let Some(path) = path.or_else(default_config_path) else {
             let mut config = Self::default();
             if options.local_test_endpoint {
@@ -737,6 +782,7 @@ impl Default for ConnectionConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default)]
 pub struct TerminalConfig {
+    pub multiline_input: bool,
     pub tick_rate_ms: u64,
     pub animation_fps: u64,
     pub mouse: bool,
@@ -747,6 +793,7 @@ pub struct TerminalConfig {
 impl Default for TerminalConfig {
     fn default() -> Self {
         Self {
+            multiline_input: false,
             tick_rate_ms: 100,
             animation_fps: 15,
             mouse: true,

@@ -4,7 +4,11 @@ The active config file is normally `~/.config/mud-client/config.toml`. The repos
 
 Colors accept named terminal colors, bright color names such as `lightred`, indexed colors such as `index:17`, or RGB values such as `#7aa2f7`.
 
+MSDP character-name reports automatically layer `characters/name.toml` over shared configuration; `--character NAME` optionally preselects it at startup. Missing profiles are silently ignored. Tables merge; arrays replace. Connection settings remain shared and runtime saves are isolated per profile. See [character profiles](character-profiles.md) for setup, examples, and reload behavior.
+
 ## macros
+
+Runtime variables, macros, aliases, triggers, and highlights can also be saved with [`/save`](commands/save.md). This writes a versioned sidecar, normally `config.toml.runtime.toml` beside the active config, and restores it at startup or first activation of a character profile. Saved runtime variables override configured values and are restored before dependent rules. Main configuration and comments are untouched. `/reload` retains live variables and rules; it does not reread the sidecar. Handlers, timers, and printable-key mode are not included. Saved variable values are plain text; do not save secrets.
 
 See [key macro configuration](commands/macro.md#persistent-configuration): `[[macros.rules]]` accepts `key`, `command`, `enabled`, `override_builtin`, and `allow_repeat`. No macros are installed by default. Printable-key mode is session-only and starts off.
 
@@ -28,6 +32,7 @@ See [key macro configuration](commands/macro.md#persistent-configuration): `[[ma
 | `mouse` | Enables mouse events such as output scrolling and pane resizing. |
 | `true_color` | Enables RGB color output when the terminal supports it. |
 | `echo_commands` | Appends sent MUD commands as local output lines without a prompt prefix. |
+| `multiline_input` | Defaults to `false`: pasted newlines become spaces. When `true`, preserve pasted newlines and use Alt+Enter to add a line; Enter submits nonblank lines in order. See [input examples](commands/input.md#paste-and-multiline-editing). |
 
 ## layout
 

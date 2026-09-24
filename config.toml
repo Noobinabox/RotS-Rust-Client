@@ -19,6 +19,7 @@ auto_reconnect = true
 line_ending = "\r\n"
 
 [terminal]
+multiline_input = false
 tick_rate_ms = 100
 animation_fps = 30
 mouse = true

@@ -1,9 +1,80 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
+mod word_edit;
+use word_edit::WordEdit;
+
+pub(crate) fn is_word_edit_key(key: KeyEvent) -> bool {
+    WordEdit::from_key(key).is_some()
+}
+
 use crate::{
     commands::ClientCommand,
     state::{AppState, SearchEdit},
 };
+
+pub const MAX_PASTE_BYTES: usize = 65_536;
+pub const MAX_INPUT_LINES: usize = 128;
+
+/// Insert a paste as text, never as key events or commands. Reject atomically so
+/// a truncated command cannot accidentally mean something different.
+pub fn insert_paste(state: &mut AppState, text: &str, multiline: bool) -> Result<(), &'static str> {
+    if text.len() > MAX_PASTE_BYTES {
+        return Err("Paste rejected: maximum size is 64 KiB.");
+    }
+    let preserve_lines = multiline && !state.output_view.search_active;
+    let mut normalized = String::with_capacity(text.len());
+    let mut chars = text.chars().peekable();
+    while let Some(ch) = chars.next() {
+        match ch {
+            '\r' => {
+                if chars.peek() == Some(&'\n') {
+                    chars.next();
+                }
+                normalized.push(if preserve_lines { '\n' } else { ' ' });
+            }
+            '\n' | '\u{2028}' | '\u{2029}' => {
+                normalized.push(if preserve_lines { '\n' } else { ' ' })
+            }
+            '\t' => normalized.push(' '),
+            ch if ch.is_control() => {}
+            ch => normalized.push(ch),
+        }
+    }
+    if normalized.is_empty() {
+        return Ok(());
+    }
+    let current = if state.output_view.search_active {
+        state.output_view.search_input.as_str()
+    } else if state.submitted_input_selected {
+        ""
+    } else {
+        &state.input
+    };
+    if current.len().saturating_add(normalized.len()) > MAX_PASTE_BYTES {
+        return Err("Paste rejected: resulting input exceeds 64 KiB.");
+    }
+    if current.bytes().filter(|&byte| byte == b'\n').count()
+        + normalized.bytes().filter(|&byte| byte == b'\n').count()
+        >= MAX_INPUT_LINES
+    {
+        return Err("Paste rejected: input may contain at most 128 lines.");
+    }
+    if state.output_view.search_active {
+        // Bulk insertion avoids repeatedly shifting the search string suffix.
+        state
+            .output_view
+            .search_input
+            .insert_str(state.output_view.search_cursor, &normalized);
+        state.output_view.search_cursor += normalized.len();
+    } else {
+        clear_selected_submission(state);
+        clear_history_navigation(state);
+        state.clear_input_completion();
+        state.input.insert_str(state.cursor, &normalized);
+        state.cursor += normalized.len();
+    }
+    Ok(())
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InputAction {
@@ -19,6 +90,24 @@ pub enum InputAction {
 }
 
 pub fn handle_key(state: &mut AppState, key: KeyEvent) -> InputAction {
+    if let Some(edit) = WordEdit::from_key(key) {
+        if state.output_view.search_active {
+            edit.apply(
+                &mut state.output_view.search_input,
+                &mut state.output_view.search_cursor,
+            );
+        } else {
+            if edit.deletes() {
+                clear_selected_submission(state);
+                clear_history_navigation(state);
+            } else {
+                edit_selected_submission(state);
+            }
+            state.clear_input_completion();
+            edit.apply(&mut state.input, &mut state.cursor);
+        }
+        return InputAction::None;
+    }
     if state.output_view.search_active {
         return handle_search_key(state, key);
     }
@@ -182,6 +271,15 @@ fn next_boundary(input: &str, cursor: usize) -> usize {
 }
 
 fn submit_input(state: &mut AppState) -> InputAction {
+    let had_newlines = if state.submitted_input_selected {
+        state
+            .submitted_input
+            .as_deref()
+            .unwrap_or_default()
+            .contains('\n')
+    } else {
+        state.input.contains('\n')
+    };
     let command = if state.submitted_input_selected {
         state.submitted_input.clone().unwrap_or_default()
     } else {
@@ -193,8 +291,15 @@ fn submit_input(state: &mut AppState) -> InputAction {
     state.clear_input_completion();
     clear_history_navigation(state);
 
+    // Only explicit input submission resumes output; editing and automation do not.
+    if !command.is_empty() || !had_newlines {
+        state.follow_output();
+    }
     if command.is_empty() {
         state.submitted_input = None;
+        if had_newlines {
+            return InputAction::None;
+        }
         return InputAction::Command(ClientCommand::SendText(String::new()));
     }
     if command == "/clear" {
@@ -309,6 +414,169 @@ mod tests {
     use crate::{config::AppConfig, state::OutputCategory};
 
     use super::*;
+
+    #[test]
+    fn paste_normalizes_lines_controls_and_preserves_unicode_at_cursor() {
+        let mut state = AppState::new(&AppConfig::default());
+        state.input = "say !".into();
+        state.cursor = 4;
+        insert_paste(&mut state, "é\r\n猫\rx\ny\t\u{2028}z\0\x03", false).unwrap();
+        assert_eq!(state.input, "say é 猫 x y  z!");
+        assert_eq!(state.cursor, state.input.len() - 1);
+        assert!(state.command_history.is_empty());
+        assert!(state.submitted_input.is_none());
+    }
+
+    #[test]
+    fn multiline_paste_is_editable_and_selected_submission_is_replaced() {
+        let mut state = AppState::new(&AppConfig::default());
+        state.submitted_input = Some("old".into());
+        state.submitted_input_selected = true;
+        insert_paste(&mut state, "look\r\nscore", true).unwrap();
+        assert_eq!(state.input, "look\nscore");
+        assert!(!state.submitted_input_selected);
+        handle_key(&mut state, KeyEvent::new(KeyCode::Home, KeyModifiers::NONE));
+        for _ in 0..5 {
+            handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
+            );
+        }
+        handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE),
+        );
+        assert_eq!(state.input, "lookscore");
+    }
+
+    #[test]
+    fn paste_limits_are_atomic_and_unicode_safe() {
+        let mut state = AppState::new(&AppConfig::default());
+        insert_paste(&mut state, &"é".repeat(MAX_PASTE_BYTES / 2), false).unwrap();
+        let before = state.input.clone();
+        assert!(insert_paste(&mut state, "x", true).is_err());
+        assert_eq!(state.input, before);
+        state.input.clear();
+        state.cursor = 0;
+        assert!(insert_paste(&mut state, &"x".repeat(MAX_PASTE_BYTES + 1), false).is_err());
+        assert!(state.input.is_empty());
+        insert_paste(&mut state, &"\n".repeat(MAX_INPUT_LINES - 1), true).unwrap();
+        assert!(insert_paste(&mut state, "\n", true).is_err());
+        assert_eq!(state.input.len(), MAX_INPUT_LINES - 1);
+    }
+
+    #[test]
+    fn search_paste_edits_only_search_and_never_commits() {
+        let mut state = AppState::new(&AppConfig::default());
+        state.input = "draft".into();
+        state.cursor = 5;
+        state.start_output_search();
+        insert_paste(&mut state, "orc\nking", true).unwrap();
+        assert_eq!(state.output_view.search_input, "orc king");
+        assert!(state.output_view.search_active);
+        assert_eq!(state.input, "draft");
+        assert!(state.command_history.is_empty());
+    }
+
+    #[test]
+    fn submitting_input_resumes_output_but_editing_does_not() {
+        for command in ["look", "/echo hello", "", "look\nscore"] {
+            let mut state = AppState::new(&AppConfig::default());
+            state.output_view.follow_newest = false;
+            state.output_view.scroll_offset = 12;
+            state.output_view.wrapped_row_offset = 3;
+            state.input = command.into();
+            state.cursor = state.input.len();
+            handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            );
+            assert!(state.output_view.follow_newest);
+            assert_eq!(state.output_view.scroll_offset, 0);
+            assert_eq!(state.output_view.wrapped_row_offset, 0);
+            // Resending the highlighted command also resumes output.
+            state.output_view.follow_newest = false;
+            state.output_view.scroll_offset = 7;
+            handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            );
+            assert!(state.output_view.follow_newest);
+            assert_eq!(state.output_view.scroll_offset, 0);
+        }
+        let mut state = AppState::new(&AppConfig::default());
+        state.output_view.follow_newest = false;
+        state.output_view.scroll_offset = 12;
+        handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('l'), KeyModifiers::NONE),
+        );
+        assert!(!state.output_view.follow_newest);
+        assert_eq!(state.output_view.scroll_offset, 12);
+        state.input = "\n\n".into();
+        assert_eq!(
+            handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)
+            ),
+            InputAction::None
+        );
+        assert!(!state.output_view.follow_newest);
+        assert_eq!(state.output_view.scroll_offset, 12);
+    }
+
+    #[test]
+    fn word_editing_preserves_search_drafts_and_history_contracts() {
+        let mut state = AppState::new(&AppConfig::default());
+        state.input = "say hello world".into();
+        state.cursor = state.input.len();
+        state.history_position = Some(0);
+        state.history_draft = Some("say".into());
+        state.input_completion.active = true;
+        handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Left, KeyModifiers::CONTROL),
+        );
+        assert_eq!(state.cursor, 10);
+        assert_eq!(state.history_position, Some(0));
+        assert!(!state.input_completion.active);
+        handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('w'), KeyModifiers::CONTROL),
+        );
+        assert_eq!(state.input, "say world");
+        assert_eq!(state.cursor, 4);
+        assert!(state.history_position.is_none());
+        assert!(state.history_draft.is_none());
+        state.start_output_search();
+        state.output_view.search_input = "orc captain".into();
+        state.output_view.search_cursor = 0;
+        handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('d'), KeyModifiers::ALT),
+        );
+        assert_eq!(state.output_view.search_input, " captain");
+        assert_eq!(state.output_view.search_cursor, 0);
+        assert_eq!(state.input, "say world");
+        assert_eq!(state.cursor, 4);
+        state.cancel_output_search();
+        state.submitted_input = Some("kill orc".into());
+        state.submitted_input_selected = true;
+        handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('b'), KeyModifiers::ALT),
+        );
+        assert_eq!(state.input, "kill orc");
+        assert_eq!(state.cursor, 5);
+        assert!(!state.submitted_input_selected);
+        state.submitted_input_selected = true;
+        handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('w'), KeyModifiers::CONTROL),
+        );
+        assert!(state.input.is_empty());
+        assert_eq!(state.cursor, 0);
+    }
 
     #[test]
     fn enter_sends_text_and_selects_last_command() {

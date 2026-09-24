@@ -1,5 +1,55 @@
 use crate::{state::OutputStyle, ui::theme::parse_color};
 
+/// Shorthand uses one name/pattern token and the remaining text as one value.
+/// Braced fields retain the existing nested-brace and multiple-action syntax.
+pub(super) fn parse_definition_fields(input: &str, command: &str) -> Result<Vec<String>, String> {
+    let input = input.trim();
+    let (name, rest) = if input.starts_with('{') {
+        let mut depth = 0usize;
+        let mut end = None;
+        let mut escaped = false;
+        for (index, ch) in input.char_indices() {
+            if escaped {
+                escaped = false;
+                continue;
+            }
+            match ch {
+                '\\' => escaped = true,
+                '{' => depth += 1,
+                '}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        end = Some(index);
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+        let end = end.ok_or_else(|| format!("{command}: unclosed brace"))?;
+        let rest = &input[end + 1..];
+        if !rest.is_empty() && !rest.starts_with('{') && !rest.starts_with(char::is_whitespace) {
+            return Err(format!(
+                "{command}: separate the name and value with whitespace or braces"
+            ));
+        }
+        let mut fields = super::parse_braced_fields(&input[..end + 1], command)?;
+        (fields.remove(0), rest.trim_start())
+    } else {
+        let Some((name, rest)) = split_first_token(input) else {
+            return Ok(Vec::new());
+        };
+        (name.to_owned(), rest.trim_start())
+    };
+    let mut fields = vec![name];
+    if rest.starts_with('{') {
+        fields.extend(super::parse_braced_fields(rest, command)?);
+    } else if !rest.is_empty() {
+        fields.push(rest.to_owned());
+    }
+    Ok(fields)
+}
+
 pub(super) fn is_recognized_local_command(text: &str) -> bool {
     let Some(command) = text.strip_prefix('/') else {
         return false;
@@ -14,6 +64,7 @@ pub(super) fn is_recognized_local_command(text: &str) -> bool {
                 | "clear"
                 | "quit"
                 | "reload"
+                | "save"
                 | "reconnect"
                 | "lua"
                 | "timer"
@@ -277,6 +328,90 @@ fn echo_usage() -> String {
 #[cfg(test)]
 mod tests {
     use super::split_game_commands;
+
+    #[test]
+    fn definitions_accept_shorthand_braces_and_mixed_fields() {
+        for (input, expected) in [
+            ("food meat pie", vec!["food", "meat pie"]),
+            ("food\tmeat  pie", vec!["food", "meat  pie"]),
+            ("k kill {1}", vec!["k", "kill {1}"]),
+            ("k {kill {1}}", vec!["k", "kill {1}"]),
+            ("{k} kill {1}", vec!["k", "kill {1}"]),
+            ("{go home}{recall}{look}", vec!["go home", "recall", "look"]),
+            ("rr {recall} {look}", vec!["rr", "recall", "look"]),
+            ("food {}", vec!["food", ""]),
+            ("food {  bread  }", vec!["food", "  bread  "]),
+            ("food ${other}", vec!["food", "${other}"]),
+            (r"{a\}b} look", vec![r"a\}b", "look"]),
+            (r"{a\\b} {look}", vec![r"a\b", "look"]),
+            ("target\u{2003}北の門", vec!["target", "北の門"]),
+        ] {
+            assert_eq!(
+                super::parse_definition_fields(input, "test").unwrap(),
+                expected,
+                "{input}"
+            );
+        }
+        for invalid in ["{k", "k {kill", "k {kill} trailing", "{k}trailing"] {
+            assert!(
+                super::parse_definition_fields(invalid, "test").is_err(),
+                "{invalid}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn shorthand_definitions_preserve_templates_and_do_not_execute_actions() {
+        use crate::{app::App, commands::ClientCommand, config::AppConfig};
+        let mut config = AppConfig::default();
+        config.map.persistence.load_on_startup = false;
+        config.lua.enabled = false;
+        let mut app = App::new(config);
+        let (tx, mut rx) = tokio::sync::mpsc::channel(16);
+        for command in [
+            "/variable food meat pie",
+            "/alias eatfood eat ${food}",
+            "/alias k kill {1}",
+            "/alias rr {recall} {look}",
+            "/alias sequence recall;look",
+            "/variable route north;east",
+        ] {
+            app.handle_command(ClientCommand::SendText(command.into()), &tx)
+                .await;
+        }
+        assert!(rx.try_recv().is_err());
+        assert_eq!(app.variables.expand("${food}").unwrap(), "meat pie");
+        assert_eq!(app.aliases.expand("eatfood").unwrap(), ["eat meat pie"]);
+        assert_eq!(app.aliases.expand("k orc").unwrap(), ["kill orc"]);
+        assert_eq!(app.aliases.expand("rr").unwrap(), ["recall", "look"]);
+        assert_eq!(app.variables.expand("${route}").unwrap(), "north;east");
+        app.handle_command(ClientCommand::SendText("sequence".into()), &tx)
+            .await;
+        for command in ["recall", "look"] {
+            assert_eq!(
+                rx.try_recv().unwrap(),
+                ClientCommand::SendText(command.into())
+            );
+        }
+        assert!(rx.try_recv().is_err());
+        app.handle_command(ClientCommand::SendText("/variable food bread".into()), &tx)
+            .await;
+        assert_eq!(app.aliases.expand("eatfood").unwrap(), ["eat bread"]);
+        app.handle_command(ClientCommand::SendText("eatfood".into()), &tx)
+            .await;
+        assert_eq!(
+            rx.try_recv().unwrap(),
+            ClientCommand::SendText("eat bread".into())
+        );
+        assert!(app.handle_alias_command("unset eatfood").is_ok());
+        assert!(app.handle_variable_command("unset food").is_ok());
+        assert!(app.variables.expand("${food}").is_err());
+        assert!(app.handle_variable_command("name").is_err());
+        assert!(app.handle_variable_command("name {one} {two}").is_err());
+        assert!(app.handle_alias_command("name").is_err());
+        assert!(app.handle_alias_command("unset k extra").is_err());
+        assert_eq!(app.aliases.expand("k orc").unwrap(), ["kill orc"]);
+    }
 
     #[test]
     fn repeat_command_expands_braced_body() {

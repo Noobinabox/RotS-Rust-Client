@@ -27,6 +27,26 @@ pub struct VariableStore {
 }
 
 impl VariableStore {
+    /// Preserve raw templates and runtime ownership, not their expanded values.
+    pub fn runtime_values(&self) -> BTreeMap<String, String> {
+        self.runtime.clone()
+    }
+
+    /// Load the whole snapshot before validation so forward references do not
+    /// depend on map iteration order.
+    pub fn with_runtime_values(
+        config: &VariableConfig,
+        runtime: BTreeMap<String, String>,
+    ) -> Result<Self> {
+        let store = Self {
+            configured: config.values.clone(),
+            runtime,
+            max_expansion_depth: config.max_expansion_depth,
+            max_expanded_bytes: config.max_expanded_bytes,
+        };
+        store.validate_all()?;
+        Ok(store)
+    }
     pub fn new(config: &VariableConfig) -> Result<Self> {
         let store = Self {
             configured: config.values.clone(),

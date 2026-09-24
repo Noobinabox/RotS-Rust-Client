@@ -15,6 +15,15 @@ Run commands when incoming MUD output matches text or a regular expression. Acti
 
 `/trigger` is accepted as a singular alias for `/triggers`. `/highlights` is not a local alias; it is sent to the MUD.
 
+## Keep a trigger after restarting
+
+```text
+/triggers plain {You are hungry} {eat bread}
+/save
+```
+
+Wait for `Saved runtime settings`. To remove this saved trigger, use `/triggers unset {You are hungry}` followed by `/save`. Existing configured triggers remain active; matching configured and runtime triggers may both run. Cooldowns and one-shot execution state reset at startup. See [`/save`](save.md).
+
 `plain` performs substring matching. `regex` supports captures such as `{1}`. Color filters require the matching ANSI color on the input line.
 
 ## Examples

@@ -1,5 +1,11 @@
 # WIP.md
 
-No active slice. Slice 60, Full Panel Customization, is complete; scope and validation are recorded in `SLICES.md`.
+## Active Slice
 
-Next: slice 53, Persistent Runtime Settings. Other planned slices remain unstarted.
+None. Slice 57 (Word-Based Input Editing) is complete and reviewed.
+
+## Next Slice: 58. Configurable Built-In Shortcuts
+
+- Bind editing, navigation, search, and client actions through configurable shortcuts.
+- Define precedence with macros and protect recovery controls.
+- Validate conflicts and reload behavior while retaining existing defaults.

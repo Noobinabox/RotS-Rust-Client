@@ -13,6 +13,14 @@ pub enum MudClientError {
         path: PathBuf,
         source: toml::de::Error,
     },
+    #[error(
+        "merged configuration from {shared} and character profile {character} is invalid: {source}"
+    )]
+    CharacterConfigParse {
+        shared: String,
+        character: PathBuf,
+        source: Box<toml::de::Error>,
+    },
     #[error("configuration is invalid: {0}")]
     ConfigValidation(String),
     #[error("command line argument is invalid: {0}")]

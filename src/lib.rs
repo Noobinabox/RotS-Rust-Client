@@ -10,6 +10,8 @@ pub mod macros;
 pub mod map;
 pub mod network;
 pub mod path;
+pub mod persistence;
+pub mod profiles;
 pub mod scripting;
 pub mod state;
 pub mod terminal;

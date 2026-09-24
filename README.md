@@ -13,6 +13,8 @@ The current implementation includes:
 - Executes configurable key macros through the command pipeline; see [macros](docs/commands/macro.md). Try `/macro {F5} {look}` and press F5.
 - Supports dedicated numpad macros such as `/macro {Numpad8} {north}` on terminals that report keypad identity, without capturing top-row digits.
 - Supports per-panel borders, text alignment, theme overrides, and refresh intervals; see [panel configuration](docs/configuration.md#panels) or `/help panels`.
+- Saves runtime variables, macros, aliases, triggers, and highlights across restarts with [`/save`](docs/commands/save.md), without rewriting the main configuration.
+- Handles bracketed paste without executing pasted commands; optional multiline editing uses Alt+Enter and visible line markers. See [input examples and terminal limitations](docs/commands/input.md#paste-and-multiline-editing).
 
 ## Run
 
@@ -33,6 +35,8 @@ CLI help is available without entering terminal UI:
 ```sh
 cargo run -- --help
 ```
+
+For character-specific automation and settings, create `characters/aragorn.toml` beside your shared config. MSDP automatically selects it when Aragorn enters the game and switches profiles when you change characters. Missing profiles quietly use shared settings. `--character aragorn` optionally preselects settings at launch. Connection settings stay shared; saved runtime rules are isolated per profile. See [character profiles](docs/character-profiles.md) for examples and merge rules.
 
 ## Configuration
 
@@ -407,7 +411,7 @@ Use `/triggers unset {pattern}` to remove one runtime trigger or `/triggers clea
 
 Triggers inspect both completed output lines and live prompts. ANSI styling is removed before matching, so anchored regular expressions operate on the visible MUD text. Persistent trigger rules can emit an event through their `event` field.
 
-Use `/highlight` to list configured and session-only highlight rules. Add or replace a runtime highlight with a plain pattern by default or select regex matching explicitly:
+Use `/highlight` to list configured and runtime highlight rules; `/save` persists runtime rules. Add or replace a runtime highlight with a plain pattern by default or select regex matching explicitly:
 
 ```text
 /highlight

@@ -12,6 +12,27 @@ Bind a key to a command that runs immediately, without Enter. The current input 
 
 ## Examples
 
+### Try a function-key binding
+
+Enter this command, then press F5 (no Enter needed for the key press):
+
+```text
+/macro {F5} {look}
+```
+
+The client sends `look` through the normal command pipeline without replacing your input draft. Inspect bindings and remove the test binding when finished:
+
+```text
+/macro
+/macro remove {F5}
+```
+
+Removal reveals any configured F5 binding underneath the session override. Runtime changes last for this session unless you run `/save`; use that command or the TOML example below to keep a binding across restarts.
+
+### More binding examples
+
+Choose the bindings you want; these are independent examples:
+
 - `/macro {F5} {cast 'heal' self}`
 - `/macro {F6} {get bread bag;eat bread}`
 - `/macro {Ctrl+G} {/lua call start_bot}`
@@ -58,4 +79,13 @@ override_builtin = false
 allow_repeat = false
 ```
 
-Definitions default to enabled, with override and repeat disabled. Invalid keys, blank commands, protected-key bindings, shortcut conflicts, and duplicate normalized keys are rejected. Runtime definitions replace the effective configured binding for that key. `/reload` refreshes configured bindings while preserving runtime definitions and printable-key mode. Runtime commands never write configuration files; edit TOML to persist or remove configured macros.
+Definitions default to enabled, with override and repeat disabled. Invalid keys, blank commands, protected-key bindings, shortcut conflicts, and duplicate normalized keys are rejected. Runtime definitions replace the effective configured binding for that key. `/reload` refreshes configured bindings while preserving runtime definitions and printable-key mode. Edit TOML to remove configured macros.
+
+Alternatively, save an in-game binding without editing TOML:
+
+```text
+/macro {F5} {look}
+/save
+```
+
+Wait for `Saved runtime settings`. This writes the runtime snapshot beside your main configuration, not into it. Run `/save` again after removing or changing saved bindings. Printable-key mode is never persisted. See [`/save`](save.md) for conflicts, file location, and limits.

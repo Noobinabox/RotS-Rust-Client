@@ -73,6 +73,8 @@ pub enum TimerEvent {
 #[derive(Debug, Clone, PartialEq)]
 pub enum TerminalEvent {
     Key(KeyEvent),
+    Paste(String),
+    PasteTooLarge,
     Mouse(MouseEvent),
     Resize { width: u16, height: u16 },
 }

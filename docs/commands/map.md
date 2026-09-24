@@ -13,6 +13,8 @@ Manage the local room graph, landmarks, room metadata, flags, persistence, and w
 
 ## Common workflow
 
+Use this on a new/test map: `/map create` resets the current local map. Back up an existing map with `/map write maps/backup.toml` first. The workflow edits the mapper; it does not establish that your character is physically in these rooms. Run each line separately.
+
 ```text
 /map create
 /map goto 1
@@ -21,9 +23,10 @@ Manage the local room graph, landmarks, room metadata, flags, persistence, and w
 /map landmark Home 2 My starting room
 /map landmarks
 /map find Home
-/map run Home
 /map write maps/rots.toml
 ```
+
+This creates a test graph, names room `2` as `Home`, previews a route, and saves the map. Only use `/map run Home` after confirming the map matches your character's actual location; unlike `/map find`, it sends movement commands.
 
 ## Subcommands
 

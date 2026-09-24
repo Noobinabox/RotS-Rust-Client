@@ -56,6 +56,8 @@ struct InputViewport {
     cursor_width: usize,
 }
 
+const NEWLINE_MARKER: &str = "↵";
+
 fn input_viewport(state: &AppState, width: usize) -> InputViewport {
     let (text, cursor) = if state.output_view.search_active {
         (
@@ -69,6 +71,16 @@ fn input_viewport(state: &AppState, width: usize) -> InputViewport {
     } else {
         (state.input.clone(), state.cursor)
     };
+    // Logical multiline input stays compact: show each newline as a visible
+    // marker, translating the byte cursor before computing the viewport.
+    let mut cursor = cursor.min(text.len());
+    while !text.is_char_boundary(cursor) {
+        cursor -= 1;
+    }
+    let cursor = cursor
+        + text[..cursor].bytes().filter(|&byte| byte == b'\n').count()
+            * (NEWLINE_MARKER.len() - '\n'.len_utf8());
+    let text = text.replace('\n', NEWLINE_MARKER);
     // Use the same graphemes as Ratatui, so combining marks and emoji sequences
     // are never split or measured as unrelated scalar characters.
     let span = Span::raw(text.as_str());
@@ -190,6 +202,21 @@ mod tests {
     use super::*;
     use crate::config::AppConfig;
     use ratatui::{buffer::Buffer, layout::Alignment};
+
+    #[test]
+    fn multiline_markers_preserve_cursor_positions_and_horizontal_following() {
+        let mut state = AppState::new(&AppConfig::default());
+        state.input = "é\n猫\nend".into();
+        for (cursor, expected_width) in [(0, 0), (2, 1), (3, 2), (6, 4), (7, 5), (10, 8)] {
+            state.cursor = cursor;
+            let viewport = input_viewport(&state, 20);
+            assert_eq!(viewport.text, "é↵猫↵end");
+            assert_eq!(viewport.cursor_width, expected_width);
+        }
+        state.cursor = state.input.len();
+        assert_eq!(input_viewport(&state, 3).text, "end");
+        assert!(input_viewport(&state, 0).text.is_empty());
+    }
 
     #[test]
     fn aligned_cursor_matches_rendered_text_for_parities_unicode_and_end() {

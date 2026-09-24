@@ -186,24 +186,26 @@ impl KeyBinding {
             return false;
         }
         // These keys are consumed by input::handle_key regardless of modifiers.
-        matches!(
-            self.code,
-            KeyCode::Enter
-                | KeyCode::Esc
-                | KeyCode::Tab
-                | KeyCode::Backspace
-                | KeyCode::Delete
-                | KeyCode::Left
-                | KeyCode::Right
-                | KeyCode::Home
-                | KeyCode::End
-                | KeyCode::Up
-                | KeyCode::Down
-                | KeyCode::PageUp
-                | KeyCode::PageDown
-                | KeyCode::F(2)
-        ) || (self.modifiers.contains(KeyModifiers::CONTROL)
-            && matches!(self.code, KeyCode::Char('e' | 'l' | 'f' | 'n' | 'p')))
+        crate::input::is_word_edit_key(KeyEvent::new(self.code, self.modifiers))
+            || matches!(
+                self.code,
+                KeyCode::Enter
+                    | KeyCode::Esc
+                    | KeyCode::Tab
+                    | KeyCode::Backspace
+                    | KeyCode::Delete
+                    | KeyCode::Left
+                    | KeyCode::Right
+                    | KeyCode::Home
+                    | KeyCode::End
+                    | KeyCode::Up
+                    | KeyCode::Down
+                    | KeyCode::PageUp
+                    | KeyCode::PageDown
+                    | KeyCode::F(2)
+            )
+            || (self.modifiers.contains(KeyModifiers::CONTROL)
+                && matches!(self.code, KeyCode::Char('e' | 'l' | 'f' | 'n' | 'p')))
     }
 }
 
@@ -272,6 +274,12 @@ impl MacroEngine {
         count
     }
 
+    pub fn runtime_configs(&self) -> Vec<MacroRule> {
+        let mut rules = self.runtime.values().cloned().collect::<Vec<_>>();
+        rules.sort_by(|left, right| left.key.cmp(&right.key));
+        rules
+    }
+
     pub fn action(&self, event: KeyEvent, searching: bool) -> Option<MacroAction<'_>> {
         if searching || event.kind == KeyEventKind::Release {
             return None;
@@ -332,6 +340,34 @@ impl MacroEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn word_shortcuts_require_explicit_macro_override() {
+        for key in [
+            "Ctrl+Left",
+            "Ctrl+Right",
+            "Ctrl+Backspace",
+            "Alt+Backspace",
+            "Ctrl+Delete",
+            "Ctrl+w",
+            "Alt+b",
+            "Alt+f",
+            "Alt+d",
+        ] {
+            let mut engine = MacroEngine::default();
+            assert!(engine.add(rule(key, "look")).is_err(), "{key}");
+            let mut binding = rule(key, "look");
+            binding.override_builtin = true;
+            engine.add(binding).unwrap();
+            let parsed = KeyBinding::parse(key).unwrap();
+            let event = KeyEvent::new(parsed.code, parsed.modifiers);
+            assert_eq!(
+                engine.action(event, false),
+                Some(MacroAction::Execute("look"))
+            );
+            assert_eq!(engine.action(event, true), None);
+        }
+    }
 
     fn rule(key: &str, command: &str) -> MacroRule {
         MacroRule {

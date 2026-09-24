@@ -747,48 +747,60 @@ Validation: 403 tests passed; optional timing probe passed separately. Formattin
 
 ### 53. Persistent Runtime Settings
 
-Status: `Next`
+Status: `Done`
 
-- Save in-game macros, aliases, triggers, and highlights for reuse after restart.
+- Save in-game variables, macros, aliases, triggers, and highlights for reuse after restart.
 - Define how saved overrides merge with configured rules, including removal and reload behavior.
 - Preserve unrelated configuration; use atomic writes and actionable save errors.
 - Test save/load round trips, conflicts, invalid data, and failed writes; document the workflow.
 
-### 54. Persistent Command History
+Implemented explicit `/save` with a versioned `.runtime.toml` sidecar, transactional startup restoration, background atomic writes, conflict detection, and bounded storage. Main configuration is untouched; `/reload` preserves live runtime edits. Runtime variables restore in bulk before dependent rules and Lua initialization, preserving templates and override ownership. History, handlers, timers, and transient execution state are excluded.
 
-Status: `Planned`
+Variable persistence follow-up: 458 tests passed; one optional probe ignored. Covered the `food` alias failure, forward references, raw-template preservation, overrides/removals, invalid snapshots, expansion/count limits, old snapshots, character isolation, and startup/profile Lua initialization. Thranduil, Magus, and Sauron completed reviews; documentation includes plain-text-value warnings and save-completion guidance. Formatting/diff checks passed; strict Clippy retains four existing warnings.
 
-- Restore bounded command history across sessions while retaining prefix navigation.
-- Provide clear/disable controls and a policy to exclude sensitive input.
-- Test restart behavior, history limits, and missing or malformed history files.
+Validation: 428 tests passed; one optional timing probe ignored. PTY save/restart verification passed, including restored macro/alias execution and terminal restoration. Formatting and diff checks passed. Thranduil, Magus, and Sauron completed reviews; fixed unknown nested fields being silently discarded and stale persistence wording. Sudden-power-loss durability is not guaranteed without parent-directory syncing (documented). Typed filesystem error sources remain a low-priority improvement; messages retain path and error details. Strict Clippy retains four pre-existing warnings.
 
-### 55. Character and Server Profiles
+### 55. Character Profiles
 
-Status: `Planned`
+Status: `Done`
 
-- Select character/server-specific connections, automation, and settings.
+- Select character-specific automation and settings for the existing MUD; connection settings stay shared (no server profiles).
 - Add explicit CLI configuration selection and define shared defaults versus profile overrides.
-- Keep history and saved runtime settings isolated by profile; test selection and invalid profiles.
+- Keep saved runtime settings isolated by profile; test selection and invalid profiles.
+
+Implemented lowercase `characters/name.toml` overlays, automatically selected by MSDP character-name changes; `--character NAME` can preselect startup settings. Missing profiles silently use shared configuration. Tables merge recursively; arrays replace shared arrays. Connections remain shared (no server profiles). Runtime sidecars and cached unsaved automation are isolated per profile. Pending saves finish for the outgoing profile; timers/path recording are cancelled on character changes. `/reload` detects profile creation/deletion. Map/Lua resource paths retain the shared config root; the live map stays shared. RoTS reports identity after entering the game, not at the account menu.
+
+Validation: 437 tests passed; one optional timing probe ignored. PTY checks passed for character selection, isolated saves, restart/reload, and terminal restoration. Formatting/diff checks passed. Thranduil, Magus, and Sauron completed reviews; fixed reserved-name portability and merged-config error attribution. Strict Clippy retains four existing warnings. Pre-existing partial-update behavior on Lua reload failure remains outside this slice.
+
+Automatic-selection follow-up: 445 tests passed; one optional probe ignored. Added MSDP event regressions for profile/unprofiled transitions, duplicate names, silent fallback, unsaved edits, pending save ownership, invalid profiles, same-character reload, and incoming Lua initialization. Required reviewers completed; fixed stale game-state retention and outgoing Lua identity exposure. Startup-owned terminal/network/logging/map-load settings do not reinitialize on profile switches (documented).
 
 ### 56. Paste Handling and Multiline Input
 
-Status: `Planned`
+Status: `Done`
 
 - Handle bracketed paste as text instead of dispatching pasted characters as shortcuts or macros.
 - Support configurable multiline editing with explicit submission behavior.
 - Prevent accidental command execution from pasted newlines; test Unicode, size limits, and terminal fallback behavior.
 
+Implemented bracketed-paste lifecycle and dedicated text events, bypassing macros/shortcuts. Default paste converts newlines to spaces; optional `[terminal] multiline_input = true` preserves logical lines, with Alt+Enter insertion, visible `↵` markers, horizontal cursor following, and Enter submission of nonblank commands in order. The input pane remains compact. Paste and resulting draft sizes are capped at 64 KiB; normalized drafts/submissions at 128 lines. Oversized pastes are rejected atomically; search paste never submits.
+
+Validation: 456 tests passed; one optional timing probe ignored. PTY checks verified no pasted quit/macro execution, explicit multiline submission, Alt+Enter, and terminal restoration. Thranduil, Magus, and Sauron completed reviews; fixed blank-multiline submission and added bound-macro precedence coverage. Formatting/diff checks passed; strict Clippy retains four existing warnings. Unsupported terminals/native Windows deliver ordinary keys (no reliable paste protection); Crossterm buffers payloads before the application cap. These limitations are documented in `/help input`.
+
 ### 57. Word-Based Input Editing
 
-Status: `Planned`
+Status: `Done`
 
 - Add word movement and word deletion shortcuts.
 - Preserve Unicode boundaries, command drafts, completion, and history behavior.
 - Document terminal chord limitations and test empty input and cursor boundaries.
 
+Implemented whitespace-delimited word movement (Ctrl-Left/Right, Alt-B/F) and deletion (Ctrl-W, Ctrl/Alt-Backspace, Ctrl-Delete, Alt-D) for command input and output search. Shared UTF-8-safe operations preserve draft/history/completion conventions; built-in macro overrides remain explicit. In-game help includes examples, migration guidance for existing macros, and terminal reporting limitations.
+
+Validation: 466 tests passed; one optional timing probe ignored. Thranduil, Magus, and Sauron completed reviews with no findings. Formatting/diff checks passed; strict Clippy retains the four existing warnings. Coverage includes every UTF-8 character boundary in representative Unicode input, whitespace/newlines, punctuation, empty input, search isolation, selected submissions, history/completion, and macro overrides.
+
 ### 58. Configurable Built-In Shortcuts
 
-Status: `Planned`
+Status: `Next`
 
 - Bind editing, navigation, search, and other client actions through a general keybinding configuration.
 - Define precedence between built-in actions and macros, with protected recovery controls.

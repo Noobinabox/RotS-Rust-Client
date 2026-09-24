@@ -3,8 +3,9 @@ use std::{io, time::Duration};
 use crossterm::{
     cursor,
     event::{
-        DisableMouseCapture, EnableMouseCapture, KeyCode, KeyEvent, KeyModifiers,
-        KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+        DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+        KeyCode, KeyEvent, KeyModifiers, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags,
+        PushKeyboardEnhancementFlags,
     },
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
@@ -43,6 +44,10 @@ impl TerminalGuard {
         } else {
             execute!(stdout, EnterAlternateScreen, cursor::Hide)?;
         }
+        // Native Windows input does not emit Paste events in Crossterm 0.28.
+        if cfg!(unix) {
+            execute!(stdout, EnableBracketedPaste)?;
+        }
         // Unsupported Unix terminals ignore this request. Do not query support:
         // Crossterm 0.28 can wait indefinitely for a partial query response.
         // Its native Windows backend does not implement these commands.
@@ -60,6 +65,9 @@ impl Drop for TerminalGuard {
     fn drop(&mut self) {
         let _ = disable_raw_mode();
         let mut stdout = io::stdout();
+        if cfg!(unix) {
+            let _ = execute!(stdout, DisableBracketedPaste);
+        }
         // Keyboard stacks belong to each screen: pop before leaving alternate screen.
         if self.keyboard_enhancement {
             let _ = execute!(stdout, PopKeyboardEnhancementFlags);
@@ -111,6 +119,18 @@ pub fn spawn_terminal_events(timeout: Duration, tx: mpsc::Sender<AppEvent>) {
                             .blocking_send(AppEvent::Terminal(TerminalEvent::Key(key)))
                             .is_err()
                         {
+                            break;
+                        }
+                    }
+                    Ok(crossterm::event::Event::Paste(text)) => {
+                        // Crossterm has already collected the payload; reject
+                        // oversized values before placing them in our queue.
+                        let event = if text.len() > crate::input::MAX_PASTE_BYTES {
+                            TerminalEvent::PasteTooLarge
+                        } else {
+                            TerminalEvent::Paste(text)
+                        };
+                        if tx.blocking_send(AppEvent::Terminal(event)).is_err() {
                             break;
                         }
                     }

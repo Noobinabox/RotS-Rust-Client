@@ -11,11 +11,15 @@ use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{Frame, layout::Rect};
 use tokio::{sync::mpsc, task::JoinHandle, time::timeout};
 
+mod character_profiles;
 mod formatting;
 mod local_commands;
 mod macros;
 mod mouse;
+#[cfg(test)]
+mod paste_tests;
 mod rendering;
+mod runtime_settings;
 mod social;
 
 pub use self::rendering::render;
@@ -70,6 +74,9 @@ use crate::{
 pub struct App {
     config: AppConfig,
     config_path: Option<PathBuf>,
+    character_path: Option<PathBuf>,
+    msdp_character: Option<String>,
+    character_sessions: BTreeMap<Option<PathBuf>, character_profiles::CharacterSession>,
     config_load_options: ConfigLoadOptions,
     state: AppState,
     theme: Theme,
@@ -83,6 +90,15 @@ pub struct App {
     animations: AnimationScheduler,
     last_terminal_area: Rect,
     panel_cache: crate::ui::panels::PanelCache,
+    runtime_store: crate::persistence::RuntimeStore,
+    runtime_save: Option<
+        JoinHandle<
+            std::result::Result<
+                crate::persistence::RuntimeStore,
+                crate::persistence::PersistenceError,
+            >,
+        >,
+    >,
     full_hd_overrides: LayoutOverrides,
     ultrawide_overrides: LayoutOverrides,
     stacked_overrides: LayoutOverrides,
@@ -120,32 +136,36 @@ impl App {
         config_path: Option<PathBuf>,
         config_load_options: ConfigLoadOptions,
     ) -> Self {
+        Self::new_with_character_source(config, config_path, config_load_options, None)
+    }
+
+    pub fn new_with_character_source(
+        config: AppConfig,
+        config_path: Option<PathBuf>,
+        config_load_options: ConfigLoadOptions,
+        character_path: Option<PathBuf>,
+    ) -> Self {
         let theme = Theme::from_config(&config.colors);
         let mut state = AppState::new(&config);
         Self::load_startup_map(&mut state, &config, config_path.as_deref());
-        let variables = VariableStore::new(&config.variables).unwrap_or_else(|error| {
+        let mut variables = VariableStore::new(&config.variables).unwrap_or_else(|error| {
             tracing::error!(target: "mud_client::app", error = %error, "variable setup failed; variables disabled");
             VariableStore::empty()
         });
-        let aliases =
+        let mut aliases =
             AliasEngine::new_with_variables(&config.aliases, &variables).unwrap_or_else(|error| {
             tracing::error!(target: "mud_client::app", error = %error, "alias setup failed; aliases disabled");
             AliasEngine::disabled()
         });
-        let triggers = TriggerEngine::new_with_variables(&config.triggers, &variables).unwrap_or_else(|error| {
+        let mut triggers = TriggerEngine::new_with_variables(&config.triggers, &variables).unwrap_or_else(|error| {
             tracing::error!(target: "mud_client::app", error = %error, "trigger setup failed; triggers disabled");
             TriggerEngine::disabled()
         });
-        let events = EventEngine::new_with_variables(&config.events, &variables).unwrap_or_else(|error| {
-            tracing::error!(target: "mud_client::app", error = %error, "event setup failed; events disabled");
-            EventEngine::disabled()
-        });
-        let highlights = HighlightEngine::new(&config.highlights).unwrap_or_else(|error| {
+        let mut highlights = HighlightEngine::new(&config.highlights).unwrap_or_else(|error| {
             tracing::error!(target: "mud_client::app", error = %error, "highlight setup failed; highlights disabled");
             HighlightEngine::disabled()
         });
-        let lua = LuaEngine::new(&config.lua, config_path.as_deref(), &state, &variables);
-        let macros = crate::macros::MacroEngine::new(&config.macros).unwrap_or_else(|error| {
+        let mut macros = crate::macros::MacroEngine::new(&config.macros).unwrap_or_else(|error| {
             state.push_output(
                 format!("Macro setup failed: {error}"),
                 OutputCategory::Error,
@@ -153,9 +173,43 @@ impl App {
             crate::macros::MacroEngine::default()
         });
         let animations = AnimationScheduler::new(&config.animation);
+        if let Some(path) = &character_path {
+            state.push_output(
+                format!("Character profile: {}", path.display()),
+                OutputCategory::System,
+            );
+        }
+        let mut runtime_store = crate::persistence::RuntimeStore::new(
+            character_path.as_deref().or(config_path.as_deref()),
+        );
+        match runtime_store.load(&config) {
+            Ok(Some(saved)) => {
+                variables = saved.variables;
+                macros = saved.macros;
+                aliases = saved.aliases;
+                triggers = saved.triggers;
+                highlights = saved.highlights;
+                state.push_output("Loaded saved runtime settings.", OutputCategory::System);
+            }
+            Ok(None) => {}
+            Err(error) => state.push_output(
+                format!(
+                    "Saved runtime settings not loaded: {error}. Configured rules remain active."
+                ),
+                OutputCategory::Error,
+            ),
+        }
+        let events = EventEngine::new_with_variables(&config.events, &variables).unwrap_or_else(|error| {
+            tracing::error!(target: "mud_client::app", error = %error, "event setup failed; events disabled");
+            EventEngine::disabled()
+        });
+        let lua = LuaEngine::new(&config.lua, config_path.as_deref(), &state, &variables);
         Self {
             config,
             config_path,
+            character_path,
+            msdp_character: None,
+            character_sessions: BTreeMap::new(),
             config_load_options,
             state,
             theme,
@@ -169,6 +223,8 @@ impl App {
             animations,
             last_terminal_area: Rect::default(),
             panel_cache: crate::ui::panels::PanelCache::default(),
+            runtime_store,
+            runtime_save: None,
             full_hd_overrides: LayoutOverrides::default(),
             ultrawide_overrides: LayoutOverrides::default(),
             stacked_overrides: LayoutOverrides::default(),
@@ -258,6 +314,9 @@ impl App {
             network_handle.abort();
         }
         self.save_exit_map();
+        if let Some(error) = self.finish_runtime_save().await {
+            return Err(crate::error::MudClientError::ConfigValidation(error));
+        }
         Ok(())
     }
 
@@ -325,6 +384,13 @@ impl App {
                 false
             }
             AppEvent::Timer(TimerEvent::Tick) => {
+                if self
+                    .runtime_save
+                    .as_ref()
+                    .is_some_and(|task| task.is_finished())
+                {
+                    self.finish_runtime_save().await;
+                }
                 self.state.tick_output_status();
                 let now = Instant::now();
                 self.animations.tick(now);
@@ -474,6 +540,21 @@ impl App {
             return false;
         };
         let command = command.trim();
+        if command.split_whitespace().next() == Some("save") {
+            let message = if command == "save" {
+                self.start_runtime_save()
+            } else {
+                Err(
+                    "usage: /save (saves all runtime macros, aliases, triggers, and highlights)"
+                        .into(),
+                )
+            };
+            match message {
+                Ok(message) => self.state.push_output(message, OutputCategory::System),
+                Err(error) => self.state.push_output(error, OutputCategory::Error),
+            }
+            return true;
+        }
         let normalized;
         let command = if let Some(index) = command.find(char::is_whitespace) {
             normalized = format!("{} {}", &command[..index], command[index..].trim_start());
@@ -570,6 +651,7 @@ impl App {
             return true;
         }
         if command == "reload" {
+            self.refresh_character_selection().await;
             match self.reload_config() {
                 Ok(message) => {
                     push_output_lines(&mut self.state, message, OutputCategory::System);
@@ -816,9 +898,12 @@ impl App {
         let show_opponent = self.config.layout.show_opponent;
         let show_group = self.config.layout.show_group;
         let show_social = self.config.layout.show_social;
-        let mut config =
-            AppConfig::load_with_options(self.config_path.clone(), self.config_load_options)
-                .map_err(|error| format!("Config reload failed: {error}"))?;
+        let mut config = AppConfig::load_with_character(
+            self.config_path.clone(),
+            self.character_path.as_deref(),
+            self.config_load_options,
+        )
+        .map_err(|error| format!("Config reload failed: {error}"))?;
         config.layout.show_opponent = show_opponent;
         config.layout.show_group = show_group;
         config.layout.show_social = show_social;
@@ -908,7 +993,7 @@ impl App {
             ));
         }
         if let Some(input) = strip_subcommand(input, "unset") {
-            let fields = parse_braced_fields(input, "alias unset")?;
+            let fields = local_commands::parse_definition_fields(input, "alias unset")?;
             if fields.len() != 1 {
                 return Err("usage: /alias unset {pattern}".to_string());
             }
@@ -921,9 +1006,12 @@ impl App {
             }
             return Err(format!("runtime alias `{}` is not defined", pattern));
         }
-        let fields = parse_braced_fields(input, "alias")?;
+        let fields = local_commands::parse_definition_fields(input, "alias")?;
         if fields.len() < 2 {
-            return Err("usage: /alias {pattern} {command} [{command}...]".to_string());
+            return Err(
+                "usage: /alias pattern command OR /alias {pattern} {command} [{command}...]"
+                    .to_string(),
+            );
         }
         let pattern = fields[0].trim();
         let commands = fields[1..]
@@ -1389,7 +1477,7 @@ impl App {
             return variable_listing(&self.variables);
         }
         if let Some(input) = strip_subcommand(input, "unset") {
-            let fields = parse_braced_fields(input, "variable unset")?;
+            let fields = local_commands::parse_definition_fields(input, "variable unset")?;
             if fields.len() != 1 {
                 return Err("usage: /variable unset {name}".to_string());
             }
@@ -1404,9 +1492,9 @@ impl App {
                 markdown_inline(name)
             ));
         }
-        let fields = parse_braced_fields(input, "variable")?;
+        let fields = local_commands::parse_definition_fields(input, "variable")?;
         if fields.len() != 2 {
-            return Err("usage: /variable {name} {value}".to_string());
+            return Err("usage: /variable name value OR /variable {name} {value}".to_string());
         }
         let name = fields[0].trim();
         let value = fields[1].as_str();
@@ -1561,6 +1649,7 @@ impl App {
                     .push_output_boundary("Connected to RoTS.", OutputCategory::System);
             }
             NetworkEvent::Disconnected => {
+                self.msdp_character = None;
                 self.state.connection = ConnectionStatus::Disconnected;
                 self.mud_ansi_colors.reset();
                 self.state
@@ -1590,6 +1679,17 @@ impl App {
                 self.mud_ansi_colors.reset();
             }
             NetworkEvent::Msdp(frames) => {
+                if let Some(name) = frames
+                    .iter()
+                    .rev()
+                    .find(|frame| {
+                        frame.variable == self.config.msdp.mapping.character_name
+                            || frame.variable == "CHARACTER_NAME"
+                    })
+                    .and_then(|frame| frame.value.as_string())
+                {
+                    self.select_msdp_character(name, &frames).await;
+                }
                 self.state
                     .apply_msdp_frames(&frames, &self.config.msdp.mapping);
             }
@@ -1737,8 +1837,37 @@ impl App {
         // User interaction must never wait for a configured panel refresh.
         self.panel_cache.clear();
         match event {
+            TerminalEvent::Paste(text) => {
+                if let Err(error) = crate::input::insert_paste(
+                    &mut self.state,
+                    &text,
+                    self.config.terminal.multiline_input,
+                ) {
+                    self.state.push_output(error, OutputCategory::Error);
+                }
+                false
+            }
+            TerminalEvent::PasteTooLarge => {
+                self.state.push_output(
+                    "Paste rejected: maximum size is 64 KiB.",
+                    OutputCategory::Error,
+                );
+                false
+            }
             TerminalEvent::Key(key) => {
                 if key.kind == crossterm::event::KeyEventKind::Release {
+                    return false;
+                }
+                if self.config.terminal.multiline_input
+                    && !self.state.output_view.search_active
+                    && key.code == crossterm::event::KeyCode::Enter
+                    && key.modifiers == crossterm::event::KeyModifiers::ALT
+                {
+                    if key.kind != crossterm::event::KeyEventKind::Repeat
+                        && let Err(error) = crate::input::insert_paste(&mut self.state, "\n", true)
+                    {
+                        self.state.push_output(error, OutputCategory::Error);
+                    }
                     return false;
                 }
                 if key
@@ -1762,6 +1891,27 @@ impl App {
                 }
                 match handle_key(&mut self.state, key) {
                     InputAction::None => false,
+                    InputAction::Command(ClientCommand::SendText(text)) if text.contains('\n') => {
+                        if text.split('\n').count() > crate::input::MAX_INPUT_LINES {
+                            self.state.push_output(
+                                "Submission rejected: at most 128 lines are allowed.",
+                                OutputCategory::Error,
+                            );
+                            return false;
+                        }
+                        for line in text.split('\n').filter(|line| !line.trim().is_empty()) {
+                            if self
+                                .handle_command(
+                                    ClientCommand::SendText(line.to_owned()),
+                                    command_tx,
+                                )
+                                .await
+                            {
+                                return true;
+                            }
+                        }
+                        false
+                    }
                     InputAction::Command(command) => self.handle_command(command, command_tx).await,
                     InputAction::ClearOutput => {
                         self.state.clear_output();
@@ -2058,11 +2208,12 @@ impl App {
 
 fn help_text(topic: &str) -> Option<&'static str> {
     match topic.trim().to_ascii_lowercase().as_str() {
+        "save" => Some(include_str!("../docs/commands/save.md")),
         "panels" => Some(include_str!("../docs/commands/panels.md")),
         "macro" | "macros" => Some(include_str!("../docs/commands/macro.md")),
         "" | "commands" => Some(concat!(
             "# Mud Client Help\n\n## Local Commands\n- `/help [topic]` - show client help\n- `/clear` - clear output\n- `/quit` - quit the client\n- `/reload` - reload config from disk\n- `/reconnect` - request a network reconnect\n- `/msdp` - show stored MSDP values\n- `/lua [status|reload|call <function>]` - inspect and run Lua hooks\n- `/echo [--fg <color>] [--bg <color>] <text>` - write styled local output\n- `/variable` - list, set, or unset script variables\n- `/macro` - bind keys to commands; `/help macro` for details\n- `/alias` - list, add, unset, or clear runtime aliases\n- `/triggers` - list, add, unset, or clear runtime text/color triggers\n- `/highlight` - list, add, unset, or clear runtime highlights\n- `/handler` - list, add, unset, or clear runtime event handlers\n- `/event` - inspect or manually emit script events\n- `/toggle group|opponent|social [on|off]` - toggle optional panels for this session\n- `/map <command>` - mapper commands\n\n## Topics\n- `msdp` - stored MSDP values\n- `lua` - Lua scripting hooks and client API\n- `echo` - local styled output\n- `variable` - configured and runtime script variables\n- `map` - room mapping commands\n- `alias` - alias configuration\n- `trigger` - configured output reactions\n- `event` - script event dispatch and handlers\n- `highlight` - configured and runtime output styling\n- `animation` - animation timing and reduced motion\n- `diagnostics` - logging and troubleshooting\n- `toggle` - optional panel toggles\n- `social` - captured communication panel\n- `path` - path finding and path running\n- `output` - scrollback, search, triggers, and highlights\n- `input` - command input controls\n- `config` - runtime configuration notes",
-            "\n- `panels` - panel borders, alignment, themes, and refresh intervals",
+            "\n- `panels` - panel borders, alignment, themes, and refresh intervals\n- `save` - persist runtime rules with `/save`",
         )),
         "msdp" => Some(
             "# MSDP Help\n\n## Usage\n- `/msdp`\n\n## Description\nShows every MSDP variable currently stored by the client. Values are sorted by variable name and reflect the latest MSDP frames received from the MUD.",
@@ -2070,9 +2221,7 @@ fn help_text(topic: &str) -> Option<&'static str> {
         "echo" => Some(
             "# Echo Help\n\n## Usage\n- `/echo <text>`\n- `/echo --fg <color> <text>`\n- `/echo --bg <color> <text>`\n- `/echo --fg=<color> --bg=<color> <text>`\n\n## Description\nWrites text to the MUD output pane without sending it to the server. Colors accept named terminal colors or `#RRGGBB`. Use `--` before text that begins with an option-like token.\n\n## Variables\nDirect input expands `${name}` before execution. Use `$${name}` to display a literal `${name}` reference.\n\n## Examples\n- `/echo Current Target: ${target}`\n- `/echo --fg yellow --bg #101010 Warning: ${target}`",
         ),
-        "variable" | "variables" => Some(
-            "# Variable Help\n\n## Commands\n- `/variable` - list all active variables\n- `/variable {name} {value}` - add or replace a runtime variable\n- `/variable unset {name}` - remove a runtime variable and reveal any configured value\n\n## Interpolation\nUse `${name}` in alias patterns/actions, trigger patterns/actions/events, and event handler patterns/actions. Use `$${name}` for literal `${name}` text. Variables expand before regular-expression compilation and before `{1}` capture substitution.\n\n## Configuration\n- `[variables]` controls `max_expansion_depth` and `max_expanded_bytes`\n- `[variables.values]` defines persistent variables\n\nRuntime variables override configured variables for the current session and survive `/reload`.",
-        ),
+        "variable" | "variables" => Some(include_str!("../docs/commands/variable.md")),
         "lua" => Some(
             "# Lua Help\n\n## Commands\n- `/lua` or `/lua status` - show Lua status\n- `/lua reload` - reload the configured entrypoint\n- `/lua call <function>` - call a Lua function with manual context\n\n## Examples\n- `/lua status`\n- `/lua reload`\n- `/lua call smoke_test`\n\n## Config\n- `[lua] enabled` turns Lua hooks on or off\n- `script_dir` and `entrypoint` locate the startup script\n- `max_actions_per_hook` caps queued client actions\n- `runtime_errors_to_output` controls whether hook failures appear in output\n\n## Hooks\nAdd `lua = \"function_name\"` to an alias rule, trigger rule, or event handler. Lua hooks receive a context table and use the global `client` API to send commands, emit events, read MSDP, inspect output, update variables, run map commands, and toggle UI panels.\n\n## API\n`client.send`, `send_all`, `echo`, `notify`, `log.*`, `var.*`, `msdp.*`, `character.get`, `opponent.get`, `group.list`, `room.current`, `output.recent`, `output.search`, `event.emit`, `event.recent`, `map.*`, `ui.*`, and `time.now_ms` are available. Filesystem, OS, process, package, and debug globals are disabled.\n\n## Docs\nSee `docs/lua-api.md` and `docs/lua-scripting-examples.md`.",
         ),
@@ -2154,9 +2303,7 @@ fn help_text(topic: &str) -> Option<&'static str> {
         "path" | "paths" | "pathing" => Some(
             "# Path Help\n\n## Commands\n- `/path create|destroy|start|stop` - manage movement recording\n- `/path insert <forward> [backward]` - add a path step\n- `/path delete` / `/path undo` - remove the last step\n- `/path describe` - show path length, position, and mapping state\n- `/path get <length|position>` - return path metadata\n- `/path goto <start|end|position>` - select a path position\n- `/path move [forward|backward] [number]` - move the path position without sending a command\n- `/path walk [forward|backward]` - send one path step\n- `/path run` - send the remaining path steps\n- `/path swap` - reverse the path and its directions\n- `/path zip` / `/path unzip <speedwalk>` - convert direction steps\n- `/path map` - show the current map\n- `/path save <forward|backward|both> <variable>` - save steps to a runtime variable\n- `/path load <variable>` - load steps from a runtime variable\n\n`/map find <vnum|name>` and `/map run <vnum|name>` remain the weighted destination-routing commands.",
         ),
-        "alias" | "aliases" => Some(
-            "# Alias Help\n\n## Commands\n- `/alias` - list aliases currently loaded in memory\n- `/alias {pattern} {command} [{command}...]` - add or replace an in-memory alias\n- `/alias unset {pattern}` - remove one runtime alias\n- `/alias clear` - remove all runtime aliases\n\n## Parameters\nUse `{1}` in an alias command to pass the text after the alias pattern.\n\n## Examples\n- `/alias {k} {kill {1}}`\n- `/alias {rr} {recall} {look}`\n- `/alias unset {k}`\n- `/alias clear`\n\nAliases from `config.toml` are loaded at startup. Runtime alias commands only remove session aliases; remove configured aliases from `config.toml` and run `/reload`.",
-        ),
+        "alias" | "aliases" => Some(include_str!("../docs/commands/alias.md")),
         "alias lua" | "aliases lua" => Some(
             "# Alias Lua Help\n\nAdd `lua = \"function_name\"` to an alias rule. The hook receives `ctx.kind`, `ctx.input`, and `ctx.captures`. Use `client.send`, `client.echo`, `client.var.*`, or any other safe client API from the hook. Alias `commands` and Lua hooks are additive.\n\n## Example\nConfig: `pattern = \"^sk\\\\s+(.+)$\"`, `lua = \"smart_kill\"`\nLua: `client.send(\"kill \" .. ctx.captures[1])`",
         ),
@@ -2187,9 +2334,7 @@ fn help_text(topic: &str) -> Option<&'static str> {
         "output" | "scrollback" | "search" => Some(
             "# Output Help\n\n## Scrollback\n- Mouse wheel over MUD output - scroll output\n- Drag a large-layout side divider - resize that pane\n- Drag the Map/MUD Output boundary in mobile or tablet layouts - resize their heights\n- `PageUp` / `PageDown` - scroll output\n- `Ctrl-Up` / `Ctrl-Down` - scroll one line\n- `Ctrl-E` - follow newest output\n- `/clear` - clear output\n\n## Search and Modes\n- `Ctrl-F` - search output\n- `Ctrl-N` / `Ctrl-P` - next or previous search match\n- `F2` - cycle styled, plain, and debug views; the mode indicator appears briefly in the output title\n\n## Automation\n- `/help trigger` - configured output reactions\n- `/help highlight` - configured output styling",
         ),
-        "input" | "keys" => Some(
-            "# Input Help\n\n## Command Editing\n- `Enter` - send command, or send a blank line when input is empty\n- `;` - separate multiple MUD commands in one input\n- `#<count> {command}` - repeat one command or braced command group\n- `Enter` on highlighted last command - resend it\n- Typing while last command is highlighted - replace it\n- `Tab` - complete the current word from recent MUD output\n- `Shift-Tab` - cycle to the previous completion\n- `Up` / `Down` - command history; typed text filters history by prefix\n- `Left` / `Right` / `Home` / `End` - edit input\n- `Ctrl-C` - clear the input line; use `/quit` to exit\n\n## Examples\n- `#10 {kill orc}` sends `kill orc` ten times\n- `#2 {look;score};rest` sends `look`, `score`, `look`, `score`, then `rest` once",
-        ),
+        "input" | "keys" => Some(include_str!("../docs/commands/input.md")),
         "config" => Some(
             "# Config Help\n\nRuntime config is loaded from the platform config path when present.\n\n## Commands\n- `/reload` - reload config from disk and report validation errors in the output pane\n- `/reconnect` - request a network reconnect\n\n## Notes\n- The repository `config.toml` is the parse-tested default example.\n- The default endpoint is `rotsmud.org:3791`.\n- `--local` forces `localhost:3791` even when config points elsewhere.\n- `layout.breakpoints` selects display profiles from terminal-cell dimensions.\n- `layout.mobile` and `layout.tablet` configure stacked map/status behavior.\n- `layout.full_hd` configures the classic sidebar position and width.\n- `layout.ultrawide` configures top, left, and right pane roles and dimensions.\n- Map, MUD output, and command input are required in every display profile.\n- `map.persistence` can load a map file at startup and save it on graceful exit.\n- `panels.*` controls optional panel title, enabled state, minimum size, priority, and responsive visibility.\n- `social.scrollback_lines` controls retained Social panel messages.\n- `variables`, `aliases`, `triggers`, `events`, and `highlights` are loaded from config at startup and reload.\n- `logging.level` controls tracing filters; `logging.raw_protocol` is reserved for protocol diagnostics and should stay off unless debugging.\n- `layout.show_group`, `layout.show_opponent`, and `layout.show_social` control optional panels at startup.\n- `/toggle group|opponent|social [on|off]` changes those optional panels in memory for the current session.",
         ),

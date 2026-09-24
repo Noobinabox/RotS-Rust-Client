@@ -21,4 +21,7 @@ Topics are case-insensitive. Topic aliases are accepted where documented, for ex
 /help path
 /help map door
 /help lua
+/help panels
+/help macro
+/help save
 ```
