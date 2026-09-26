@@ -1,4 +1,3 @@
--- Generated from /home/seth/repos/personal/tintin-rots/bot/areas/*.tt.
 -- Mob text is matched exactly; attack is the TinTin++ mobname.
 bot_areas = {
   ancient = { title = "Ancient Spider",

@@ -15,3 +15,4 @@ This directory is the end-user reference for the terminal MUD client.
 - [Numbered Targeting](targeting.md): standalone Lua room targets and command shortcuts.
 - [Substitutions and Gagging](commands/substitute.md): change or hide displayed server lines.
 - [Troubleshooting](troubleshooting.md): common setup and runtime issues.
+- [Development and Validation](development.md): building from source, `make` targets (including `make install`), and the full validation/CI command sequence.

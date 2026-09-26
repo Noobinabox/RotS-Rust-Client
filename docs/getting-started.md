@@ -39,8 +39,11 @@ Common make targets:
 ```sh
 make help
 make local
+make install
 make ci
 ```
+
+See [Development and Validation](development.md) for every `make` target, its plain Cargo equivalent, and the full pre-change validation sequence.
 
 ## Configuration File
 
