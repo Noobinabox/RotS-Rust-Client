@@ -18,6 +18,26 @@ The current implementation includes:
 - Saves runtime variables, macros, aliases, triggers, and highlights across restarts with [`/save`](docs/commands/save.md), without rewriting the main configuration.
 - Handles bracketed paste without executing pasted commands; optional multiline editing uses Alt+Enter and visible line markers. See [input examples and terminal limitations](docs/commands/input.md#paste-and-multiline-editing).
 
+## Screenshots
+
+The client adapts to terminal dimensions; see [responsive display profiles](#responsive-display-profiles) for layout details.
+
+### Normal
+
+![Normal layout with world information, map, opponent and character gauges beside MUD output](img/normal%20rust-client.png)
+
+### Ultrawide
+
+![Ultrawide layout with world, social and nearby-map dashboard, group gauges and expanded map](img/ultra-wide%20rust-client.png)
+
+### Tablet
+
+![Tablet layout with map above MUD output, compact gauges and command input](img/tablet%20rust-client.png)
+
+### Mobile
+
+![Mobile layout with a compact map above MUD output and command input](img/mobile%20rust-client.png)
+
 ## Run
 
 ```sh
