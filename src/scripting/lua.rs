@@ -22,6 +22,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LuaAction {
     Send(String),
+    Execute(String),
     Echo(String, Option<LuaOutputOptions>),
     Notify(String, Option<LuaOutputOptions>),
     Log(LuaLogLevel, String),
@@ -36,6 +37,8 @@ pub enum LuaAction {
         repeat: bool,
     },
     CancelTimer(String),
+    ReplaceLine(String),
+    GagLine,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -103,7 +106,7 @@ pub struct LuaEngine {
     actions: Rc<LuaActionQueue>,
     snapshot: Rc<RefCell<LuaSnapshot>>,
     instruction_budget: u32,
-    loaded_path: Option<PathBuf>,
+    loaded_paths: Vec<PathBuf>,
     last_error: Option<String>,
 }
 
@@ -115,10 +118,12 @@ impl LuaEngine {
         variables: &VariableStore,
     ) -> Self {
         let mut engine = Self::empty(config, state, variables);
-        if config.enabled {
-            if let Err(error) = engine.load_entrypoint(config, config_path) {
-                engine.last_error = Some(error);
-            }
+        if config.enabled
+            && let Err(error) = engine.load_entrypoint(config, config_path)
+        {
+            engine.enabled = false;
+            engine.actions.clear();
+            engine.last_error = Some(error);
         }
         engine
     }
@@ -145,7 +150,7 @@ impl LuaEngine {
             actions,
             snapshot,
             instruction_budget: config.instruction_budget,
-            loaded_path: None,
+            loaded_paths: Vec::new(),
             last_error: None,
         };
         if let Err(error) = engine.install_client_api() {
@@ -162,29 +167,34 @@ impl LuaEngine {
         state: &AppState,
         variables: &VariableStore,
     ) -> Result<String, String> {
-        *self = Self::empty(config, state, variables);
+        let mut replacement = Self::empty(config, state, variables);
         if !config.enabled {
+            *self = replacement;
             return Ok("Lua disabled.".to_string());
         }
-        self.load_entrypoint(config, config_path)?;
-        Ok(format!(
-            "Lua loaded from {}.",
-            self.loaded_path
-                .as_ref()
-                .map(|path| path.display().to_string())
-                .unwrap_or_else(|| "no entrypoint".to_string())
-        ))
+        replacement.load_entrypoint(config, config_path)?;
+        *self = replacement;
+        Ok(self.status())
     }
 
     pub fn status(&self) -> String {
         if !self.enabled {
-            return "Lua disabled.".to_string();
+            return match &self.last_error {
+                Some(error) => format!("Lua disabled.\nLast error: {error}"),
+                None => "Lua disabled.".to_string(),
+            };
         }
         let loaded = self
-            .loaded_path
-            .as_ref()
+            .loaded_paths
+            .iter()
             .map(|path| path.display().to_string())
-            .unwrap_or_else(|| "no entrypoint loaded".to_string());
+            .collect::<Vec<_>>()
+            .join(", ");
+        let loaded = if loaded.is_empty() {
+            "no scripts loaded"
+        } else {
+            &loaded
+        };
         match &self.last_error {
             Some(error) => format!("Lua enabled.\nLoaded: {loaded}\nLast error: {error}"),
             None => format!("Lua enabled.\nLoaded: {loaded}"),
@@ -205,6 +215,7 @@ impl LuaEngine {
         }
         *self.snapshot.borrow_mut() = snapshot_from_state(state, variables);
         self.actions.clear();
+        let allow_line_edits = context.kind == "trigger" && context.line.is_some();
         let function_value = self
             .lua
             .globals()
@@ -233,9 +244,14 @@ impl LuaEngine {
                 }
             })
             .map_err(|error| format!("Lua hook `{function}` budget setup failed: {error}"))?;
+        self.actions.allow_line_edits.set(allow_line_edits);
         let call_result = function_value.call::<()>(context);
         self.lua.remove_hook();
-        call_result.map_err(|error| format!("Lua hook `{function}` failed: {error}"))?;
+        self.actions.allow_line_edits.set(false);
+        if let Err(error) = call_result {
+            self.actions.clear();
+            return Err(format!("Lua hook `{function}` failed: {error}"));
+        }
         Ok(LuaCallResult {
             actions: self.actions.take(),
         })
@@ -246,48 +262,67 @@ impl LuaEngine {
         config: &LuaConfig,
         config_path: Option<&Path>,
     ) -> Result<(), String> {
-        let path = lua_entrypoint_path(config, config_path);
-        if !path.exists() {
-            self.loaded_path = None;
-            self.last_error = None;
+        if let Some(error) = &self.last_error {
+            return Err(error.clone());
+        }
+        let names = config
+            .scripts
+            .clone()
+            .unwrap_or_else(|| vec![config.entrypoint.clone()]);
+        if names.is_empty() || names.iter().any(|name| name.trim().is_empty()) {
+            return Err("Lua scripts must contain at least one nonempty script path".into());
+        }
+        let remaining = Rc::new(Cell::new(self.instruction_budget));
+        self.lua
+            .set_hook(HookTriggers::new().every_nth_instruction(1), move |_, _| {
+                let next = remaining.get().saturating_sub(1);
+                remaining.set(next);
+                if next == 0 {
+                    Err(LuaError::RuntimeError(
+                        "Lua instruction budget exceeded".to_string(),
+                    ))
+                } else {
+                    Ok(VmState::Continue)
+                }
+            })
+            .map_err(|error| format!("Lua script budget setup failed: {error}"))?;
+        let result: Result<(), String> = (|| {
+            for name in names {
+                let path = lua_script_path(config, config_path, &name);
+                if config.scripts.is_none() && !path.exists() {
+                    continue;
+                }
+                if path.file_name().and_then(|name| name.to_str()) == Some("bot.lua") {
+                    let companion = path.with_file_name("bot_areas.lua");
+                    if companion.exists() {
+                        self.load_script(&companion)?;
+                    }
+                }
+                self.load_script(&path)?;
+            }
+            Ok(())
+        })();
+        self.lua.remove_hook();
+        self.actions.clear();
+        result?;
+        self.last_error = None;
+        Ok(())
+    }
+
+    fn load_script(&mut self, path: &Path) -> Result<(), String> {
+        let path = fs::canonicalize(path)
+            .map_err(|error| format!("failed to locate Lua script {}: {error}", path.display()))?;
+        if self.loaded_paths.contains(&path) {
             return Ok(());
         }
-        let source = fs::read_to_string(&path).map_err(|error| {
-            format!("failed to read Lua entrypoint {}: {error}", path.display())
-        })?;
-        if path.file_name().and_then(|name| name.to_str()) == Some("bot.lua") {
-            let areas_path = path.with_file_name("bot_areas.lua");
-            if areas_path.exists() {
-                let areas = fs::read_to_string(&areas_path).map_err(|error| {
-                    format!(
-                        "failed to read Lua bot areas {}: {error}",
-                        areas_path.display()
-                    )
-                })?;
-                self.lua
-                    .load(&areas)
-                    .set_name(areas_path.to_string_lossy().as_ref())
-                    .exec()
-                    .map_err(|error| {
-                        format!(
-                            "failed to execute Lua bot areas {}: {error}",
-                            areas_path.display()
-                        )
-                    })?;
-            }
-        }
+        let source = fs::read_to_string(&path)
+            .map_err(|error| format!("failed to read Lua script {}: {error}", path.display()))?;
         self.lua
             .load(&source)
             .set_name(path.to_string_lossy().as_ref())
             .exec()
-            .map_err(|error| {
-                format!(
-                    "failed to execute Lua entrypoint {}: {error}",
-                    path.display()
-                )
-            })?;
-        self.loaded_path = Some(path);
-        self.last_error = None;
+            .map_err(|error| format!("failed to execute Lua script {}: {error}", path.display()))?;
+        self.loaded_paths.push(path);
         Ok(())
     }
 
@@ -296,7 +331,11 @@ impl LuaEngine {
         let client = self.lua.create_table()?;
         client.set(
             "send",
-            action_function(&self.lua, &self.actions, |text| LuaAction::Send(text))?,
+            action_function(&self.lua, &self.actions, LuaAction::Send)?,
+        )?;
+        client.set(
+            "execute",
+            action_function(&self.lua, &self.actions, LuaAction::Execute)?,
         )?;
         client.set(
             "send_all",
@@ -332,7 +371,36 @@ impl LuaEngine {
         )?;
         client.set("group", group_table(&self.lua, &self.snapshot)?)?;
         client.set("room", room_table(&self.lua, &self.snapshot)?)?;
-        client.set("output", output_read_table(&self.lua, &self.snapshot)?)?;
+        let output = output_read_table(&self.lua, &self.snapshot)?;
+        output.set(
+            "replace",
+            self.lua.create_function({
+                let actions = Rc::clone(&self.actions);
+                move |_, text: String| {
+                    actions.require_line_context()?;
+                    if text.len() > 65_536 || text.contains(['\r', '\n']) {
+                        return Err(LuaError::RuntimeError(
+                            "output replacement must be a single line of at most 65536 bytes"
+                                .into(),
+                        ));
+                    }
+                    actions.push(LuaAction::ReplaceLine(text));
+                    Ok(())
+                }
+            })?,
+        )?;
+        output.set(
+            "gag",
+            self.lua.create_function({
+                let actions = Rc::clone(&self.actions);
+                move |_, ()| {
+                    actions.require_line_context()?;
+                    actions.push(LuaAction::GagLine);
+                    Ok(())
+                }
+            })?,
+        )?;
+        client.set("output", output)?;
         client.set(
             "event",
             event_table(&self.lua, &self.actions, &self.snapshot)?,
@@ -399,7 +467,12 @@ fn remove_unsafe_globals(lua: &Lua) -> mlua::Result<()> {
     Ok(())
 }
 
+#[cfg(test)]
 fn lua_entrypoint_path(config: &LuaConfig, config_path: Option<&Path>) -> PathBuf {
+    lua_script_path(config, config_path, &config.entrypoint)
+}
+
+fn lua_script_path(config: &LuaConfig, config_path: Option<&Path>, name: &str) -> PathBuf {
     let script_dir = PathBuf::from(&config.script_dir);
     let base = if script_dir.is_absolute() {
         script_dir
@@ -412,13 +485,14 @@ fn lua_entrypoint_path(config: &LuaConfig, config_path: Option<&Path>) -> PathBu
     } else {
         script_dir
     };
-    base.join(&config.entrypoint)
+    base.join(name)
 }
 
 #[derive(Debug)]
 struct LuaActionQueue {
     actions: RefCell<Vec<LuaAction>>,
     max_actions: usize,
+    allow_line_edits: Cell<bool>,
 }
 
 impl LuaActionQueue {
@@ -426,6 +500,17 @@ impl LuaActionQueue {
         Self {
             actions: RefCell::new(Vec::new()),
             max_actions,
+            allow_line_edits: Cell::new(false),
+        }
+    }
+
+    fn require_line_context(&self) -> mlua::Result<()> {
+        if self.allow_line_edits.get() {
+            Ok(())
+        } else {
+            Err(LuaError::RuntimeError(
+                "client.output edits require an incoming-line trigger context".into(),
+            ))
         }
     }
 
@@ -906,7 +991,13 @@ fn snapshot_from_state(state: &AppState, variables: &VariableStore) -> LuaSnapsh
         output: state
             .output
             .iter()
-            .map(|line| line.normalized.clone())
+            .map(|line| {
+                if line.source_id.is_some() {
+                    crate::state::plain_text(&line.raw)
+                } else {
+                    line.normalized.clone()
+                }
+            })
             .collect(),
         events: state
             .script_events
@@ -1213,6 +1304,26 @@ mod tests {
     use super::{LuaAction, LuaEngine, LuaHookContext, lua_entrypoint_path};
 
     #[test]
+    fn lua_execute_is_distinct_from_direct_send() {
+        let (config, path) = lua_config_with_script(
+            "function commands() client.execute('p 1.orc'); client.send('p 1.orc') end",
+        );
+        let state = AppState::new(&AppConfig::default());
+        let variables = VariableStore::empty();
+        let mut engine = LuaEngine::new(&config, Some(&path), &state, &variables);
+        let result = engine
+            .call_hook("commands", LuaHookContext::default(), &state, &variables)
+            .unwrap();
+        assert_eq!(
+            result.actions,
+            vec![
+                LuaAction::Execute("p 1.orc".into()),
+                LuaAction::Send("p 1.orc".into())
+            ]
+        );
+    }
+
+    #[test]
     fn lua_hook_collects_client_actions() {
         let (config, config_path) = lua_config_with_script(
             r#"
@@ -1419,6 +1530,179 @@ end
             .expect_err("budget should stop runaway hooks");
 
         assert!(error.contains("instruction budget"));
+    }
+
+    #[test]
+    fn ordered_scripts_share_globals_and_deduplicate_companions() {
+        let (mut config, path) = lua_config_with_script("error('legacy must not run')");
+        let directory = std::path::Path::new(&config.script_dir);
+        fs::write(directory.join("bot_areas.lua"), "count = (count or 0) + 1").unwrap();
+        fs::write(
+            directory.join("bot.lua"),
+            "function check() client.echo(tostring(count)) end",
+        )
+        .unwrap();
+        config.scripts = Some(vec![
+            "bot_areas.lua".into(),
+            "./bot_areas.lua".into(),
+            "bot.lua".into(),
+        ]);
+        let state = AppState::new(&AppConfig::default());
+        let variables = VariableStore::empty();
+        let mut engine = LuaEngine::new(&config, Some(&path), &state, &variables);
+        let result = engine
+            .call_hook("check", LuaHookContext::default(), &state, &variables)
+            .unwrap();
+        assert_eq!(result.actions, vec![LuaAction::Echo("1".into(), None)]);
+        assert_eq!(engine.loaded_paths.len(), 2);
+        assert!(engine.status().contains("bot.lua"));
+        assert!(engine.status().contains("bot_areas.lua"));
+    }
+
+    #[test]
+    fn failed_reload_preserves_previous_functions() {
+        let (mut config, path) = lua_config_with_script("function check() client.echo('old') end");
+        let state = AppState::new(&AppConfig::default());
+        let variables = VariableStore::empty();
+        let mut engine = LuaEngine::new(&config, Some(&path), &state, &variables);
+        config.scripts = Some(vec!["missing.lua".into()]);
+        assert!(
+            engine
+                .reload(&config, Some(&path), &state, &variables)
+                .is_err()
+        );
+        let result = engine
+            .call_hook("check", LuaHookContext::default(), &state, &variables)
+            .unwrap();
+        assert_eq!(result.actions, vec![LuaAction::Echo("old".into(), None)]);
+    }
+
+    #[test]
+    fn startup_failure_disables_partial_functions_and_actions() {
+        let (config, path) = lua_config_with_script(
+            "function check() client.send('unsafe') end; client.send('queued'); error('failed')",
+        );
+        let state = AppState::new(&AppConfig::default());
+        let variables = VariableStore::empty();
+        let mut engine = LuaEngine::new(&config, Some(&path), &state, &variables);
+        assert!(engine.status().contains("Lua disabled."));
+        assert!(engine.status().contains("failed"));
+        assert!(engine.actions.take().is_empty());
+        assert!(
+            engine
+                .call_hook("check", LuaHookContext::default(), &state, &variables)
+                .unwrap()
+                .actions
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn script_loading_has_instruction_budget() {
+        let (mut config, path) = lua_config_with_script("while true do end");
+        config.instruction_budget = 64;
+        let state = AppState::new(&AppConfig::default());
+        let variables = VariableStore::empty();
+        let engine = LuaEngine::new(&config, Some(&path), &state, &variables);
+        assert!(engine.status().contains("instruction budget"));
+    }
+
+    #[test]
+    fn output_edits_require_incoming_trigger_and_failed_hooks_discard_actions() {
+        let (config, path) = lua_config_with_script(
+            "function edit() client.echo('queued'); client.output.replace('new'); client.output.gag() end; function fail() client.output.gag(); error('failed') end",
+        );
+        let state = AppState::new(&AppConfig::default());
+        let variables = VariableStore::empty();
+        let mut engine = LuaEngine::new(&config, Some(&path), &state, &variables);
+        for kind in ["manual", "alias", "timer", "event"] {
+            let context = LuaHookContext {
+                kind: kind.into(),
+                line: Some("old".into()),
+                ..LuaHookContext::default()
+            };
+            assert!(
+                engine
+                    .call_hook("edit", context, &state, &variables)
+                    .is_err()
+            );
+            assert!(engine.actions.take().is_empty());
+        }
+        let context = LuaHookContext {
+            kind: "trigger".into(),
+            ..LuaHookContext::default()
+        };
+        assert!(
+            engine
+                .call_hook("edit", context, &state, &variables)
+                .is_err()
+        );
+        let context = LuaHookContext {
+            kind: "trigger".into(),
+            line: Some("old".into()),
+            ..LuaHookContext::default()
+        };
+        let result = engine
+            .call_hook("edit", context.clone(), &state, &variables)
+            .unwrap();
+        assert_eq!(
+            result.actions,
+            vec![
+                LuaAction::Echo("queued".into(), None),
+                LuaAction::ReplaceLine("new".into()),
+                LuaAction::GagLine
+            ]
+        );
+        assert!(
+            engine
+                .call_hook("fail", context, &state, &variables)
+                .is_err()
+        );
+        assert!(engine.actions.take().is_empty());
+    }
+
+    #[test]
+    fn script_list_validation_rejects_empty_paths_and_allows_entrypoint_override() {
+        let mut config = AppConfig::default();
+        config.lua.entrypoint.clear();
+        config.lua.scripts = Some(vec!["one.lua".into()]);
+        assert!(config.validate().is_ok());
+        for scripts in [vec![], vec![" ".into()]] {
+            config.lua.scripts = Some(scripts);
+            assert!(config.validate().is_err());
+        }
+    }
+
+    #[test]
+    fn output_replacement_rejects_multiline_and_oversized_text() {
+        let (config, path) =
+            lua_config_with_script("function edit(ctx) client.output.replace(ctx.line) end");
+        let state = AppState::new(&AppConfig::default());
+        let variables = VariableStore::empty();
+        let mut engine = LuaEngine::new(&config, Some(&path), &state, &variables);
+        for line in ["two\nlines".into(), "bad\rline".into(), "x".repeat(65_537)] {
+            let context = LuaHookContext {
+                kind: "trigger".into(),
+                line: Some(line),
+                ..LuaHookContext::default()
+            };
+            assert!(
+                engine
+                    .call_hook("edit", context, &state, &variables)
+                    .is_err()
+            );
+            assert!(engine.actions.take().is_empty());
+        }
+        let context = LuaHookContext {
+            kind: "trigger".into(),
+            line: Some("x".repeat(65_536)),
+            ..LuaHookContext::default()
+        };
+        assert!(
+            engine
+                .call_hook("edit", context, &state, &variables)
+                .is_ok()
+        );
     }
 
     fn lua_config_with_script(source: &str) -> (LuaConfig, std::path::PathBuf) {

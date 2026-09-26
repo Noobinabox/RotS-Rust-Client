@@ -444,10 +444,30 @@ match_type = "regex"
 pattern = "^runto\\s+(.+)$"
 lua = "run_path"
 
+# Color-based RoTS targeting; see docs/targeting.md.
+[[aliases.rules]]
+name = "targeting-actions"
+match_type = "regex"
+pattern = "^[pflcabkqxhiy](?:[0-9]+|t)$"
+lua = "targeting_action"
+
+[[aliases.rules]]
+name = "targeting-list"
+match_type = "exact"
+pattern = "vt"
+lua = "targeting_list"
+
+[[aliases.rules]]
+name = "targeting-manual"
+match_type = "regex"
+pattern = "^target(?:\\s+.*)?$"
+lua = "targeting_manual"
+
 [lua]
 enabled = true
 script_dir = "scripts"
 entrypoint = "init.lua"
+scripts = ["init.lua", "targeting.lua"]
 instruction_budget = 100000
 max_actions_per_hook = 32
 runtime_errors_to_output = true
@@ -474,6 +494,40 @@ name = "needs-warning"
 match_type = "regex"
 pattern = "^You are (hungry|thirsty)\\."
 lua = "needs_warning"
+
+# Server room titles must be bright yellow, mobile lines bright cyan.
+[[triggers.rules]]
+name = "targeting-room-header"
+match_type = "regex"
+pattern = "^.+$"
+foreground = "lightyellow"
+categories = ["normal"]
+priority = 100
+lua = "targeting_reset"
+
+[[triggers.rules]]
+name = "targeting-word-of-sight"
+match_type = "plain"
+pattern = "Your mind probes the area seeking other souls."
+categories = ["normal"]
+priority = 100
+lua = "targeting_reset"
+
+[[triggers.rules]]
+name = "targeting-reveal"
+match_type = "plain"
+pattern = "A surge of light reveals to you every corner of the room."
+categories = ["normal"]
+priority = 100
+lua = "targeting_reset"
+
+[[triggers.rules]]
+name = "targeting-mobile"
+match_type = "regex"
+pattern = "^.+$"
+foreground = "lightcyan"
+categories = ["normal"]
+lua = "targeting_observe"
 
 # Optional ANSI color filters:
 # foreground = "lightred"

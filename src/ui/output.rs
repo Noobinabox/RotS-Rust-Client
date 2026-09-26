@@ -275,6 +275,14 @@ fn ansi_lines(
         if line.starts_new_output {
             mud_style = Style::new().fg(default_fg);
         }
+        if let Some(prefix) = &line.source_prefix {
+            AnsiParser {
+                remaining: prefix,
+                style: &mut mud_style,
+                default_fg,
+            }
+            .scan(false);
+        }
         if index < visible_start {
             if matches!(
                 line.category,
@@ -728,6 +736,8 @@ mod tests {
 
     fn output_line(value: &str, category: OutputCategory) -> OutputLine {
         OutputLine {
+            source_id: None,
+            source_prefix: None,
             raw: value.to_string(),
             normalized: value.to_string(),
             category,

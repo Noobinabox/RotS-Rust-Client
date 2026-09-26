@@ -10,4 +10,6 @@ This directory is the end-user reference for the terminal MUD client.
 - [Scripting](scripting.md): variables, aliases, triggers, highlights, events, Lua hooks, and safety limits.
 - [Lua API Reference](lua-api.md): every exposed `client` API, hook context, editor-completion setup, and examples.
 - [Lua Scripting Examples](lua-scripting-examples.md): copy-ready Lua alias, trigger, and event examples.
+- [Numbered Targeting](targeting.md): standalone Lua room targets and command shortcuts.
+- [Substitutions and Gagging](commands/substitute.md): change or hide displayed server lines.
 - [Troubleshooting](troubleshooting.md): common setup and runtime issues.

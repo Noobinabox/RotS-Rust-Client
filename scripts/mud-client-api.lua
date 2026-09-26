@@ -145,6 +145,8 @@
 ---@class MudOutputApi
 ---@field recent fun(limit?: integer): string[] Return recent normalized output lines. Default limit is 20.
 ---@field search fun(pattern: string): string[] Return normalized output lines containing the literal pattern.
+---@field replace fun(text: string) Replace this incoming line with single-line text; incoming-line trigger hooks only.
+---@field gag fun() Hide this incoming line; incoming-line trigger hooks only.
 
 ---@class MudEventApi
 ---@field emit fun(name: string, source?: string) Queue a script event for dispatch.
@@ -173,8 +175,9 @@
 
 ---Global client API available inside configured Lua hooks.
 ---@class MudClientApi
----@field send fun(command: string) Queue one MUD command through the normal command pipeline.
----@field send_all fun(commands: string[]) Queue several MUD commands through the normal command pipeline.
+---@field send fun(command: string) Queue one MUD command directly, without expanding aliases.
+---@field send_all fun(commands: string[]) Queue several MUD commands directly, without expanding aliases.
+---@field execute fun(command: string) Queue typed command input through aliases and local commands, subject to the current dispatch budget.
 ---@field echo fun(text: string, opts?: MudOutputOptions) Queue local output in the normal output pane.
 ---@field notify fun(text: string, opts?: MudOutputOptions) Queue a triggered local notification.
 ---@field log MudLogApi Logging action helpers.

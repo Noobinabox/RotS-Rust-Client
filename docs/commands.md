@@ -12,7 +12,7 @@ Type one command at a time into the client and press Enter. These are independen
 | Clear | `/clear` | Removes retained output; does not disconnect. |
 | Quit | `/quit` | Disconnects and closes the client. |
 | Reload | `/reload` | Applies your saved configuration changes. |
-| Save | `/save` | Saves current runtime variables, macros, aliases, triggers, and highlights for restart. |
+| Save | `/save` | Saves current runtime variables, macros, aliases, triggers, highlights, and substitutions for restart. |
 | Reconnect | `/reconnect` | Reports a request only; currently requires a client restart to reconnect. |
 | MSDP | `/msdp` | Shows server variables received so far. |
 | Toggle | `/toggle group on` | Enables the Group panel where the layout allows it. |
@@ -22,6 +22,7 @@ Type one command at a time into the client and press Enter. These are independen
 | Alias | `/alias {rr} {look}` | Makes typing `rr` send `look`. |
 | Trigger | `/triggers plain {You are hungry} {eat bread}` | Sends `eat bread` when matching server output arrives. |
 | Highlight | `/highlight {You are hit} {red}` | Colors matching output red. |
+| [Substitute](commands/substitute.md) | `/substitute plain {orc} {enemy}` | Replaces displayed text without changing trigger input. |
 | Event | `/event {ExampleNotice}` | Emits a local event; matching handlers may execute commands. |
 | Handler | `/handler {ExampleNotice} {/echo Event received}` | Prints a message when you subsequently emit `ExampleNotice`. |
 | Lua | `/lua status` | Shows Lua configuration/loading status without calling a script. |

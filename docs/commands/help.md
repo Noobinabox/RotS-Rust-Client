@@ -25,4 +25,5 @@ Topics are case-insensitive. Topic aliases are accepted where documented, for ex
 /help macro
 /help save
 /help vim
+/help substitute
 ```

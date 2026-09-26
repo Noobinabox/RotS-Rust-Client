@@ -32,6 +32,7 @@ pub struct AnsiColors {
 pub struct AnsiColorState {
     foreground: Option<AnsiColor>,
     background: Option<AnsiColor>,
+    bold: bool,
 }
 
 impl AnsiColorState {
@@ -41,7 +42,7 @@ impl AnsiColorState {
         while let Some(index) = remaining.find("\x1b[") {
             let (plain, rest) = remaining.split_at(index);
             if !plain.is_empty() {
-                colors.record(self.foreground, self.background);
+                colors.record(self.effective_foreground(), self.background);
             }
             let Some(end) = rest.find('m') else {
                 break;
@@ -50,13 +51,34 @@ impl AnsiColorState {
             remaining = &rest[end + 1..];
         }
         if !remaining.is_empty() {
-            colors.record(self.foreground, self.background);
+            colors.record(self.effective_foreground(), self.background);
         }
         colors
     }
 
     pub fn reset(&mut self) {
         *self = Self::default();
+    }
+
+    fn effective_foreground(&self) -> Option<AnsiColor> {
+        let color = self.foreground?;
+        if !self.bold {
+            return Some(color);
+        }
+        // Classic MUD palettes use bold plus a base foreground for bright colors.
+        // Keep the original foreground so SGR 22 restores it without changing
+        // explicitly bright, indexed, or RGB colors.
+        Some(match color {
+            AnsiColor::Black => AnsiColor::BrightBlack,
+            AnsiColor::Red => AnsiColor::BrightRed,
+            AnsiColor::Green => AnsiColor::BrightGreen,
+            AnsiColor::Yellow => AnsiColor::BrightYellow,
+            AnsiColor::Blue => AnsiColor::BrightBlue,
+            AnsiColor::Magenta => AnsiColor::BrightMagenta,
+            AnsiColor::Cyan => AnsiColor::BrightCyan,
+            AnsiColor::White => AnsiColor::BrightWhite,
+            color => color,
+        })
     }
 
     fn apply_sgr(&mut self, sequence: &str) {
@@ -67,6 +89,8 @@ impl AnsiColorState {
         while index < values.len() {
             match values[index] {
                 0 => self.reset(),
+                1 => self.bold = true,
+                22 => self.bold = false,
                 30..=37 => self.foreground = Some(ansi_color(values[index] - 30, false)),
                 39 => self.foreground = None,
                 40..=47 => self.background = Some(ansi_color(values[index] - 40, false)),
@@ -262,6 +286,73 @@ mod tests {
         assert_eq!(parse_color("lightred"), Some(Color::LightRed));
         assert_eq!(parse_color("brightcyan"), Some(Color::LightCyan));
         assert_eq!(parse_color("index:123"), Some(Color::Indexed(123)));
+    }
+
+    #[test]
+    fn bold_base_colors_match_bright_names_in_either_sgr_order() {
+        let mut state = AnsiColorState::default();
+        assert_eq!(
+            state.inspect("\x1b[01m\x1b[36mcyan").foregrounds,
+            [AnsiColor::BrightCyan]
+        );
+        assert_eq!(
+            state.inspect("inherited").foregrounds,
+            [AnsiColor::BrightCyan]
+        );
+        assert_eq!(
+            state.inspect("\x1b[0;33;1myellow").foregrounds,
+            [AnsiColor::BrightYellow]
+        );
+        assert_eq!(
+            state.inspect("\x1b[22mnormal").foregrounds,
+            [AnsiColor::Yellow]
+        );
+        assert_eq!(
+            state.inspect("\x1b[1mbold\x1b[0mplain").foregrounds,
+            [AnsiColor::BrightYellow]
+        );
+        assert_eq!(state.inspect("plain"), AnsiColors::default());
+    }
+
+    #[test]
+    fn bold_preserves_explicit_colors_and_backgrounds() {
+        let mut state = AnsiColorState::default();
+        assert_eq!(
+            state
+                .inspect("\x1b[1;96mbright\x1b[22mstill bright")
+                .foregrounds,
+            [AnsiColor::BrightCyan]
+        );
+        assert_eq!(
+            state
+                .inspect("\x1b[38;5;3;1mindexed\x1b[22mstill indexed")
+                .foregrounds,
+            [AnsiColor::Indexed(3)]
+        );
+        assert_eq!(
+            state
+                .inspect("\x1b[38;2;1;2;3;1mrgb\x1b[22mstill rgb")
+                .foregrounds,
+            [AnsiColor::Rgb(1, 2, 3)]
+        );
+        let colors = state.inspect("\x1b[1;36;43mcyan on yellow");
+        assert_eq!(colors.foregrounds, [AnsiColor::BrightCyan]);
+        assert_eq!(colors.backgrounds, [AnsiColor::Yellow]);
+        assert!(
+            state
+                .inspect("\x1b[39mdefault foreground")
+                .foregrounds
+                .is_empty()
+        );
+        assert_eq!(
+            state.inspect("\x1b[33myellow").foregrounds,
+            [AnsiColor::BrightYellow]
+        );
+        state.reset();
+        assert_eq!(
+            state.inspect("\x1b[33myellow").foregrounds,
+            [AnsiColor::Yellow]
+        );
     }
 
     #[test]

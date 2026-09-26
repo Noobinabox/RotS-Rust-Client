@@ -72,6 +72,7 @@ pub(super) fn is_recognized_local_command(text: &str) -> bool {
                 | "trigger"
                 | "triggers"
                 | "highlight"
+                | "substitute"
                 | "handler"
                 | "variable"
                 | "event"
@@ -86,7 +87,7 @@ pub(super) fn preserves_variable_templates(text: &str) -> bool {
     let command = text.trim_start().strip_prefix('/').unwrap_or_default();
     matches!(
         command.split_whitespace().next(),
-        Some("alias" | "trigger" | "triggers" | "handler" | "variable" | "macro")
+        Some("alias" | "trigger" | "triggers" | "handler" | "variable" | "macro" | "substitute")
     )
 }
 

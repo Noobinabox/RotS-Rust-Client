@@ -9,6 +9,7 @@ impl App {
             aliases: self.aliases.runtime_configs(),
             triggers: self.triggers.runtime_configs(),
             highlights: self.highlights.runtime_configs(),
+            substitutions: self.substitutions.runtime_configs(),
             ..RuntimeSettings::default()
         }
     }

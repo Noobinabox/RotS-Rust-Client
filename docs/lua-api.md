@@ -16,6 +16,10 @@ max_actions_per_hook = 32
 runtime_errors_to_output = true
 ```
 
+To load independent files, set `scripts = ["init.lua", "targeting.lua"]` in that same Lua table. This ordered list replaces `entrypoint`; each canonical file loads once into a shared Lua environment. Prefix hook names to avoid collisions. Explicitly listed missing or invalid files fail loading. `/lua reload` builds a replacement runtime and retains the working runtime if loading fails. Top-level script loading is instruction-budgeted too.
+
+The bundled configuration enables [RoTS numbered targeting](targeting.md) this way. Copy every listed file into the active script directory; the list must not be empty.
+
 Attach Lua hooks to configured rules:
 
 ```toml
@@ -98,11 +102,23 @@ end
 
 ### `client.send(command)`
 
-Queues one MUD command through variables, aliases, door-aware movement, command echo, and network sending.
+Queues one literal MUD command through door-aware movement, command echo, and
+network sending. It does not expand aliases or execute local commands.
+Use `client.execute` for the typed-command pipeline.
 
 ```lua
 client.send("look")
 client.send("kill " .. (client.var.get("last_target") or "orc"))
+```
+
+### `client.execute(command)`
+
+Runs a command through variable expansion, client aliases, and local commands,
+like typed input. Nested script execution shares a bounded command budget.
+
+```lua
+client.execute("p 2.orc") -- expands your configured p alias
+client.execute("/echo Ready") -- runs a local command
 ```
 
 ### `client.send_all(commands)`
@@ -246,6 +262,22 @@ end
 ```
 
 ## Output
+
+### `client.output.replace(text)` and `client.output.gag()`
+
+During an incoming-line trigger hook, replace the displayed line in place or suppress it. These actions are not available from aliases, timers, events, or manual `/lua call` hooks. Replacements must be a single line. All hooks see original server text, and replaced rows retain that original for diagnostics. Gagged rows are removed from scrollback, so their original is available during trigger processing but is not retained as an output row. Replacement text does not recursively fire triggers.
+
+```lua
+function numbered_mobile(ctx)
+  client.output.replace("(1) " .. ctx.raw_line)
+end
+
+function hide_noisy_line(ctx)
+  client.output.gag()
+end
+```
+
+Use `ctx.raw_line` when retaining server ANSI colors; `ctx.line` is normalized plain text. Do not call `client.echo` just to replace a server line: that adds another output entry instead.
 
 ### `client.output.recent(limit)`
 

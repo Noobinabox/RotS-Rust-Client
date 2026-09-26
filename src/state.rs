@@ -72,6 +72,8 @@ impl Default for OutputView {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OutputLine {
+    pub source_id: Option<u64>,
+    pub source_prefix: Option<String>,
     pub raw: String,
     pub normalized: String,
     pub category: OutputCategory,
@@ -276,6 +278,8 @@ pub struct AppState {
     pub script_events: Vec<ScriptEventRecord>,
     pub last_error: Option<String>,
     scrollback_limit: usize,
+    pub(crate) protected_output_id: Option<u64>,
+    inserting_source_id: Option<u64>,
 }
 
 impl AppState {
@@ -305,11 +309,55 @@ impl AppState {
             script_events: Vec::new(),
             last_error: None,
             scrollback_limit: config.layout.scrollback_lines,
+            protected_output_id: None,
+            inserting_source_id: None,
         }
     }
 
     pub fn push_output(&mut self, raw: impl Into<String>, category: OutputCategory) {
         self.push_output_styled(raw, category, None);
+    }
+
+    pub(crate) fn push_incoming_line(
+        &mut self,
+        id: u64,
+        raw: &str,
+        category: OutputCategory,
+        style: Option<OutputStyle>,
+    ) {
+        self.inserting_source_id = Some(id);
+        if category == OutputCategory::Prompt {
+            self.push_prompt_styled(raw, style);
+        } else {
+            self.push_output_styled(raw, category, style);
+        }
+        self.inserting_source_id = None;
+    }
+
+    /// Edit only the originating server line, even if hooks appended output or
+    /// evicted it. The raw text remains intact for diagnostics and scripting.
+    pub(crate) fn edit_incoming_line(&mut self, id: u64, display: Option<String>, prefix: String) {
+        let Some(index) = self
+            .output
+            .iter()
+            .rposition(|line| line.source_id == Some(id))
+        else {
+            return;
+        };
+        if let Some(display) = display {
+            self.output[index].normalized = normalize_text(&display);
+            self.output[index].source_prefix = Some(prefix);
+        } else {
+            let hidden_start = self
+                .output
+                .len()
+                .saturating_sub(self.output_view.scroll_offset);
+            self.output.remove(index);
+            if index >= hidden_start && self.output_view.scroll_offset > 0 {
+                self.output_view.scroll_offset -= 1;
+            }
+        }
+        self.after_output_changed(false);
     }
 
     pub fn push_output_boundary(&mut self, raw: impl Into<String>, category: OutputCategory) {
@@ -353,6 +401,8 @@ impl AppState {
                 return;
             }
             self.output.push_back(OutputLine {
+                source_id: self.inserting_source_id,
+                source_prefix: None,
                 raw,
                 normalized,
                 category: OutputCategory::Prompt,
@@ -369,6 +419,9 @@ impl AppState {
             return;
         }
         let starts_new_output = category == OutputCategory::Normal
+            && !self.output.back().is_some_and(|line| {
+                line.source_id.is_some() && line.source_id == self.protected_output_id
+            })
             && matches!(
                 self.output.back().map(|line| &line.category),
                 Some(OutputCategory::Prompt)
@@ -377,6 +430,8 @@ impl AppState {
             self.output.pop_back();
         }
         self.output.push_back(OutputLine {
+            source_id: self.inserting_source_id,
+            source_prefix: None,
             raw,
             normalized,
             category,
@@ -407,6 +462,8 @@ impl AppState {
         for (index, raw) in lines.into_iter().enumerate() {
             let normalized = normalize_text(&raw);
             self.output.push_back(OutputLine {
+                source_id: None,
+                source_prefix: None,
                 raw,
                 normalized,
                 category: OutputCategory::Snapshot,
@@ -436,6 +493,8 @@ impl AppState {
             .filter(|line| line.category == OutputCategory::Prompt)
         {
             line.raw = raw.to_string();
+            line.source_id = self.inserting_source_id;
+            line.source_prefix = None;
             line.normalized = normalized.to_string();
             line.category = OutputCategory::Prompt;
             line.style = style;
@@ -451,6 +510,8 @@ impl AppState {
             .find(|line| line.category == OutputCategory::Prompt)
         {
             previous.raw = raw.to_string();
+            previous.source_id = self.inserting_source_id;
+            previous.source_prefix = None;
             previous.normalized = normalized.to_string();
             previous.category = OutputCategory::Prompt;
             previous.style = style;
@@ -492,12 +553,16 @@ impl AppState {
             && line.category == OutputCategory::Prompt
         {
             line.raw = raw;
+            line.source_id = self.inserting_source_id;
+            line.source_prefix = None;
             line.normalized = normalized;
             line.style = style;
             self.after_output_changed(false);
             return;
         }
         self.output.push_back(OutputLine {
+            source_id: self.inserting_source_id,
+            source_prefix: None,
             raw,
             normalized,
             category: OutputCategory::Prompt,
@@ -1060,6 +1125,49 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn gagging_last_visible_line_preserves_hidden_line_count() {
+        let mut state = AppState::new(&AppConfig::default());
+        for id in 1..=5 {
+            state.push_incoming_line(id, &format!("line {id}"), OutputCategory::Normal, None);
+        }
+        state.scroll_output_up(2);
+        state.edit_incoming_line(3, None, String::new());
+        assert_eq!(state.output_view.scroll_offset, 2);
+        assert!(!state.output_view.follow_newest);
+        let visible_end = state.output.len() - state.output_view.scroll_offset;
+        assert_eq!(state.output[visible_end - 1].raw, "line 2");
+
+        // Removing a hidden line reduces only the hidden count, not the anchor.
+        state.edit_incoming_line(4, None, String::new());
+        assert_eq!(state.output_view.scroll_offset, 1);
+        let visible_end = state.output.len() - state.output_view.scroll_offset;
+        assert_eq!(state.output[visible_end - 1].raw, "line 2");
+    }
+
+    #[test]
+    fn coalesced_spinner_source_id_never_selects_identical_local_echo() {
+        for category in [OutputCategory::Prompt, OutputCategory::Normal] {
+            let mut state = AppState::new(&AppConfig::default());
+            state.push_incoming_line(1, "-", category, None);
+            state.edit_incoming_line(1, Some("old display".into()), "\x1b[31m".into());
+            state.protected_output_id = Some(1);
+            state.push_local_output_styled("-", OutputCategory::Normal, None);
+            state.protected_output_id = None;
+
+            state.push_incoming_line(2, "-", OutputCategory::Normal, None);
+            assert_eq!(state.output.len(), 2);
+            assert_eq!(state.output[0].source_id, Some(2));
+            assert_eq!(state.output[0].source_prefix, None);
+            assert_eq!(state.output[1].source_id, None);
+            state.edit_incoming_line(2, Some("new spinner".into()), String::new());
+            assert_eq!(state.output[0].normalized, "new spinner");
+            assert_eq!(state.output[1].normalized, "-");
+            state.edit_incoming_line(1, Some("stale edit".into()), String::new());
+            assert_eq!(state.output[0].normalized, "new spinner");
+        }
+    }
 
     #[test]
     fn output_respects_scrollback_limit() {

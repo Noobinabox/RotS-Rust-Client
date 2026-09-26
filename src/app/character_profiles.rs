@@ -10,6 +10,7 @@ pub(super) struct CharacterSession {
     events: EventEngine,
     variables: VariableStore,
     highlights: HighlightEngine,
+    substitutions: crate::scripting::substitutions::SubstitutionEngine,
     lua: LuaEngine,
     runtime_store: crate::persistence::RuntimeStore,
 }
@@ -24,6 +25,7 @@ impl CharacterSession {
             events: EventEngine::disabled(),
             variables: VariableStore::empty(),
             highlights: HighlightEngine::disabled(),
+            substitutions: crate::scripting::substitutions::SubstitutionEngine::disabled(),
             lua: LuaEngine::disabled(),
             runtime_store: crate::persistence::RuntimeStore::new(None),
         }
@@ -51,6 +53,10 @@ impl CharacterSession {
                 .map_err(|error| error.to_string())?,
             highlights: HighlightEngine::new(&config.highlights)
                 .map_err(|error| error.to_string())?,
+            substitutions: crate::scripting::substitutions::SubstitutionEngine::new(
+                &config.substitutions,
+            )
+            .map_err(|error| error.to_string())?,
             lua: LuaEngine::new(
                 &config.lua,
                 app.config_path.as_deref(),
@@ -66,6 +72,7 @@ impl CharacterSession {
             session.macros = saved.macros;
             session.triggers = saved.triggers;
             session.highlights = saved.highlights;
+            session.substitutions = saved.substitutions;
         }
         Ok(session)
     }
@@ -78,6 +85,7 @@ impl CharacterSession {
         std::mem::swap(&mut self.events, &mut app.events);
         std::mem::swap(&mut self.variables, &mut app.variables);
         std::mem::swap(&mut self.highlights, &mut app.highlights);
+        std::mem::swap(&mut self.substitutions, &mut app.substitutions);
         std::mem::swap(&mut self.lua, &mut app.lua);
         std::mem::swap(&mut self.runtime_store, &mut app.runtime_store);
     }

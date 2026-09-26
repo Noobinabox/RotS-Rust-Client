@@ -1,7 +1,9 @@
 pub mod aliases;
+pub mod ansi;
 pub mod events;
 pub mod highlights;
 pub mod lua;
+pub mod substitutions;
 pub mod templates;
 pub mod triggers;
 pub mod variables;

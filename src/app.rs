@@ -16,11 +16,13 @@ mod formatting;
 mod local_commands;
 mod macros;
 mod mouse;
+mod output_edits;
 #[cfg(test)]
 mod paste_tests;
 mod rendering;
 mod runtime_settings;
 mod social;
+mod substitutions;
 #[cfg(test)]
 mod vim_tests;
 
@@ -88,6 +90,10 @@ pub struct App {
     events: EventEngine,
     variables: VariableStore,
     highlights: HighlightEngine,
+    substitutions: crate::scripting::substitutions::SubstitutionEngine,
+    incoming_line: Option<output_edits::IncomingLine>,
+    incoming_sequence: u64,
+    source_style: crate::scripting::ansi::AnsiStyleState,
     lua: LuaEngine,
     animations: AnimationScheduler,
     weather_playback: crate::animation::weather_playback::WeatherPlayback,
@@ -175,6 +181,15 @@ impl App {
             );
             crate::macros::MacroEngine::default()
         });
+        let mut substitutions =
+            crate::scripting::substitutions::SubstitutionEngine::new(&config.substitutions)
+                .unwrap_or_else(|error| {
+                    state.push_output(
+                        format!("Substitution setup failed: {error}"),
+                        OutputCategory::Error,
+                    );
+                    crate::scripting::substitutions::SubstitutionEngine::disabled()
+                });
         let animations = AnimationScheduler::new(&config.animation);
         if let Some(path) = &character_path {
             state.push_output(
@@ -192,6 +207,7 @@ impl App {
                 aliases = saved.aliases;
                 triggers = saved.triggers;
                 highlights = saved.highlights;
+                substitutions = saved.substitutions;
                 state.push_output("Loaded saved runtime settings.", OutputCategory::System);
             }
             Ok(None) => {}
@@ -222,6 +238,10 @@ impl App {
             events,
             variables,
             highlights,
+            substitutions,
+            incoming_line: None,
+            incoming_sequence: 0,
+            source_style: Default::default(),
             lua,
             animations,
             weather_playback: Default::default(),
@@ -442,6 +462,7 @@ impl App {
                 }
                 if text.trim() == "/clear" {
                     self.state.clear_output();
+                    self.source_style = Default::default();
                     self.mud_ansi_colors.reset();
                     return false;
                 }
@@ -631,6 +652,7 @@ impl App {
         }
         if command == "clear" {
             self.state.clear_output();
+            self.source_style = Default::default();
             self.mud_ansi_colors.reset();
             return true;
         }
@@ -689,6 +711,15 @@ impl App {
                 .or_else(|| command.strip_prefix("trigger"))
                 .unwrap_or_default();
             match self.handle_trigger_command(input) {
+                Ok(message) => push_output_lines(&mut self.state, message, OutputCategory::System),
+                Err(error) => push_output_lines(&mut self.state, error, OutputCategory::Error),
+            }
+            return true;
+        }
+        if command == "substitute" || command.starts_with("substitute ") {
+            match self
+                .handle_substitution_command(command.strip_prefix("substitute").unwrap_or_default())
+            {
                 Ok(message) => push_output_lines(&mut self.state, message, OutputCategory::System),
                 Err(error) => push_output_lines(&mut self.state, error, OutputCategory::Error),
             }
@@ -952,6 +983,22 @@ impl App {
                 .add_runtime_highlight(highlight)
                 .map_err(|error| format!("Config reload failed: {error}"))?;
         }
+        let mut substitutions =
+            crate::scripting::substitutions::SubstitutionEngine::new(&config.substitutions)
+                .map_err(|error| format!("Config reload failed: {error}"))?;
+        for rule in self.substitutions.runtime_configs() {
+            substitutions
+                .add_runtime_substitution(rule)
+                .map_err(|error| error.to_string())?;
+        }
+        self.lua
+            .reload(
+                &config.lua,
+                self.config_path.as_deref(),
+                &self.state,
+                &variables,
+            )
+            .map_err(|error| format!("Config reload failed: {error}"))?;
         self.theme = Theme::from_config(&config.colors);
         self.panel_cache.clear();
         self.aliases = aliases;
@@ -959,14 +1006,7 @@ impl App {
         self.events = events;
         self.variables = variables;
         self.highlights = highlights;
-        self.lua
-            .reload(
-                &config.lua,
-                self.config_path.as_deref(),
-                &self.state,
-                &self.variables,
-            )
-            .map_err(|error| format!("Config reload failed: {error}"))?;
+        self.substitutions = substitutions;
         self.animations.configure(&config.animation);
         self.state
             .set_scrollback_limit(config.layout.scrollback_lines);
@@ -1318,11 +1358,51 @@ impl App {
     ) {
         for action in actions {
             match action {
+                LuaAction::Execute(command) => {
+                    let root = budgets.is_empty();
+                    if root {
+                        let limit = self.config.lua.max_actions_per_hook;
+                        budgets.push(CommandBudget {
+                            remaining: limit,
+                            limit,
+                            source: "Lua execution",
+                        });
+                    }
+                    if self.consume_command_budget(budgets) {
+                        let expanded = if preserves_variable_templates(&command) {
+                            Ok(command)
+                        } else {
+                            self.variables
+                                .expand(&command)
+                                .map_err(|error| error.to_string())
+                        };
+                        match expanded {
+                            Ok(command) => {
+                                Box::pin(self.handle_text_commands(&command, command_tx, budgets))
+                                    .await;
+                            }
+                            Err(error) => self.state.push_output(error, OutputCategory::Error),
+                        }
+                    }
+                    if root {
+                        budgets.pop();
+                    }
+                }
                 LuaAction::Send(command) => {
                     if !self.consume_command_budget(budgets) {
                         break;
                     }
                     self.send_mud_text_command(&command, command_tx).await;
+                }
+                LuaAction::ReplaceLine(text) => {
+                    if let Some(line) = &mut self.incoming_line {
+                        line.replacement = Some(text);
+                    }
+                }
+                LuaAction::GagLine => {
+                    if let Some(line) = &mut self.incoming_line {
+                        line.gag = true;
+                    }
                 }
                 LuaAction::Echo(message, style) => {
                     self.state.push_local_output_styled(
@@ -1651,11 +1731,13 @@ impl App {
     ) {
         match event {
             NetworkEvent::Connected => {
+                self.source_style = Default::default();
                 self.state.connection = ConnectionStatus::Connected;
                 self.state
                     .push_output_boundary("Connected to RoTS.", OutputCategory::System);
             }
             NetworkEvent::Disconnected => {
+                self.source_style = Default::default();
                 self.msdp_character = None;
                 self.state.connection = ConnectionStatus::Disconnected;
                 self.mud_ansi_colors.reset();
@@ -1675,7 +1757,7 @@ impl App {
                 let style = self
                     .highlights
                     .style_for(&normalized, OutputCategory::Prompt);
-                self.state.push_prompt_styled(text.clone(), style);
+                self.begin_line_edit(&text, OutputCategory::Prompt, style);
                 self.run_trigger_actions_with_colors(
                     &text,
                     OutputCategory::Prompt,
@@ -1683,6 +1765,8 @@ impl App {
                     command_tx,
                 )
                 .await;
+                self.finish_line_edit(&text, OutputCategory::Prompt, &colors);
+                self.source_style = Default::default();
                 self.mud_ansi_colors.reset();
             }
             NetworkEvent::Msdp(frames) => {
@@ -1701,6 +1785,7 @@ impl App {
                     .apply_msdp_frames(&frames, &self.config.msdp.mapping);
             }
             NetworkEvent::Error(message) => {
+                self.source_style = Default::default();
                 self.state.connection = ConnectionStatus::Disconnected;
                 self.mud_ansi_colors.reset();
                 self.state.last_error = Some(message.clone());
@@ -1716,11 +1801,12 @@ impl App {
         let style = self
             .highlights
             .style_for(&normalized, OutputCategory::Normal);
-        self.state
-            .push_output_styled(line.to_string(), OutputCategory::Normal, style);
+        self.begin_line_edit(line, OutputCategory::Normal, style);
         self.run_trigger_actions_with_colors(line, OutputCategory::Normal, &colors, command_tx)
             .await;
+        self.finish_line_edit(line, OutputCategory::Normal, &colors);
         if is_casting_spinner_line(&normalized) {
+            self.source_style = Default::default();
             self.mud_ansi_colors.reset();
         }
     }
@@ -1937,6 +2023,7 @@ impl App {
                     InputAction::Command(command) => self.handle_command(command, command_tx).await,
                     InputAction::ClearOutput => {
                         self.state.clear_output();
+                        self.source_style = Default::default();
                         self.mud_ansi_colors.reset();
                         false
                     }
@@ -2355,6 +2442,7 @@ fn help_text(topic: &str) -> Option<&'static str> {
         "event lua" | "events lua" | "handler lua" => Some(
             "# Event Lua Help\n\nAdd `lua = \"function_name\"` to an event handler. The hook receives `ctx.kind`, `ctx.event`, `ctx.source`, and `ctx.captures`. Lua hooks run inside the existing event dispatch budget and can use `client.event.emit` for follow-up events.\n\n## Example\nConfig: `event = \"LowHealth\"`, `lua = \"low_health\"`\nLua: `client.send(\"flee\")`",
         ),
+        "substitute" | "substitution" => Some(include_str!("../docs/commands/substitute.md")),
         "highlight" => Some(
             "# Highlight Help\n\n## Commands\n- `/highlight` - list configured and runtime highlights\n- `/highlight [plain|regex] {pattern} {foreground|none} [background|none] [styles]` - add or replace a runtime highlight\n- `/highlight unset {pattern}` - remove one runtime highlight\n- `/highlight clear` - remove all runtime highlights\n\nStyles are comma- or space-separated values chosen from `bold`, `dim`, `italic`, `underline`, and `reverse`.\n\n## Examples\n- `/highlight {You are hit} {red}`\n- `/highlight regex {You receive \\\\d+ gold} {yellow} {none} {bold}`\n- `/highlight plain {IMPORTANT} {white} {red} {bold underline}`\n- `/highlight unset {You are hit}`\n- `/highlight clear`\n\n## Config\n- `[highlights]` controls whether configured highlights are enabled\n- `[[highlights.rules]]` defines persistent highlights\n\n## Rule Fields\n- `name` - unique highlight name\n- `match_type` - `plain` or `regex`\n- `pattern` - text or regular expression to match\n- `foreground` / `background` - named color or hex color\n- `bold`, `dim`, `italic`, `underline`, `reverse` - style toggles\n- `categories` - optional output category filter\n\nRuntime highlight removal only affects session highlights. Remove configured highlights from `config.toml` and run `/reload`.",
         ),

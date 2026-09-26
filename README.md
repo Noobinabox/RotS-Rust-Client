@@ -15,7 +15,9 @@ The current implementation includes:
 - Executes configurable key macros through the command pipeline; see [macros](docs/commands/macro.md). Try `/macro {F5} {look}` and press F5.
 - Supports dedicated numpad macros such as `/macro {Numpad8} {north}` on terminals that report keypad identity, without capturing top-row digits.
 - Supports per-panel borders, text alignment, theme overrides, and refresh intervals; see [panel configuration](docs/configuration.md#panels) or `/help panels`.
-- Saves runtime variables, macros, aliases, triggers, and highlights across restarts with [`/save`](docs/commands/save.md), without rewriting the main configuration.
+- Saves runtime variables, macros, aliases, triggers, highlights, and substitutions across restarts with [`/save`](docs/commands/save.md), without rewriting the main configuration.
+- Loads multiple Lua scripts together and supports [numbered RoTS targeting](docs/targeting.md), with inline numbering and manual target overrides.
+- Supports [display substitutions and Lua gagging](docs/commands/substitute.md) without changing the original text seen by triggers.
 - Handles bracketed paste without executing pasted commands; optional multiline editing uses Alt+Enter and visible line markers. See [input examples and terminal limitations](docs/commands/input.md#paste-and-multiline-editing).
 
 ## Screenshots

@@ -1,6 +1,15 @@
 use mud_client::config::AppConfig;
 
 #[test]
+fn substitution_guide_toml_is_valid() {
+    let guide = include_str!("../docs/commands/substitute.md");
+    for snippet in guide.split("```toml\n").skip(1) {
+        let config: AppConfig = toml::from_str(snippet.split("```").next().unwrap()).unwrap();
+        config.validate().unwrap();
+    }
+}
+
+#[test]
 fn vim_example_enables_opt_in_editing() {
     let guide = include_str!("../docs/commands/vim.md");
     let snippet = guide

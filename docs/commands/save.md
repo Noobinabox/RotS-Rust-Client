@@ -1,6 +1,6 @@
 # `/save`
 
-Save all current runtime variables, macros, aliases, triggers, and highlights for the next launch. Saving is explicit, not automatic on quit.
+Save all current runtime variables, macros, aliases, triggers, highlights, and substitutions for the next launch. Saving is explicit, not automatic on quit.
 
 ## Syntax
 

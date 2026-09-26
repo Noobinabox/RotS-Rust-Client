@@ -128,6 +128,13 @@ sky states are recognized. Disabled animation or reduced motion retains a static
 marker; low-performance mode caps weather motion at 2 FPS. Visible motion is
 limited by terminal ticks and the World pane's configured refresh interval.
 
+## substitutions
+
+`[substitutions] enabled` controls configured display rules. Runtime rules remain
+active independently. `[[substitutions.rules]]` supports `name`, `enabled`,
+`priority`, `match_type` (`plain` or `regex`), `pattern`, `replacement`, optional
+`foreground`/`background`, and `categories`. See [examples and Lua line edits](commands/substitute.md).
+
 ## panels
 
 Each panel table supports the same fields:
@@ -317,8 +324,9 @@ An alias must define at least one `commands` entry or `lua` hook.
 |---|---|
 | `enabled` | Enables Lua runtime loading and Lua hooks. |
 | `script_dir` | Directory containing Lua scripts. Relative paths resolve beside the active config file, or from the platform config directory (normally `~/.config/mud-client`) when the default config is used. |
-| `entrypoint` | Lua file loaded from `script_dir`, usually `init.lua`. |
-| `instruction_budget` | Hook instruction limit to stop runaway scripts. Must be greater than zero. |
+| `entrypoint` | Legacy Lua file loaded from `script_dir`, usually `init.lua`; used only when `scripts` is omitted. |
+| `scripts` | Optional nonempty ordered list of Lua files under `script_dir`; overrides `entrypoint`. Files share a Lua environment and duplicate canonical paths load once. Explicitly listed missing files fail loading. |
+| `instruction_budget` | Instruction limit for hooks and script loading to stop runaway scripts. Must be greater than zero. |
 | `max_actions_per_hook` | Maximum actions a hook may enqueue. Must be greater than zero. |
 | `runtime_errors_to_output` | Shows Lua hook errors in the MUD output pane. |
 

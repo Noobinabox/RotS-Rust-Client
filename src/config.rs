@@ -33,6 +33,7 @@ pub struct AppConfig {
     pub lua: LuaConfig,
     pub variables: VariableConfig,
     pub highlights: HighlightConfig,
+    pub substitutions: SubstitutionConfig,
     pub logging: LoggingConfig,
 }
 
@@ -387,9 +388,16 @@ impl AppConfig {
                     "lua.script_dir must not be empty when Lua is enabled".to_string(),
                 ));
             }
-            if self.lua.entrypoint.trim().is_empty() {
+            if self.lua.scripts.is_none() && self.lua.entrypoint.trim().is_empty() {
                 return Err(MudClientError::ConfigValidation(
                     "lua.entrypoint must not be empty when Lua is enabled".to_string(),
+                ));
+            }
+            if self.lua.scripts.as_ref().is_some_and(|scripts| {
+                scripts.is_empty() || scripts.iter().any(|script| script.trim().is_empty())
+            }) {
+                return Err(MudClientError::ConfigValidation(
+                    "lua.scripts must contain at least one nonempty script path".to_string(),
                 ));
             }
             if self.lua.instruction_budget == 0 || self.lua.max_actions_per_hook == 0 {
@@ -670,6 +678,7 @@ impl AppConfig {
                 )?;
             }
         }
+        crate::scripting::substitutions::SubstitutionEngine::new(&self.substitutions)?;
         for highlight in &self.highlights.rules {
             if highlight.name.trim().is_empty() {
                 return Err(MudClientError::ConfigValidation(
@@ -1468,6 +1477,7 @@ pub struct LuaConfig {
     pub enabled: bool,
     pub script_dir: String,
     pub entrypoint: String,
+    pub scripts: Option<Vec<String>>,
     pub instruction_budget: u32,
     pub max_actions_per_hook: usize,
     pub runtime_errors_to_output: bool,
@@ -1510,6 +1520,7 @@ impl Default for LuaConfig {
             enabled: true,
             script_dir: "scripts".to_string(),
             entrypoint: "init.lua".to_string(),
+            scripts: None,
             instruction_budget: 100_000,
             max_actions_per_hook: 32,
             runtime_errors_to_output: true,
@@ -1572,6 +1583,52 @@ impl Default for TriggerRuleConfig {
 pub struct HighlightConfig {
     pub enabled: bool,
     pub rules: Vec<HighlightRuleConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default)]
+pub struct SubstitutionConfig {
+    pub enabled: bool,
+    pub rules: Vec<SubstitutionRuleConfig>,
+}
+
+impl Default for SubstitutionConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            rules: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default)]
+pub struct SubstitutionRuleConfig {
+    pub name: String,
+    pub enabled: bool,
+    pub priority: i32,
+    pub match_type: MatchType,
+    pub pattern: String,
+    pub replacement: String,
+    pub foreground: Option<String>,
+    pub background: Option<String>,
+    pub categories: Vec<OutputCategoryConfig>,
+}
+
+impl Default for SubstitutionRuleConfig {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            enabled: true,
+            priority: 0,
+            match_type: MatchType::Plain,
+            pattern: String::new(),
+            replacement: String::new(),
+            foreground: None,
+            background: None,
+            categories: Vec::new(),
+        }
+    }
 }
 
 impl Default for HighlightConfig {

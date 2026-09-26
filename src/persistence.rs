@@ -11,11 +11,13 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    config::{AliasRuleConfig, AppConfig, HighlightRuleConfig, TriggerRuleConfig},
+    config::{
+        AliasRuleConfig, AppConfig, HighlightRuleConfig, SubstitutionRuleConfig, TriggerRuleConfig,
+    },
     macros::{MacroConfig, MacroEngine, MacroRule},
     scripting::{
-        aliases::AliasEngine, highlights::HighlightEngine, triggers::TriggerEngine,
-        variables::VariableStore,
+        aliases::AliasEngine, highlights::HighlightEngine, substitutions::SubstitutionEngine,
+        triggers::TriggerEngine, variables::VariableStore,
     },
 };
 
@@ -55,6 +57,8 @@ pub struct RuntimeSettings {
     pub triggers: Vec<TriggerRuleConfig>,
     #[serde(default, deserialize_with = "deserialize_strict_rules")]
     pub highlights: Vec<HighlightRuleConfig>,
+    #[serde(default, deserialize_with = "deserialize_strict_rules")]
+    pub substitutions: Vec<SubstitutionRuleConfig>,
 }
 
 // Main configuration remains permissive. Snapshots must reject unknown rule
@@ -111,6 +115,20 @@ impl SavedRuleFields for HighlightRuleConfig {
     ];
 }
 
+impl SavedRuleFields for SubstitutionRuleConfig {
+    const FIELDS: &'static [&'static str] = &[
+        "name",
+        "enabled",
+        "priority",
+        "match_type",
+        "pattern",
+        "replacement",
+        "foreground",
+        "background",
+        "categories",
+    ];
+}
+
 fn deserialize_strict_rules<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -140,6 +158,7 @@ impl Default for RuntimeSettings {
             aliases: Vec::new(),
             triggers: Vec::new(),
             highlights: Vec::new(),
+            substitutions: Vec::new(),
         }
     }
 }
@@ -150,6 +169,7 @@ pub struct RuntimeEngines {
     pub aliases: AliasEngine,
     pub triggers: TriggerEngine,
     pub highlights: HighlightEngine,
+    pub substitutions: SubstitutionEngine,
 }
 
 impl RuntimeSettings {
@@ -159,6 +179,7 @@ impl RuntimeSettings {
             + self.aliases.len()
             + self.triggers.len()
             + self.highlights.len()
+            + self.substitutions.len()
     }
 
     /// Restore variables before compiling dependent rules; replace nothing live
@@ -181,6 +202,7 @@ impl RuntimeSettings {
         validation.aliases.rules = self.aliases.clone();
         validation.triggers.rules = self.triggers.clone();
         validation.highlights.rules = self.highlights.clone();
+        validation.substitutions.rules = self.substitutions.clone();
         validation
             .validate()
             .map_err(|error| PersistenceError::Invalid(error.to_string()))?;
@@ -201,6 +223,10 @@ impl RuntimeSettings {
             self.highlights.iter().map(|rule| rule.pattern.as_str()),
             "highlight pattern",
         )?;
+        unique(
+            self.substitutions.iter().map(|rule| rule.pattern.as_str()),
+            "substitution pattern",
+        )?;
         let variables =
             VariableStore::with_runtime_values(&config.variables, self.variables.clone())
                 .map_err(|e| PersistenceError::Invalid(e.to_string()))?;
@@ -211,6 +237,8 @@ impl RuntimeSettings {
             triggers: TriggerEngine::new_with_variables(&config.triggers, &variables)
                 .map_err(|e| PersistenceError::Invalid(e.to_string()))?,
             highlights: HighlightEngine::new(&config.highlights)
+                .map_err(|e| PersistenceError::Invalid(e.to_string()))?,
+            substitutions: SubstitutionEngine::new(&config.substitutions)
                 .map_err(|e| PersistenceError::Invalid(e.to_string()))?,
             variables,
         };
@@ -236,6 +264,12 @@ impl RuntimeSettings {
             engines
                 .highlights
                 .add_runtime_highlight(rule.clone())
+                .map_err(|e| PersistenceError::Invalid(e.to_string()))?;
+        }
+        for rule in &self.substitutions {
+            engines
+                .substitutions
+                .add_runtime_substitution(rule.clone())
                 .map_err(|e| PersistenceError::Invalid(e.to_string()))?;
         }
         Ok(engines)
@@ -466,6 +500,12 @@ mod tests {
                 foreground: Some("red".into()),
                 ..HighlightRuleConfig::default()
             }],
+            substitutions: vec![SubstitutionRuleConfig {
+                name: "runtime:orc".into(),
+                pattern: "orc".into(),
+                replacement: "goblin".into(),
+                ..SubstitutionRuleConfig::default()
+            }],
             ..RuntimeSettings::default()
         }
     }
@@ -488,6 +528,18 @@ mod tests {
         let mut restarted = RuntimeStore::new(Some(&config_path));
         let engines = restarted.load(&config).unwrap().unwrap();
         assert_eq!(engines.aliases.expand("rr").unwrap(), ["look"]);
+        assert_eq!(
+            engines
+                .substitutions
+                .apply(
+                    "orc",
+                    crate::state::OutputCategory::Normal,
+                    &crate::color::AnsiColors::default(),
+                    &engines.variables
+                )
+                .unwrap(),
+            "goblin"
+        );
         store.save(&RuntimeSettings::default()).unwrap();
         assert!(
             RuntimeStore::new(Some(&config_path))
@@ -578,6 +630,8 @@ mod tests {
             "version = 1\n[[aliases]]\nname = 'look'\npattern = '^look$'\ncommands = ['look']\nunknown = true",
             "version = 1\n[[triggers]]\nname = 'hungry'\npattern = 'hungry'\ncommands = ['eat bread']\nunknown = true",
             "version = 1\n[[highlights]]\nname = 'danger'\npattern = 'danger'\nforeground = 'red'\nunknown = true",
+            "version = 1\n[[substitutions]]\nname = 'orc'\npattern = 'orc'\nreplacement = 'goblin'\nunknown = true",
+            "version = 1\n[[substitutions]]\nname = 'orc'\npattern = 'orc'\nreplacement = '{1}'",
             "version = 1\n[[macros]]\nkey = 'Ctrl+C'\ncommand = 'look'",
             "version = 1\n[[aliases]]\nname = 'bad'\npattern = '['\ncommands = ['look']",
         ] {
@@ -601,6 +655,11 @@ mod tests {
 
     #[test]
     fn limits_duplicate_keys_and_restart_variable_dependencies_are_validated() {
+        let mut substitutions = sample();
+        substitutions
+            .substitutions
+            .push(substitutions.substitutions[0].clone());
+        assert!(substitutions.compile(&AppConfig::default()).is_err());
         let mut settings = sample();
         settings.macros.push(MacroRule {
             key: "numpadup".into(),
@@ -645,6 +704,7 @@ mod tests {
     fn old_snapshots_default_to_no_variables_and_variable_limits_are_enforced() {
         let old: RuntimeSettings = toml::from_str("version = 1").unwrap();
         assert!(old.variables.is_empty());
+        assert!(old.substitutions.is_empty());
         let mut settings = RuntimeSettings::default();
         settings.variables.insert("food".into(), "bread".into());
         let mut config = AppConfig::default();
