@@ -2,6 +2,10 @@
 
 Terminal MUD client for Return of the Shadow.
 
+Licensed under the [MIT License](LICENSE), copyright 2026 Seth Lyon. Commercial
+use, modification, and redistribution are permitted under its terms. Dependencies
+and third-party materials retain their own licenses; this does not relicense them.
+
 The current implementation includes:
 
 - Optional Vim-style command editing with modes, operators, text objects, selection, registers, undo, and repeat; see [`/help vim`](docs/commands/vim.md).
@@ -41,6 +45,11 @@ The client adapts to terminal dimensions; see [responsive display profiles](#res
 ![Mobile layout with a compact map above MUD output and command input](img/mobile%20rust-client.png)
 
 ## Run
+
+For guided setup, download and extract this repository, then run `bash install.sh`
+on Linux, double-click `Install-macOS.command` on macOS, or double-click
+`Install-Windows.cmd` on Windows. See [guided installation](docs/installation.md#guided-installers)
+for prerequisites, permission prompts, and first-run configuration.
 
 New here? Follow the [Linux, macOS, and Windows installation guide](docs/installation.md) for computer prerequisites, download/build commands, configuration, first login, and updates. Windows instructions include WSL and native PowerShell options.
 

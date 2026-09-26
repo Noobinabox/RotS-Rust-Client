@@ -1,8 +1,44 @@
 # Install mud-client
 
-These instructions build the client from source. You do not need to know Rust, but the first build downloads dependencies and can take several minutes. Internet access, Git, the latest stable Rust toolchain, and a C compiler/linker are required. Lua is bundled: no separate Lua installation is needed.
+These instructions build the client from source. You do not need to know Rust, but the first build downloads dependencies and can take several minutes. Internet access, the latest stable Rust toolchain, and a C compiler/linker are required. Git is needed only for the manual clone/update workflow, not installation from an extracted ZIP. Lua is bundled: no separate Lua installation is needed.
 
-Choose your computer: [Linux](#linux), [macOS](#macos), or [Windows](#windows). Run commands one block at a time; stop if a command reports an error. Do not run Cargo or the client as administrator/root.
+Use the [guided installers](#guided-installers), or follow the manual instructions for [Linux](#linux), [macOS](#macos), or [Windows](#windows). Run commands one block at a time; stop if a command reports an error. Do not run Cargo or the client as administrator/root.
+
+## Guided installers
+
+Download the repository using GitHub's **Code → Download ZIP**, then **extract the entire ZIP**. Keep the installer beside `Cargo.toml`, `Cargo.lock`, `install/`, `scripts/`, and `src/`; it is not a standalone executable. Alternatively, use an existing Git checkout.
+
+| Computer | Start setup |
+|---|---|
+| Linux / Ubuntu under WSL | Open a terminal in the extracted folder and run `bash install.sh`. |
+| macOS | Double-click `Install-macOS.command`; if executable permission was lost during extraction, open Terminal in that folder and run `bash Install-macOS.command`. |
+| Native Windows | Double-click `Install-Windows.cmd` in the extracted folder, not inside the ZIP viewer. |
+
+The installers explain their actions and ask before continuing. They install missing build prerequisites using system installers/package managers and Rust's official installer, then compile the source. Downloads and compilation can take several minutes; Windows C++ tools can be a large download. System prerequisite installers may need administrator approval or a restart. On macOS, finish Apple's developer-tools dialog and rerun setup when asked. Package managers and third-party installers may present their own terms.
+
+The application itself installs for your normal user. The installer does not log in, connect to the MUD, install a background service, or collect credentials. When finished, open a new terminal and run `mud-client`; its full executable path is also printed. The project scripts do not bypass Gatekeeper/SmartScreen globally or change machine-wide PowerShell policy. Follow your organization's security policy if downloaded scripts are blocked; do not disable security controls to force installation.
+
+Fresh configuration is copied from `install/default-config.toml`, **not** the developer's full `config.toml`. It connects to `rotsmud.org:3791`, uses standard (non-Vim) input, and disables Lua automation. Lua examples are copied for later opt-in; see [targeting setup](targeting.md) before enabling them. Other settings use built-in defaults. Existing config and script files are preserved, including customized connection settings; runtime sidecars, profiles and maps are not reset. Rerunning setup upgrades the executable but does not silently merge newer settings or scripts.
+
+Check prerequisites without installing anything:
+
+```sh
+bash install.sh --check
+```
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -CheckOnly
+```
+
+For computers with prerequisites already installed, use `bash install.sh --skip-prerequisites` or `install.ps1 -SkipPrerequisites`. These skip prerequisite installation, not Cargo dependency downloads. The PowerShell execution-policy option applies only to that process; managed policies can still block execution.
+
+### Installer status and legal terms
+
+These are guided **source installers**, not signed `.msi`/`.pkg` packages or prebuilt application downloads. Automated tests cover non-destructive setup paths; native platform and fresh-machine validation are listed with the development results rather than assumed. A future polished wizard would require release builds for each supported CPU/OS, package signing (and macOS notarization), update/uninstall behavior, and platform testing.
+
+Validation so far: a real isolated Linux/WSL release install with existing prerequisites passed. `cargo test --test installer` covers safe defaults, repeated installation, cancellation, build failure and interrupted-copy recovery using mocked system tools. Native Windows PowerShell parsing and read-only prerequisite detection were checked, but installing Windows prerequisites/building the client and running on macOS have not been tested. These checks are not a fresh-machine certification.
+
+The project uses the [MIT License](../LICENSE), which permits commercial use and resale subject to its notice requirements and includes warranty/liability disclaimers. There is no separate restrictive EULA or noncommercial condition. Guided installers identify the license and copy it beside the configuration without replacing an existing file. Preserve the license when redistributing the software. Dependencies and third-party materials retain their own licenses; their required notices still need to accompany release packaging. A license screen alone does not provide signing or replace a third-party license review.
 
 ## Linux
 

@@ -1,0 +1,13 @@
+# Safe first-run settings. Other options use built-in defaults.
+# See docs/configuration.md before enabling example automation.
+[connection]
+host = "rotsmud.org"
+port = 3791
+username = ""
+password = ""
+
+[terminal]
+input_mode = "standard"
+
+[lua]
+enabled = false
