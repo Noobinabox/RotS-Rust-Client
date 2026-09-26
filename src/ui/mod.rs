@@ -6,3 +6,4 @@ pub mod map;
 pub mod output;
 pub mod panels;
 pub mod theme;
+pub mod weather;

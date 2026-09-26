@@ -17,7 +17,7 @@ Keep any other scripts in the list, including `bot.lua` if you use it. Paths res
 
 Configure RoTS room titles as **bright yellow** and character/mobile descriptions as **bright cyan**. The corresponding trigger filters are `lightyellow` and `lightcyan`. Other server text with these colors can cause false resets/sightings; this is a color-based heuristic, not a server-provided roster. Existing example arrival hooks remain enabled and may run their own actions independently.
 
-Run `/reload`, then `look`. Each matching mobile line receives an in-place `(1)`, `(2)`, etc. prefix; original ANSI text remains after the prefix. Nothing attacks automatically merely because a mobile is observed.
+Run `/reload`, then `look`. Each matching mobile line receives an in-place `(1)`, `(2)`, etc. prefix. Leading ANSI styling is applied before the number so it matches the mob text; embedded color changes and trailing resets remain intact. Nothing attacks automatically merely because a mobile is observed.
 
 ## Everyday commands
 

@@ -4,7 +4,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Paragraph, Widget, Wrap},
 };
-use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+use unicode_width::UnicodeWidthChar;
 
 use crate::{
     animation::weather::WeatherKind,
@@ -36,16 +36,25 @@ fn render_info_panel(
 
     let time = display_time(state.world.time.as_deref());
     let weather = state.world.weather.as_deref().unwrap_or("--");
-    let marker = weather_marker(weather, weather_config, state.world.weather_frame);
     let mut lines = vec![Line::from(vec![
         Span::styled("Time ", Style::new().fg(theme.muted)),
         Span::styled(time, Style::new().fg(theme.foreground)),
     ])];
-    lines.extend(weather_lines(weather, marker, inner.width as usize, theme));
+    lines.extend(weather_lines(weather, inner.width as usize, theme));
     Paragraph::new(lines)
         .alignment(theme.alignment)
         .wrap(Wrap { trim: false })
         .render(inner, buf);
+    if weather_config.enabled && weather_config.show_info_marker {
+        super::weather::render_weather(
+            inner,
+            buf,
+            WeatherKind::classify(weather),
+            state.world.weather_frame,
+            theme,
+            crate::animation::daylight::Daylight::from_world_time(state.world.time.as_deref()),
+        );
+    }
 }
 
 pub fn render_info(
@@ -660,16 +669,6 @@ fn panel_visible(panel: &PanelOptions, mode: UiMode) -> bool {
             }))
 }
 
-fn weather_marker(weather: &str, config: &WeatherConfig, frame: usize) -> &'static str {
-    if !config.enabled || !config.show_info_marker {
-        return "";
-    }
-    match WeatherKind::classify(weather) {
-        WeatherKind::Indoor | WeatherKind::Unknown => "",
-        kind => kind.frame(frame),
-    }
-}
-
 fn display_time(time: Option<&str>) -> String {
     let Some(time) = time else {
         return "--".to_string();
@@ -680,16 +679,11 @@ fn display_time(time: Option<&str>) -> String {
     time.to_string()
 }
 
-fn weather_lines<'a>(weather: &str, marker: &str, width: usize, theme: &Theme) -> Vec<Line<'a>> {
+fn weather_lines<'a>(weather: &str, width: usize, theme: &Theme) -> Vec<Line<'a>> {
     const LABEL: &str = "Weather ";
     const INDENT: &str = "        ";
 
-    let marker_width = if marker.is_empty() {
-        0
-    } else {
-        marker.width() + 1
-    };
-    let first_width = width.saturating_sub(LABEL.len() + marker_width).max(1);
+    let first_width = width.saturating_sub(LABEL.len()).max(1);
     let next_width = width.saturating_sub(INDENT.len()).max(1);
     let mut wrapped = wrap_words(weather, first_width, next_width);
     if wrapped.is_empty() {
@@ -702,13 +696,6 @@ fn weather_lines<'a>(weather: &str, marker: &str, width: usize, theme: &Theme) -
         .map(|(index, line)| {
             if index == 0 {
                 let mut spans = vec![Span::styled(LABEL, Style::new().fg(theme.muted))];
-                if !marker.is_empty() {
-                    spans.push(Span::styled(
-                        marker.to_string(),
-                        Style::new().fg(theme.accent),
-                    ));
-                    spans.push(Span::raw(" "));
-                }
                 spans.push(Span::styled(line, Style::new().fg(theme.foreground)));
                 Line::from(spans)
             } else {
@@ -1325,21 +1312,90 @@ mod tests {
     }
 
     #[test]
-    fn weather_markers_animate_without_changing_text_width() {
-        let config = WeatherConfig::default();
-        assert_ne!(
-            weather_marker("rain", &config, 0),
-            weather_marker("rain", &config, 1)
-        );
-        assert_eq!(weather_marker("indoors", &config, 0), "");
-        assert_eq!(weather_marker("", &config, 0), "");
-        let hidden = WeatherConfig {
-            show_info_marker: false,
-            ..config
-        };
-        assert_eq!(weather_marker("rain", &hidden, 1), "");
-        let lines = weather_lines("Rain falls heavily on the fields.", "╱", 30, &theme());
+    fn weather_description_wraps_without_a_marker() {
+        let lines = weather_lines("Rain falls heavily on the fields.", 30, &theme());
         assert!(lines.iter().all(|line| line.width() <= 30));
+        assert_eq!(lines[0].to_string(), "Weather Rain falls heavily on");
+    }
+
+    #[test]
+    fn world_time_changes_weather_tint_without_changing_its_animation_phase() {
+        let config = crate::config::AppConfig::default();
+        let mut state = AppState::new(&config);
+        state.world.weather = Some("Rain".into());
+        let area = Rect::new(0, 0, 40, 10);
+        let theme = theme();
+        for (time, expected) in [
+            ("It is about 6:00 AM on ", theme.warning),
+            ("It is about 12:00 PM on ", theme.accent),
+            ("It is about 12:00 AM on ", theme.muted),
+        ] {
+            state.world.time = Some(time.into());
+            let mut buffer = Buffer::empty(area);
+            render_info_panel(area, &mut buffer, &state, &theme, "World", &config.weather);
+            let drops: Vec<_> = buffer
+                .content
+                .iter()
+                .filter(|cell| cell.symbol() == "/")
+                .collect();
+            assert!(!drops.is_empty());
+            assert!(drops.iter().all(|cell| cell.fg == expected));
+            assert_eq!(state.world.weather_frame, 0);
+        }
+    }
+
+    #[test]
+    fn weather_background_preserves_aligned_text_borders_and_neighbors() {
+        let state_config = crate::config::AppConfig::default();
+        let mut state = AppState::new(&state_config);
+        state.world.weather = Some("Rain falls".into());
+        state.world.time = Some("Morning".into());
+        let bounds = Rect::new(0, 0, 48, 12);
+        let area = Rect::new(3, 2, 40, 8);
+        for alignment in [
+            ratatui::layout::Alignment::Left,
+            ratatui::layout::Alignment::Center,
+            ratatui::layout::Alignment::Right,
+        ] {
+            let mut theme = theme();
+            theme.alignment = alignment;
+            let hidden = WeatherConfig {
+                show_info_marker: false,
+                ..WeatherConfig::default()
+            };
+            let mut plain = Buffer::empty(bounds);
+            render_info_panel(area, &mut plain, &state, &theme, "World", &hidden);
+            let mut decorated = Buffer::empty(bounds);
+            render_info_panel(
+                area,
+                &mut decorated,
+                &state,
+                &theme,
+                "World",
+                &WeatherConfig::default(),
+            );
+            assert_ne!(plain, decorated);
+            for y in bounds.top()..bounds.bottom() {
+                for x in bounds.left()..bounds.right() {
+                    if !area.contains((x, y).into()) || plain[(x, y)].symbol() != " " {
+                        assert_eq!(plain[(x, y)], decorated[(x, y)]);
+                    }
+                }
+            }
+            let mut disabled = Buffer::empty(bounds);
+            render_info_panel(
+                area,
+                &mut disabled,
+                &state,
+                &theme,
+                "World",
+                &WeatherConfig {
+                    enabled: false,
+                    ..WeatherConfig::default()
+                },
+            );
+            assert_eq!(plain, disabled);
+        }
     }
 
     #[test]
@@ -1366,7 +1422,7 @@ mod tests {
                 .iter()
                 .any(|line| line.contains("Weather ") && line.contains("Above"))
         );
-        assert!(lines.iter().any(|line| line.contains("seen in the sky.")));
+        assert!(lines.iter().any(|line| line.contains("sky.")), "{lines:?}");
     }
 
     #[test]

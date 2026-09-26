@@ -9,6 +9,7 @@ use super::{
 
 const EFFECT: &str = "weather";
 const LOW_PERFORMANCE_FPS: u64 = 2;
+pub const SCENE_PHASES: usize = 240;
 
 /// Owns weather timing; widgets only consume the resulting frame index.
 #[derive(Debug, Default)]
@@ -29,7 +30,7 @@ impl WeatherPlayback {
             && weather.show_info_marker
             && animation.enabled
             && !animation.reduced_motion
-            && kind.frame_count() > 1;
+            && !matches!(kind, WeatherKind::Indoor | WeatherKind::Unknown);
         let fps = if animation.low_performance {
             animation.weather_fps.min(LOW_PERFORMANCE_FPS)
         } else {
@@ -38,11 +39,11 @@ impl WeatherPlayback {
         let desired = moving.then_some((kind, fps));
         if desired != self.active {
             scheduler.cancel(EFFECT);
-            if let Some((kind, fps)) = desired {
+            if let Some((_, fps)) = desired {
                 scheduler.start(
                     AnimationDefinition {
                         name: EFFECT.into(),
-                        frames: kind.frame_count(),
+                        frames: SCENE_PHASES,
                         frame_rate_fps: fps,
                         duration: Duration::ZERO,
                         looping: true,

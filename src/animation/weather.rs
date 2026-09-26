@@ -51,32 +51,6 @@ impl WeatherKind {
             Self::Unknown
         }
     }
-
-    pub fn frame(self, index: usize) -> &'static str {
-        let frames = self.frames();
-        frames[index % frames.len()]
-    }
-
-    pub fn frame_count(self) -> usize {
-        self.frames().len()
-    }
-
-    fn frames(self) -> &'static [&'static str] {
-        match self {
-            Self::Clear => &["☼", "☉"],
-            Self::Cloudy => &["☁", "~", "☁", "-"],
-            Self::Rain => &["╱", "│", "╲"],
-            Self::Storm => &["ϟ", "*", "ϟ"],
-            Self::Snow => &["*", "·", "+"],
-            Self::Blizzard => &["*", "+", "*", "x"],
-            Self::Fog => &["~", "≈"],
-            Self::Wind => &[">", "»", "-"],
-            Self::Ash => &["*", ".", "`"],
-            Self::Dust => &[".", ":", "'"],
-            Self::Indoor => &["-"],
-            Self::Unknown => &["?"],
-        }
-    }
 }
 
 #[cfg(test)]
@@ -91,39 +65,6 @@ mod tests {
         );
         assert_eq!(WeatherKind::classify("light rain"), WeatherKind::Rain);
         assert_eq!(WeatherKind::classify("clear skies"), WeatherKind::Clear);
-    }
-
-    #[test]
-    fn selects_deterministic_frames() {
-        assert_eq!(WeatherKind::Rain.frame(0), "╱");
-        assert_eq!(WeatherKind::Rain.frame(3), "╱");
-        assert_eq!(WeatherKind::Snow.frame(1), "·");
-    }
-
-    #[test]
-    fn all_frames_have_one_terminal_cell_and_wrap() {
-        use unicode_width::UnicodeWidthStr;
-        for kind in [
-            WeatherKind::Clear,
-            WeatherKind::Cloudy,
-            WeatherKind::Rain,
-            WeatherKind::Storm,
-            WeatherKind::Snow,
-            WeatherKind::Blizzard,
-            WeatherKind::Fog,
-            WeatherKind::Wind,
-            WeatherKind::Ash,
-            WeatherKind::Dust,
-            WeatherKind::Indoor,
-            WeatherKind::Unknown,
-        ] {
-            assert!(kind.frame_count() > 0);
-            for index in 0..kind.frame_count() {
-                assert_eq!(kind.frame(index).width(), 1, "{kind:?}");
-                assert_eq!(kind.frame(index), kind.frame(index + kind.frame_count()));
-            }
-            assert_eq!(kind.frame(usize::MAX).width(), 1);
-        }
     }
 
     #[test]

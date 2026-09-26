@@ -120,13 +120,23 @@ These are the global Tokyo Night themed defaults used by panels and widgets unle
 
 | Option | Meaning |
 |---|---|
-| `enabled` | Enables the World pane weather marker and its animation; server weather text remains visible when false. |
-| `show_info_marker` | Shows the compact marker beside MSDP weather text. |
+| `enabled` | Enables the World pane weather background and its animation; server weather text remains visible when false. |
+| `show_info_marker` | Legacy setting name retained for compatibility: shows the weather background scene, not a cycling marker. |
 
 See [weather types and animation examples](commands/animation.md). All six RoTS
-sky states are recognized. Disabled animation or reduced motion retains a static
-marker; low-performance mode caps weather motion at 2 FPS. Visible motion is
-limited by terminal ticks and the World pane's configured refresh interval.
+sky states are recognized, with sunshine, clouds, rain, lightning, snow, and blizzard
+scenes; generic fog, wind, ash, and dust also have scenes. Backgrounds stay inside
+the World pane's content area and do not obscure text. Lighting follows the
+server's `WORLD_TIME`, not the local clock: warm theme `warning` colors at dawn/dusk,
+weather-specific non-dimmed colors by day, and dimmed `muted`/`accent` colors at
+night. Clear nights show a crescent, not a lunar-phase simulation. Unknown time
+retains the dimmed `muted`/`accent` palette. The normal RoTS hour-only time uses
+6 AM dawn and 6 PM dusk as display fallbacks, rather than seasonal sunrise data.
+See the animation guide for the complete theme mapping.
+
+Disabled animation or reduced motion retains a static first-frame scene;
+game-time lighting still updates. Low-performance mode caps weather motion at 2 FPS. Visible
+motion is limited by terminal ticks and the World pane's configured refresh interval.
 
 ## substitutions
 

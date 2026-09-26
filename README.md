@@ -42,6 +42,8 @@ The client adapts to terminal dimensions; see [responsive display profiles](#res
 
 ## Run
 
+New here? Follow the [Linux, macOS, and Windows installation guide](docs/installation.md) for computer prerequisites, download/build commands, configuration, first login, and updates. Windows instructions include WSL and native PowerShell options.
+
 ```sh
 cargo run
 ```
@@ -567,8 +569,14 @@ enabled = true
 show_info_marker = true
 ```
 
-The World pane animates markers for all six RoTS weather states: clear, cloudy,
-rain, lightning, snow, and blizzard. Reduced motion retains static symbols.
+The World pane animates background scenes for all six RoTS weather states: sunshine,
+clouds, rain, lightning, snow, and blizzard. Generic fog, wind, ash, and dust also
+have scenes. Theme colors follow the server's `WORLD_TIME`: warm dawn/dusk,
+daytime weather colors, and dimmed night scenes with a crescent for clear skies.
+Scenes stay inside the pane's content area without obscuring text. The default
+rate remains 2 FPS; reduced motion retains a static first frame while game-time
+color changes still apply. The legacy `show_info_marker` option now controls
+this background rather than a cycling glyph.
 Use `/help animation` or `/help weather` for the [reference and examples](docs/commands/animation.md).
 
 Use `;` to send multiple MUD commands from one input:

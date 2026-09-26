@@ -83,8 +83,16 @@ function targeting_observe(ctx)
     entry.command_target = counts[keyword] .. "." .. keyword
   end
   targets[#targets + 1] = entry
-  -- Rewrite this output line, retaining the original ANSI content and ordering.
-  client.output.replace("(" .. #targets .. ") " .. (ctx.raw_line or ctx.line or ""))
+  local raw = ctx.raw_line or ctx.line or ""
+  -- Apply leading SGR styling before the number so it matches the first mob
+  -- character. Leave embedded styling and trailing resets in their original order.
+  local offset = 1
+  while true do
+    local first, last = raw:find("\27%[[%d;:]*m", offset)
+    if first ~= offset then break end
+    offset = last + 1
+  end
+  client.output.replace(raw:sub(1, offset - 1) .. "(" .. #targets .. ") " .. raw:sub(offset))
 end
 
 function targeting_list(ctx)

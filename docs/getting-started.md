@@ -1,5 +1,7 @@
 # Getting Started
 
+Start with [Installation for Linux, macOS, and Windows](installation.md) if this is your first setup. It covers Rust/compiler installation, downloading the client, platform-specific configuration paths, and copying bundled Lua scripts.
+
 ## Requirements
 
 - Stable Rust toolchain.
@@ -15,10 +17,10 @@ cargo run
 Install the release binary into Cargo's user binary directory:
 
 ```sh
-make install
+cargo +stable install --path . --locked
 ```
 
-This installs `mud-client`; it does not overwrite the optional runtime configuration at `~/.config/mud-client/config.toml`.
+This installs `mud-client`; it does not copy or overwrite configuration or scripts. `make install` is also available when Make is installed.
 
 Force the local test endpoint even when an installed config points elsewhere:
 
@@ -42,13 +44,15 @@ make ci
 
 ## Configuration File
 
-The repository includes `config.toml` as a complete default example. At runtime the client looks for:
+The repository includes `config.toml` as a complete default example. It is not automatically loaded from the current directory. On Linux/WSL the default location is:
 
 ```text
 ~/.config/mud-client/config.toml
 ```
 
 If no config file exists, built-in defaults are used. The default repository config connects to `rotsmud.org` on port `3791`.
+
+See [platform configuration paths and copy commands](installation.md#first-launch-and-configuration) for macOS, Windows, and Linux setup. Copy the Lua scripts too when using the bundled example configuration.
 
 Reload the active config without restarting:
 

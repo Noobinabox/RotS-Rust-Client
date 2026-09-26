@@ -84,13 +84,53 @@ fn assert_no_send(actions: &[LuaAction]) {
 }
 
 #[test]
+fn target_number_follows_only_leading_sgr_sequences() {
+    for (raw, expected) in [
+        (
+            "\x1b[0m\x1b[1m\x1b[36mA guard\x1b[0m",
+            "\x1b[0m\x1b[1m\x1b[36m(1) A guard\x1b[0m",
+        ),
+        (
+            "\x1b[m\x1b[38:2::1:2:3mA guard",
+            "\x1b[m\x1b[38:2::1:2:3m(1) A guard",
+        ),
+        ("A \x1b[36mguard", "(1) A \x1b[36mguard"),
+        ("\x1b[36", "(1) \x1b[36"),
+        ("", "(1) "),
+        ("雪", "(1) 雪"),
+    ] {
+        let mut h = Harness::new();
+        let actions = h.call(
+            "targeting_observe",
+            LuaHookContext {
+                line: Some("A guard".into()),
+                kind: "trigger".into(),
+                raw_line: Some(raw.into()),
+                ..Default::default()
+            },
+        );
+        assert_eq!(actions, vec![LuaAction::ReplaceLine(expected.into())]);
+    }
+    let mut h = Harness::new();
+    let actions = h.call(
+        "targeting_observe",
+        LuaHookContext {
+            line: Some("A guard".into()),
+            kind: "trigger".into(),
+            ..Default::default()
+        },
+    );
+    assert_eq!(actions, vec![LuaAction::ReplaceLine("(1) A guard".into())]);
+}
+
+#[test]
 fn numbered_targets_preserve_ansi_and_count_duplicate_keywords() {
     let mut h = Harness::new();
     let line = "A hungry wolf stands here.";
     assert_eq!(
         h.observe(line),
         vec![LuaAction::ReplaceLine(format!(
-            "(1) \x1b[1;36m{line}\x1b[0m"
+            "\x1b[1;36m(1) {line}\x1b[0m"
         ))]
     );
     h.observe("A grey wolf stands here.");

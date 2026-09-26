@@ -1160,6 +1160,7 @@ pub struct AnimationConfig {
 #[serde(default)]
 pub struct WeatherConfig {
     pub enabled: bool,
+    /// Legacy configuration key retained for compatibility; controls the World background.
     pub show_info_marker: bool,
 }
 

@@ -2,6 +2,8 @@
 
 This directory is the end-user reference for the terminal MUD client.
 
+- [Installation](installation.md): step-by-step Linux, macOS, and Windows setup, including prerequisites, scripts, updates, and common errors.
+
 - [Getting Started](getting-started.md): install, run, connect, and reload configuration.
 - [Configuration Reference](configuration.md): every supported `config.toml` section and option.
 - [Command Reference](commands.md): local `/` commands, command input behavior, and keys.
