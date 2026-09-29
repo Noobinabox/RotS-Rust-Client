@@ -232,12 +232,30 @@ fn map_lines<'a>(
     };
 
     let width = area.width as usize;
-    let height = area.height as usize;
+    let footer_rows = legend_footer_rows(area.height as usize, config.show_legend);
+    let height = area.height as usize - footer_rows;
     let mut cells = vec![vec![' '; width]; height];
     let mut styles: BTreeMap<(usize, usize), Color> = BTreeMap::new();
     let mut exit_overlays = BTreeMap::new();
     let positions = visible_positions(map, current_id);
     let markers = MapMarkers::new(map);
+    let marker_spacing = positions
+        .keys()
+        .filter_map(|id| map.rooms.get(id))
+        .map(|room| {
+            let width = safe_room_symbol(&room.symbol).chars().count() as i32;
+            let indicators =
+                i32::from(room.exits.contains_key("u")) + i32::from(room.exits.contains_key("d"));
+            // Leave the connector midpoint clear of centered labels and arrows.
+            if width > 1 {
+                width + 2 + indicators * 2
+            } else {
+                3
+            }
+        })
+        .max()
+        .unwrap_or(3);
+    let column_spacing = config.room_spacing_columns.max(marker_spacing);
     let center_x = (width / 2) as i32;
     let center_y = (height / 2) as i32;
 
@@ -248,7 +266,7 @@ fn map_lines<'a>(
         if room.flags.contains(&RoomFlag::Hide) {
             continue;
         }
-        let x = center_x + room_x * config.room_spacing_columns;
+        let x = center_x + room_x * column_spacing;
         let y = center_y + room_y * config.room_spacing_rows;
         if !inside(width, height, x, y) {
             continue;
@@ -270,7 +288,7 @@ fn map_lines<'a>(
         if room.flags.contains(&RoomFlag::Hide) {
             continue;
         }
-        let x = center_x + room_x * config.room_spacing_columns;
+        let x = center_x + room_x * column_spacing;
         let y = center_y + room_y * config.room_spacing_rows;
         if !inside(width, height, x, y) {
             continue;
@@ -307,7 +325,7 @@ fn map_lines<'a>(
                 &mut styles,
                 (x, y),
                 (
-                    center_x + target_x * config.room_spacing_columns,
+                    center_x + target_x * column_spacing,
                     center_y + target_y * config.room_spacing_rows,
                 ),
                 ConnectionStyle {
@@ -316,12 +334,12 @@ fn map_lines<'a>(
                     route_link,
                 },
             );
-            if let Some((symbol, color)) = door_marker(config, exit.door, theme) {
+            if let Some((symbol, color)) = door_marker(config, exit, theme) {
                 let key = exit_overlay_key("door", room_id, target_id);
                 let overlay = ExitOverlay {
                     from: (x, y),
                     to: (
-                        center_x + target_x * config.room_spacing_columns,
+                        center_x + target_x * column_spacing,
                         center_y + target_y * config.room_spacing_rows,
                     ),
                     symbol,
@@ -336,7 +354,7 @@ fn map_lines<'a>(
                 let overlay = ExitOverlay {
                     from: (x, y),
                     to: (
-                        center_x + target_x * config.room_spacing_columns,
+                        center_x + target_x * column_spacing,
                         center_y + target_y * config.room_spacing_rows,
                     ),
                     symbol,
@@ -363,7 +381,7 @@ fn map_lines<'a>(
                 config,
                 room_id,
                 (
-                    center_x + room_x * config.room_spacing_columns,
+                    center_x + room_x * column_spacing,
                     center_y + room_y * config.room_spacing_rows,
                 ),
             );
@@ -378,7 +396,7 @@ fn map_lines<'a>(
             config,
             current_id,
             (
-                center_x + room_x * config.room_spacing_columns,
+                center_x + room_x * column_spacing,
                 center_y + room_y * config.room_spacing_rows,
             ),
         );
@@ -409,7 +427,74 @@ fn map_lines<'a>(
             Style::new().fg(theme.title),
         ));
     }
+    if footer_rows > 0 {
+        let mut noted_rooms = positions
+            .iter()
+            .filter_map(|(id, &(rx, ry))| {
+                let room = map.rooms.get(id)?;
+                let x = center_x + rx * column_spacing;
+                let y = center_y + ry * config.room_spacing_rows;
+                if room.note.trim().is_empty()
+                    || !room_marker_visible(room, id == current_id)
+                    || !inside(width, height, x, y)
+                    || (height > 1 && y == 0)
+                {
+                    return None;
+                }
+                Some((i128::from(rx).pow(2) + i128::from(ry).pow(2), id.as_str()))
+            })
+            .collect::<Vec<_>>();
+        noted_rooms.sort_unstable();
+        let entry_count = noted_rooms
+            .len()
+            .min(3)
+            .min(if noted_rooms.len() > footer_rows {
+                footer_rows - 1
+            } else {
+                footer_rows
+            });
+        for &(_, id) in noted_rooms.iter().take(entry_count) {
+            let (symbol, color) =
+                room_marker_style(&markers, theme, config, id, false, MapView::Regular);
+            let note = &map.rooms[id].note;
+            let label = legend_label(&format!("{symbol} - {note}"), width);
+            lines.push(Line::from(Span::styled(label, Style::new().fg(color))));
+        }
+        if noted_rooms.len() > entry_count {
+            lines.push(Line::from(Span::styled(
+                legend_label(&format!("+{} more", noted_rooms.len() - entry_count), width),
+                Style::new().fg(theme.muted),
+            )));
+        }
+        lines.resize_with(area.height as usize, || Line::from(" ".repeat(width)));
+    }
     lines
+}
+
+fn legend_footer_rows(height: usize, enabled: bool) -> usize {
+    let rows = (height / 3).min(4);
+    if enabled && rows >= 2 { rows } else { 0 }
+}
+
+fn legend_label(value: &str, width: usize) -> String {
+    let mut remaining = width;
+    value
+        .chars()
+        .map(|ch| if ch.is_control() { ' ' } else { ch })
+        .take_while(|ch| {
+            let cells = ch.width().unwrap_or(0);
+            if cells > remaining {
+                false
+            } else {
+                remaining -= cells;
+                true
+            }
+        })
+        .collect()
+}
+
+fn room_marker_visible(room: &crate::map::Room, is_current: bool) -> bool {
+    !room.flags.contains(&RoomFlag::Hide) && (is_current || !room.flags.contains(&RoomFlag::Void))
 }
 
 fn map_header(current: &crate::map::Room) -> String {
@@ -436,6 +521,12 @@ fn map_header(current: &crate::map::Room) -> String {
     format!(" {}    Exits: {exits}", current.name_or_default())
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum MapView {
+    Regular,
+    Nearby,
+}
+
 fn draw_room_marker(
     cells: &mut [Vec<char>],
     styles: &mut BTreeMap<(usize, usize), Color>,
@@ -446,7 +537,14 @@ fn draw_room_marker(
     position: (i32, i32),
 ) {
     draw_room_marker_internal(
-        cells, styles, markers, theme, config, room_id, position, true,
+        cells,
+        styles,
+        markers,
+        theme,
+        config,
+        room_id,
+        position,
+        MapView::Regular,
     );
 }
 
@@ -460,7 +558,14 @@ fn draw_room_marker_without_vertical_indicators(
     position: (i32, i32),
 ) {
     draw_room_marker_internal(
-        cells, styles, markers, theme, config, room_id, position, false,
+        cells,
+        styles,
+        markers,
+        theme,
+        config,
+        room_id,
+        position,
+        MapView::Nearby,
     );
 }
 
@@ -472,13 +577,13 @@ fn draw_room_marker_internal(
     config: &MapRenderConfig,
     room_id: &str,
     position: (i32, i32),
-    show_vertical_indicators: bool,
+    view: MapView,
 ) {
     let map = markers.map;
     let Some(room) = map.rooms.get(room_id) else {
         return;
     };
-    if room.flags.contains(&RoomFlag::Hide)
+    if !room_marker_visible(room, map.current_room.as_deref() == Some(room_id))
         || !inside(
             cells.first().map_or(0, Vec::len),
             cells.len(),
@@ -489,17 +594,61 @@ fn draw_room_marker_internal(
         return;
     }
     let is_current = map.current_room.as_deref() == Some(room_id);
-    if room.flags.contains(&RoomFlag::Void) && !is_current {
-        return;
+    let (symbol, color) = room_marker_style(markers, theme, config, room_id, is_current, view);
+    let marker_x = if view == MapView::Regular && !is_current && !room.symbol.is_empty() {
+        position.0 - (symbol.chars().count() as i32 / 2)
+    } else {
+        position.0
+    };
+    put_text(cells, styles, marker_x, position.1, &symbol, color);
+    let marker_end = (marker_x + symbol.chars().count() as i32 - 1, position.1);
+    if view == MapView::Regular {
+        draw_vertical_exit_indicators(cells, styles, room, theme, marker_end);
     }
-    let (symbol, color) = if is_current {
+    if map.show_vnums {
+        put_text(
+            cells,
+            styles,
+            marker_end.0.saturating_add(1),
+            position.1,
+            &room.id,
+            theme.muted,
+        );
+    }
+}
+
+// Saved maps predate symbol validation. Never let their symbols consume wide
+// terminal cells or inject controls into the map or legend.
+fn safe_room_symbol(symbol: &str) -> String {
+    symbol
+        .chars()
+        .filter(|ch| !ch.is_control() && ch.width() == Some(1))
+        .take(3)
+        .collect()
+}
+
+fn room_marker_style(
+    markers: &MapMarkers<'_>,
+    theme: &Theme,
+    config: &MapRenderConfig,
+    room_id: &str,
+    is_current: bool,
+    view: MapView,
+) -> (String, Color) {
+    let room = &markers.map.rooms[room_id];
+    let custom = if view == MapView::Regular {
+        safe_room_symbol(&room.symbol)
+    } else {
+        String::new()
+    };
+    if is_current {
         (
             config.current_room_symbol.clone(),
             parse_color(&config.current_room_color).unwrap_or(theme.accent),
         )
-    } else if !room.symbol.is_empty() {
+    } else if !custom.is_empty() {
         (
-            room.symbol.clone(),
+            custom,
             room_flag_color(config, theme, room).unwrap_or(theme.foreground),
         )
     } else if route_terrain(&room.terrain) {
@@ -520,20 +669,6 @@ fn draw_room_marker_internal(
             config.stub_symbol.clone(),
             room_flag_color(config, theme, room).unwrap_or(theme.muted),
         )
-    };
-    put_text(cells, styles, position.0, position.1, &symbol, color);
-    if show_vertical_indicators {
-        draw_vertical_exit_indicators(cells, styles, room, theme, position);
-    }
-    if map.show_vnums {
-        put_text(
-            cells,
-            styles,
-            position.0.saturating_add(1),
-            position.1,
-            &room.id,
-            theme.muted,
-        );
     }
 }
 
@@ -718,24 +853,33 @@ fn exit_color(
     }
 }
 
-fn door_marker(
-    config: &MapRenderConfig,
-    door: Option<DoorState>,
-    theme: &Theme,
-) -> Option<(String, Color)> {
+fn door_marker(config: &MapRenderConfig, exit: &Exit, theme: &Theme) -> Option<(String, Color)> {
     if !config.doors.show || config.doors.glyph.is_empty() {
         return None;
     }
-    let color = match door? {
-        DoorState::Open => &config.doors.open_color,
-        DoorState::Closed => &config.doors.closed_color,
-        DoorState::Pickable => &config.doors.pickable_color,
-        DoorState::Locked => &config.doors.locked_color,
-        DoorState::Trigger => &config.doors.trigger_color,
-        DoorState::Unknown => &config.doors.unknown_color,
+    let doors = &config.doors;
+    let (state_glyph, color) = match exit.door? {
+        DoorState::Open => (doors.open_glyph.as_deref(), &doors.open_color),
+        DoorState::Closed => (doors.closed_glyph.as_deref(), &doors.closed_color),
+        DoorState::Pickable => (doors.pickable_glyph.as_deref(), &doors.pickable_color),
+        DoorState::Locked => (doors.locked_glyph.as_deref(), &doors.locked_color),
+        DoorState::Trigger => (None, &doors.trigger_color),
+        DoorState::Unknown => (None, &doors.unknown_color),
+    };
+    let gate_glyph = if exit.flags.contains(&ExitFlag::Gate) {
+        match crate::map::normalize_direction(&exit.direction).as_str() {
+            "n" | "s" => doors.gate_ns_glyph.as_deref(),
+            "e" | "w" => doors.gate_ew_glyph.as_deref(),
+            _ => None,
+        }
+    } else {
+        None
     };
     Some((
-        config.doors.glyph.clone(),
+        gate_glyph
+            .or(state_glyph)
+            .unwrap_or(&doors.glyph)
+            .to_string(),
         parse_color(color).unwrap_or(theme.foreground),
     ))
 }
@@ -1135,6 +1279,212 @@ mod tests {
     use unicode_width::UnicodeWidthStr;
 
     use super::*;
+
+    #[test]
+    fn nearby_map_ignores_custom_symbols_with_or_without_notes() {
+        for terrain in ["Forest", "Road", "Unconfigured"] {
+            for note in ["", "Dol-Goldur Innkeeper"] {
+                let mut map = MapState::default();
+                map.create();
+                map.execute("link e 2 both").unwrap();
+                map.rooms.get_mut("1").unwrap().symbol = "Inn".into();
+                let room = map.rooms.get_mut("2").unwrap();
+                room.symbol = "Zzz".into();
+                room.note = note.into();
+                room.terrain = terrain.into();
+                let mut config = map_config();
+                config.current_room_symbol = "@".into();
+                config.stub_symbol = "?".into();
+                config.terrain.get_mut("Forest").unwrap().symbol = "F".into();
+                let area = Rect::new(0, 0, 31, 9);
+                let nearby = nearby_map_lines(area, &map, &theme(), &config);
+                let regular = plain_lines(map_lines(area, &map, &theme(), &config));
+                assert!(regular.join("\n").contains("Zzz"));
+                let mut without_symbols = map.clone();
+                for room in without_symbols.rooms.values_mut() {
+                    room.symbol.clear();
+                }
+                assert_eq!(
+                    nearby,
+                    nearby_map_lines(area, &without_symbols, &theme(), &config)
+                );
+                let plain = plain_lines(nearby);
+                assert_eq!(plain[4].chars().nth(15), Some('@'));
+                if terrain != "Road" {
+                    assert_eq!(
+                        plain[4].chars().nth(16),
+                        Some(if terrain == "Forest" { 'F' } else { '?' })
+                    );
+                }
+                assert!(!plain.join("\n").contains("Zzz"));
+            }
+        }
+    }
+
+    #[test]
+    fn legend_lists_nearest_noted_rooms_with_stable_ties_and_overflow() {
+        let mut map = MapState::default();
+        map.create();
+        map.execute("set note Player room").unwrap();
+        map.execute("set symbol Zzz").unwrap();
+        for (dir, id) in [("e", "2"), ("n", "3"), ("s", "4"), ("w", "5")] {
+            map.execute(&format!("link {dir} {id} both")).unwrap();
+            map.rooms.get_mut(id).unwrap().note = format!("Room {id} note");
+        }
+        map.execute("goto 2").unwrap();
+        map.execute("link e 02 both").unwrap();
+        map.rooms.get_mut("02").unwrap().note = "Farther room sorts after nearer rooms".into();
+        map.execute("goto 1").unwrap();
+        let config = MapRenderConfig::default();
+        let lines = plain_lines(map_lines(Rect::new(0, 0, 41, 18), &map, &theme(), &config));
+        assert_eq!(
+            &lines[14..],
+            [
+                "Zzz - Player room",
+                "∘ - Room 2 note",
+                "∘ - Room 3 note",
+                "+3 more"
+            ]
+        );
+        assert_eq!(lines[7].chars().nth(20), Some('X'));
+        map.rooms.get_mut("1").unwrap().note.clear();
+        let lines = plain_lines(map_lines(Rect::new(0, 0, 41, 18), &map, &theme(), &config));
+        assert_eq!(
+            &lines[14..],
+            [
+                "∘ - Room 2 note",
+                "∘ - Room 3 note",
+                "∘ - Room 4 note",
+                "+2 more"
+            ]
+        );
+    }
+
+    #[test]
+    fn legend_tracks_viewport_movement_and_excludes_hidden_and_other_layers() {
+        let mut map = MapState::default();
+        map.create();
+        map.execute("link e 2 both").unwrap();
+        map.rooms.get_mut("2").unwrap().symbol = "Zzz".into();
+        map.rooms.get_mut("2").unwrap().note = "Dol-Goldur Innkeeper".into();
+        let config = MapRenderConfig::default();
+        let render = |map: &MapState, width| {
+            plain_lines(map_lines(
+                Rect::new(0, 0, width, 12),
+                map,
+                &theme(),
+                &config,
+            ))
+        };
+        assert!(
+            render(&map, 41)
+                .join("\n")
+                .contains("Zzz - Dol-Goldur Innkeeper")
+        );
+        assert!(!render(&map, 9).join("\n").contains("Innkeeper"));
+        map.execute("goto 2").unwrap();
+        assert!(
+            render(&map, 41)
+                .join("\n")
+                .contains("Zzz - Dol-Goldur Innkeeper")
+        );
+        map.execute("goto 1").unwrap();
+        for flag in [RoomFlag::Hide, RoomFlag::Void] {
+            map.rooms.get_mut("2").unwrap().flags.insert(flag);
+            assert!(!render(&map, 41).join("\n").contains("Innkeeper"));
+            map.rooms.get_mut("2").unwrap().flags.remove(&flag);
+        }
+        map.rooms.get_mut("2").unwrap().z = 1;
+        assert!(!render(&map, 41).join("\n").contains("Innkeeper"));
+    }
+
+    #[test]
+    fn legend_handles_small_panes_unicode_notes_disabled_and_nearby_views() {
+        let mut map = MapState::default();
+        map.create();
+        map.rooms.get_mut("1").unwrap().note = "Innkeeper 界\nsecond line\u{1b}".into();
+        map.rooms.get_mut("1").unwrap().symbol = "界\u{1b}Zzz-extra".into();
+        let mut config = MapRenderConfig::default();
+        for width in 0..16 {
+            for height in 0..16 {
+                let lines = map_lines(Rect::new(0, 0, width, height), &map, &theme(), &config);
+                assert!(lines.len() <= height as usize);
+                if width > 0 && height > 0 {
+                    let footer = legend_footer_rows(height as usize, true);
+                    for line in &lines[height as usize - footer..] {
+                        let label = line.to_string();
+                        assert!(UnicodeWidthStr::width(label.as_str()) <= width as usize);
+                        assert!(!label.chars().any(char::is_control));
+                    }
+                }
+            }
+        }
+        let snapshot = map_snapshot_lines(40, 12, &map, &theme(), &config);
+        assert!(
+            snapshot
+                .iter()
+                .any(|line| plain_text(line).contains("Zzz - Innkeeper"))
+        );
+        assert!(
+            !plain_lines(nearby_map_lines(
+                Rect::new(0, 0, 40, 12),
+                &map,
+                &theme(),
+                &config
+            ))
+            .join("\n")
+            .contains("Innkeeper")
+        );
+        config.show_legend = false;
+        assert!(
+            !plain_lines(map_lines(Rect::new(0, 0, 40, 12), &map, &theme(), &config))
+                .join("\n")
+                .contains("Innkeeper")
+        );
+    }
+
+    #[test]
+    fn custom_symbol_vertical_indicators_do_not_cover_door_overlay() {
+        let mut map = MapState::default();
+        map.create();
+        map.execute("link w 2 both").unwrap();
+        map.execute("goto 2").unwrap();
+        map.execute("set symbol Zzz").unwrap();
+        map.execute("door e closed").unwrap();
+        map.execute("link u 3").unwrap();
+        map.execute("link d 4").unwrap();
+        map.execute("goto 1").unwrap();
+        let lines = plain_lines(map_lines(
+            Rect::new(0, 0, 41, 9),
+            &map,
+            &theme(),
+            &map_config(),
+        ));
+        assert!(lines[4].contains("Zzz↑↓"), "{}", lines[4]);
+        assert!(lines[4].contains('╬'), "{}", lines[4]);
+        assert_eq!(lines[4].chars().nth(20), Some('X'));
+    }
+
+    #[test]
+    fn multi_character_markers_are_centered_and_leave_gate_space() {
+        let mut map = MapState::default();
+        map.create();
+        map.execute("link e 2 both").unwrap();
+        map.execute("door e closed").unwrap();
+        map.rooms.get_mut("2").unwrap().symbol = "Zzz".into();
+        let lines = plain_lines(map_lines(
+            Rect::new(0, 0, 31, 9),
+            &map,
+            &theme(),
+            &map_config(),
+        ));
+        assert_eq!(
+            &lines[4].chars().skip(19).take(3).collect::<String>(),
+            "Zzz"
+        );
+        assert!(lines[4].contains('╬'));
+        assert_eq!(lines[4].chars().nth(15), Some('X'));
+    }
 
     #[test]
     fn snapshot_fills_requested_dimensions_without_a_map() {
@@ -1727,7 +2077,7 @@ mod tests {
     }
 
     #[test]
-    fn door_marker_survives_reverse_link_redraw() {
+    fn gate_marker_survives_reverse_link_redraw() {
         let mut map = MapState::default();
         map.current_room = Some("1".to_string());
         map.rooms
@@ -1742,14 +2092,19 @@ mod tests {
         map.rooms
             .insert("2".to_string(), room("2", "West", 0, 0, [("e", "1")]));
 
-        let lines = plain_lines(map_lines(
-            Rect::new(0, 0, 21, 9),
-            &map,
-            &theme(),
-            &map_config(),
-        ));
+        map.rooms
+            .get_mut("1")
+            .unwrap()
+            .exits
+            .get_mut("w")
+            .unwrap()
+            .flags
+            .insert(ExitFlag::Gate);
+        let mut config = map_config();
+        config.doors.gate_ew_glyph = Some("╫".into());
+        let lines = plain_lines(map_lines(Rect::new(0, 0, 21, 9), &map, &theme(), &config));
 
-        assert_eq!(lines[4].chars().nth(9), Some('╬'));
+        assert_eq!(lines[4].chars().nth(9), Some('╫'));
     }
 
     #[test]
@@ -1858,11 +2213,77 @@ mod tests {
     }
 
     #[test]
+    fn door_symbols_follow_state_and_gate_direction_without_changing_colors() {
+        let mut config = map_config();
+        config.doors.open_glyph = Some("□".into());
+        config.doors.closed_glyph = Some("▣".into());
+        config.doors.pickable_glyph = Some("⊞".into());
+        config.doors.locked_glyph = Some("⊠".into());
+        config.doors.gate_ns_glyph = Some("╪".into());
+        config.doors.gate_ew_glyph = Some("╫".into());
+        for (state, symbol) in [
+            (DoorState::Open, "□"),
+            (DoorState::Closed, "▣"),
+            (DoorState::Pickable, "⊞"),
+            (DoorState::Locked, "⊠"),
+            (DoorState::Trigger, "╬"),
+            (DoorState::Unknown, "╬"),
+        ] {
+            let mut exit = Exit {
+                direction: "n".into(),
+                door: Some(state),
+                ..Exit::default()
+            };
+            let ordinary = door_marker(&config, &exit, &theme()).unwrap();
+            assert_eq!(ordinary.0, symbol);
+            exit.flags.insert(ExitFlag::Gate);
+            for (direction, expected) in [
+                ("n", "╪"),
+                ("south", "╪"),
+                ("e", "╫"),
+                ("west", "╫"),
+                ("ne", symbol),
+                ("u", symbol),
+                ("d", symbol),
+            ] {
+                exit.direction = direction.into();
+                assert_eq!(
+                    door_marker(&config, &exit, &theme()),
+                    Some((expected.into(), ordinary.1))
+                );
+            }
+            exit.door = None;
+            assert!(door_marker(&config, &exit, &theme()).is_none());
+        }
+        let exit = Exit {
+            direction: "n".into(),
+            door: Some(DoorState::Open),
+            flags: [ExitFlag::Gate].into(),
+            ..Exit::default()
+        };
+        config.doors.gate_ns_glyph = None;
+        assert_eq!(door_marker(&config, &exit, &theme()).unwrap().0, "□");
+        config.doors.open_glyph = None;
+        config.doors.glyph = "#".into();
+        assert_eq!(door_marker(&config, &exit, &theme()).unwrap().0, "#");
+        config.doors.show = false;
+        assert!(door_marker(&config, &exit, &theme()).is_none());
+    }
+
+    #[test]
     fn door_markers_use_state_specific_colors() {
         let mut config = map_config();
         config.doors.trigger_color = "#ff00ff".to_string();
 
-        let marker = door_marker(&config, Some(DoorState::Trigger), &theme()).unwrap();
+        let marker = door_marker(
+            &config,
+            &Exit {
+                door: Some(DoorState::Trigger),
+                ..Exit::default()
+            },
+            &theme(),
+        )
+        .unwrap();
 
         assert_eq!(marker.0, "╬");
         assert_eq!(marker.1, Color::Rgb(255, 0, 255));
@@ -2137,6 +2558,9 @@ mod tests {
     }
 
     fn map_config() -> MapRenderConfig {
-        MapRenderConfig::default()
+        MapRenderConfig {
+            show_legend: false,
+            ..MapRenderConfig::default()
+        }
     }
 }

@@ -166,11 +166,13 @@ pub struct GroupMember {
     pub movement_percent: Option<i64>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct WorldState {
     pub time: Option<String>,
     pub weather: Option<String>,
     pub weather_frame: usize,
+    pub lightning_bolts: u8,
+    pub displayed_sky: Option<crate::animation::daylight::SkyClock>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1651,7 +1653,7 @@ mod tests {
     }
 
     #[test]
-    fn room_exits_update_replaces_existing_room_exits_after_room_exists() {
+    fn room_exits_update_preserves_existing_room_exits_after_room_exists() {
         let config = AppConfig::default();
         let mapping = &config.msdp.mapping;
         let mut state = AppState::new(&config);
@@ -1690,9 +1692,43 @@ mod tests {
 
         let room = &state.map.rooms["2811"];
         assert!(room.exits.contains_key("e"));
-        assert!(!room.exits.contains_key("n"));
+        assert_eq!(room.exits["n"].to.as_deref(), Some("2812"));
         assert!(room.exits.contains_key("s"));
         assert!(room.exits.contains_key("w"));
+    }
+
+    #[test]
+    fn manual_hidden_exit_survives_msdp_room_reentry() {
+        let config = AppConfig::default();
+        let mapping = &config.msdp.mapping;
+        let mut state = AppState::new(&config);
+        state.apply_msdp_frames(
+            &[MsdpFrame {
+                variable: mapping.room.clone(),
+                value: room_table("100", "Entrance", []),
+            }],
+            mapping,
+        );
+        state.map.execute("link n 101 both").unwrap();
+
+        for id in ["101", "100"] {
+            state.apply_msdp_frames(
+                &[
+                    MsdpFrame {
+                        variable: mapping.room_exits.clone(),
+                        value: room_exits([]),
+                    },
+                    MsdpFrame {
+                        variable: mapping.room.clone(),
+                        value: room_table(id, "Hidden passage", []),
+                    },
+                ],
+                mapping,
+            );
+        }
+        assert_eq!(state.map.current_room.as_deref(), Some("100"));
+        assert_eq!(state.map.rooms["100"].exits["n"].to.as_deref(), Some("101"));
+        assert_eq!(state.map.rooms["101"].exits["s"].to.as_deref(), Some("100"));
     }
 
     #[test]

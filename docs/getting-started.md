@@ -45,6 +45,22 @@ make ci
 
 See [Development and Validation](development.md) for every `make` target, its plain Cargo equivalent, and the full pre-change validation sequence.
 
+## Preview Weather Offline
+
+Run `mud-client --demo weather` (or `cargo run -- --demo weather` from source)
+to preview every outdoor weather effect without connecting to a server. The demo
+uses built-in colors and animation settings; it does not load your configuration,
+run scripts, or write any files. It cannot be combined with `--local` or `--character`.
+
+- Left/Right: cycle clear, cloudy, rain, storm/lightning, snow, blizzard, fog, wind, ash, and dust.
+- Up/Down: advance or rewind one game hour. Clear and cloudy skies show the sun or moon, with clouds passing in front.
+- Space: pause/resume both the clock and animation. Hour/weather selection still works while paused; fades resume when unpaused.
+- `q`, Escape, or Ctrl-C: exit.
+
+The clock starts at 5 AM and automatically advances one game hour every six
+seconds, looping through day and night. Resize the terminal to preview different
+World-pane sizes. Sun/moon fades use the same renderer and playback as the game.
+
 ## Configuration File
 
 The repository includes `config.toml` as a complete default example. It is not automatically loaded from the current directory. On Linux/WSL the default location is:

@@ -13,6 +13,8 @@ pub struct Theme {
     pub border: Color,
     pub title: Color,
     pub accent: Color,
+    pub rain: Color,
+    pub lightning: Color,
     pub success: Color,
     pub warning: Color,
     pub danger: Color,
@@ -31,6 +33,8 @@ impl Theme {
             border: parse_color(&config.border).unwrap_or(Color::DarkGray),
             title: parse_color(&config.title).unwrap_or(Color::Yellow),
             accent: parse_color(&config.accent).unwrap_or(Color::Cyan),
+            rain: parse_color(&config.rain).unwrap_or(Color::Cyan),
+            lightning: parse_color(&config.lightning).unwrap_or(Color::LightYellow),
             success: parse_color(&config.success).unwrap_or(Color::Green),
             warning: parse_color(&config.warning).unwrap_or(Color::Yellow),
             danger: parse_color(&config.danger).unwrap_or(Color::Red),
@@ -55,6 +59,8 @@ impl Theme {
                 "border" => &mut theme.border,
                 "title" => &mut theme.title,
                 "accent" => &mut theme.accent,
+                "rain" => &mut theme.rain,
+                "lightning" => &mut theme.lightning,
                 "success" => &mut theme.success,
                 "warning" => &mut theme.warning,
                 "danger" => &mut theme.danger,
@@ -72,5 +78,54 @@ impl Theme {
 
     pub fn background_safe_foreground(&self) -> Color {
         Color::Black
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn lightning_defaults_to_bright_yellow_and_supports_panel_overrides() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        assert_eq!(theme.lightning, Color::Rgb(255, 255, 0));
+        let mut options = PanelOptions::default();
+        options
+            .theme
+            .insert("lightning".into(), "lightyellow".into());
+        assert_eq!(theme.for_panel(&options).lightning, Color::LightYellow);
+        assert_eq!(theme.lightning, Color::Rgb(255, 255, 0));
+    }
+
+    #[test]
+    fn rain_color_parses_supported_formats_and_defaults() {
+        assert_eq!(
+            Theme::from_config(&ThemeConfig::default()).rain,
+            Color::Rgb(97, 175, 239)
+        );
+        for (value, expected) in [
+            ("blue", Color::Blue),
+            ("index:123", Color::Indexed(123)),
+            ("#123456", Color::Rgb(18, 52, 86)),
+        ] {
+            let config = ThemeConfig {
+                rain: value.into(),
+                ..ThemeConfig::default()
+            };
+            assert_eq!(Theme::from_config(&config).rain, expected);
+        }
+    }
+
+    #[test]
+    fn rain_panel_override_is_local_and_invalid_override_is_ignored() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let mut options = PanelOptions::default();
+        options.theme.insert("rain".into(), "blue".into());
+        let panel = theme.for_panel(&options);
+        assert_eq!(panel.rain, Color::Blue);
+        assert_eq!(panel.accent, theme.accent);
+        assert_eq!(theme.rain, Color::Rgb(97, 175, 239));
+        options.theme.insert("rain".into(), "invalid".into());
+        assert_eq!(theme.for_panel(&options).rain, theme.rain);
     }
 }

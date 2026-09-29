@@ -1,3 +1,4 @@
+mod celestial;
 pub mod character;
 pub mod gauges;
 pub mod input;

@@ -50,7 +50,7 @@ When multiple mapped rooms resolve to the same display position, the map keeps t
 /map set roomweight <value>
 /map flag <static|nofollow|direction|unicode|asciigraphics|asciivnums> [on|off]
 /map roomflag [<avoid|block|curved|fog|hide|invis|leave|noglobal|static|void>[;...] [on|off|get <variable>]]
-/map exitflag <dir> <avoid|block|hide|invis|teleport> [on|off]
+/map exitflag <dir> <avoid|block|hide|invis|teleport|gate> [on|off]
 /map list [query]
 /map landmark [query]
 /map landmarks [query]
@@ -130,10 +130,18 @@ Examples:
 | `roomname` | `name` | Room display name. |
 | `roomdesc` | `desc`, `description` | Room description. |
 | `roomarea` | `area` | Area name. |
-| `roomnote` | `note` | Mapper note. |
+| `roomnote` | `note` | Mapper note shown in the visible-room legend. Omit the value to clear. |
 | `roomterrain` | `terrain` | Terrain type. Also updates the default path weight for known RoTS terrain names. |
-| `roomsymbol` | `symbol` | Custom room symbol, truncated to three characters. |
+| `roomsymbol` | `symbol` | Custom room symbol, up to three single-cell non-control characters. Invalid input is rejected; omit the value to clear. |
 | `roomweight` | `weight` | Numeric pathing weight used by `/map find` and `/map run`. |
+
+### Room notes and legend
+
+For an innkeeper, use `/map set roomsymbol Zzz`, then `/map set roomnote Dol-Goldur Innkeeper`. `/map info` shows both fields; `/map write maps/rots.toml` saves them with the map. MSDP updates do not overwrite these annotations. `/map set roomsymbol` and `/map set roomnote` clear their respective values.
+
+The regular map and `/map map` snapshots show a legend of visible rooms with nonblank notes, such as `Zzz - Dol-Goldur Innkeeper`. Entries disappear from the live legend when the room leaves the drawing viewport. The current room retains the player marker, but its legend uses the custom symbol; rooms without one use their terrain marker. Horizontal spacing expands as needed for multi-character symbols. Nearby Map ignores custom room symbols, using configured terrain/stub symbols and its existing connected-road markers instead; the configured player marker is retained.
+
+At most three entries appear, nearest first by straight-line room-grid distance, with room ID breaking ties and `+N more` for overflow. The legend follows the map's layer, hidden-room, and void-room rules, clips long notes without wrapping, and keeps separate entries for separate rooms. Its stable footer is up to four rows, at most one-third of the inner pane height; smaller panes reduce entries and suppress the footer when fewer than two rows are available. Empty legends leave the reserved area blank. `[map] show_legend = false` disables it after `/reload`.
 
 ## Flags
 
@@ -166,6 +174,7 @@ Exit flags:
 - `hide`
 - `invis`
 - `teleport`
+- `gate`
 
 Omitting `on` or `off` toggles the current flag value.
 
@@ -173,7 +182,7 @@ Omitting `on` or `off` toggles the current flag value.
 
 Doors exist once between two connected rooms on the rendered link. Door state and name are stored on the room where the user set them because doors can be named differently from each side.
 
-The default door glyph is `╬`. State is shown by color:
+The shared fallback door glyph is `╬`. Optional per-state glyphs and directional gate glyphs are configured in `[map.doors]`; the supplied configuration uses `□` open, `▣` closed, `⊞` pickable, and `⊠` locked. Use `/map exitflag n gate on` on an existing door for `╪` north/south or `╫` east/west. The tag is directional and independent of door state, so gates retain state colors and movement behavior. See [door configuration](configuration.md#mapdoors) for fallback rules and examples. Supported states are:
 
 - trigger
 - unknown

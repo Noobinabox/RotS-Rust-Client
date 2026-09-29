@@ -97,6 +97,7 @@ pub struct App {
     lua: LuaEngine,
     animations: AnimationScheduler,
     weather_playback: crate::animation::weather_playback::WeatherPlayback,
+    celestial_playback: crate::animation::celestial_playback::CelestialPlayback,
     last_terminal_area: Rect,
     panel_cache: crate::ui::panels::PanelCache,
     runtime_store: crate::persistence::RuntimeStore,
@@ -245,6 +246,7 @@ impl App {
             lua,
             animations,
             weather_playback: Default::default(),
+            celestial_playback: Default::default(),
             last_terminal_area: Rect::default(),
             panel_cache: crate::ui::panels::PanelCache::default(),
             runtime_store,
@@ -2314,6 +2316,14 @@ impl App {
             &mut self.animations,
             now,
         );
+        self.state.world.lightning_bolts = self.weather_playback.lightning_bolts();
+        self.state.world.displayed_sky = Some(self.celestial_playback.update(
+            crate::animation::daylight::SkyClock::from_world_time(self.state.world.time.as_deref()),
+            kind,
+            (&self.config.weather, &self.config.animation),
+            &mut self.animations,
+            now,
+        ));
     }
 
     fn render(&self, frame: &mut Frame) {
@@ -2385,10 +2395,10 @@ fn help_text(topic: &str) -> Option<&'static str> {
             "# /map leave\n\n## Usage\n- `/map leave`\n\n## Description\nTemporarily leaves the map while remembering the current room for `/map return`.",
         ),
         "map set" => Some(
-            "# /map set\n\n## Usage\n- `/map set <option> <value>`\n\n## Description\nUpdates metadata on the current room.\n\n## Options\n- `roomname` / `name` - room display name\n- `roomdesc` / `description` - room description\n- `roomarea` / `area` - area name\n- `roomnote` / `note` - mapper note\n- `roomterrain` / `terrain` - terrain type\n- `roomsymbol` / `symbol` - custom room symbol\n- `roomweight` / `weight` - pathing weight",
+            "# /map set\n\n## Usage\n- `/map set <option> [value]`\n\n## Description\nUpdates metadata on the current room. Omit the value to clear a note or symbol.\n\n## Options\n- `roomname` / `name` - room display name\n- `roomdesc` / `description` - room description\n- `roomarea` / `area` - area name\n- `roomnote` / `note` - mapper note, shown in the visible-room legend\n- `roomterrain` / `terrain` - terrain type\n- `roomsymbol` / `symbol` - up to three single-cell non-control characters\n- `roomweight` / `weight` - pathing weight\n\n## Examples\n- `/map set roomsymbol Zzz`\n- `/map set roomnote Dol-Goldur Innkeeper`\n- `/map set roomsymbol` - clear the symbol\n- `/map set roomnote` - clear the note\n- `/map write maps/rots.toml` - save annotations with the map",
         ),
         "map get" | "map info" => Some(
-            "# /map get\n\n## Usage\n- `/map get`\n- `/map info`\n\n## Description\nShows the current map room id, name, coordinates, area, terrain, weight, and mapped exits.",
+            "# /map get\n\n## Usage\n- `/map get`\n- `/map info`\n\n## Description\nShows the current map room id, name, coordinates, area, terrain, weight, symbol, note, and mapped exits.",
         ),
         "map list" => Some(
             "# /map list\n\n## Usage\n- `/map list [query]`\n\n## Description\nLists mapped rooms, optionally filtered by room id, name, area, description, note, or terrain.",
@@ -2412,10 +2422,10 @@ fn help_text(topic: &str) -> Option<&'static str> {
             "# /map roomflag\n\n## Usage\n- `/map roomflag`\n- `/map roomflag <flag>[;<flag>...] [on|off]`\n- `/map roomflag <flag> get <variable>`\n\n## Description\nLists or changes TinTin-style flags on the current room.\n\n## Flags\n`avoid`, `block`, `curved`, `fog`, `hide`, `invis`, `leave`, `noglobal`, `static`, `void`.\n\n## Examples\n- `/map roomflag`\n- `/map roomflag avoid on`\n- `/map roomflag avoid;fog off`\n- `/map roomflag block get is_blocked`",
         ),
         "map exitflag" => Some(
-            "# /map exitflag\n\n## Usage\n- `/map exitflag <direction> <flag> [on|off]`\n\n## Description\nToggles a flag on an exit from the current room.\n\n## Flags\n`avoid`, `block`, `hide`, `invis`, `teleport`.",
+            "# /map exitflag\n\n## Usage\n- `/map exitflag <direction> <flag> [on|off]`\n\n## Description\nToggles a flag on an exit from the current room.\n\n## Flags\n`avoid`, `block`, `hide`, `invis`, `teleport`, `gate`.\n\n## Gate example\n`/map exitflag n gate on` tags an existing door as a gate without changing its state. Use `off` to remove the tag.",
         ),
         "map door" => Some(
-            "# /map door\n\n## Usage\n- `/map door <direction> [state|none] [name]`\n\n## Description\nMarks a door state and optional directional door name on an exit from the current room. If the state is omitted, the door is marked `closed`. Door names are stored only on the current room's exit because the opposite side can use a different name. Door markers render centered on the map link and can appear anywhere in the world. Every state uses the same configured glyph, with color indicating the door state.\n\n## States\n- `trigger` - door uses a manual trigger; no automatic movement command\n- `unknown` - details are unknown; no automatic movement command\n- `open` - known open door; no automatic movement command\n- `closed` - sends `open <name> <direction>` before movement\n- `pickable` - sends `pick <name> <direction>` before movement\n- `locked` - sends `unlock <name> <direction>` and `open <name> <direction>` before movement\n- `none` - clears door state and name",
+            "# /map door\n\n## Usage\n- `/map door <direction> [state|none] [name]`\n\n## Description\nMarks a door state and optional directional door name on an exit from the current room. If the state is omitted, the door is marked `closed`. Door names are stored only on the current room's exit because the opposite side can use a different name. Door markers render centered on the map link and can appear anywhere in the world. Configure optional open/closed/pickable/locked glyphs under `[map.doors]`; missing glyphs fall back to the shared `glyph`. Use `/map exitflag n gate on` for directional gate symbols while retaining the door-state color and movement behavior. Tags apply only with door metadata and are set separately on each side.\n\n## States\n- `trigger` - door uses a manual trigger; no automatic movement command\n- `unknown` - details are unknown; no automatic movement command\n- `open` - known open door; no automatic movement command\n- `closed` - sends `open <name> <direction>` before movement\n- `pickable` - sends `pick <name> <direction>` before movement\n- `locked` - sends `unlock <name> <direction>` and `open <name> <direction>` before movement\n- `none` - clears door state and name",
         ),
         "map read" => Some(
             "# /map read\n\n## Usage\n- `/map read <file>`\n\n## Description\nLoads map state from a TOML map file.",
@@ -2888,6 +2898,37 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn celestial_fade_state_is_updated_before_read_only_rendering() {
+        let mut app = App::new(AppConfig::default());
+        app.state.world.weather = Some("clear skies".into());
+        app.state.world.time = Some("6:00 AM".into());
+        let now = Instant::now();
+        app.update_weather_animation(now);
+        assert_eq!(app.state.world.displayed_sky.unwrap().opacity, 0);
+        app.update_weather_animation(now + Duration::from_secs(2));
+        assert_eq!(app.state.world.displayed_sky.unwrap().opacity, 255);
+        app.state.world.time = Some("7:00 PM".into());
+        app.update_weather_animation(now + Duration::from_secs(3));
+        assert!(
+            !app.state
+                .world
+                .displayed_sky
+                .unwrap()
+                .celestial
+                .unwrap()
+                .moon
+        );
+        app.config.animation.reduced_motion = true;
+        app.update_weather_animation(now + Duration::from_secs(4));
+        let sky = app.state.world.displayed_sky.unwrap();
+        assert_eq!(sky.opacity, 255);
+        assert!(sky.celestial.unwrap().moon);
+        app.state.world.weather = Some("rain".into());
+        app.update_weather_animation(now + Duration::from_secs(5));
+        assert!(app.state.world.displayed_sky.unwrap().celestial.is_none());
+    }
 
     #[test]
     fn weather_animation_updates_read_only_world_rendering() {
@@ -6088,7 +6129,7 @@ port = 3791
         assert_eq!(
             app.state
                 .output
-                .get(expected_height / 2)
+                .get((expected_height - (expected_height / 3).min(4)) / 2)
                 .and_then(|line| plain_text(&line.raw).chars().nth(expected_width / 2)),
             Some('X')
         );

@@ -4,12 +4,17 @@ use mud_client::{
     error::{MudClientError, Result},
 };
 
+mod weather_demo;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let options = CliOptions::parse(std::env::args().skip(1))?;
     if options.help {
         print_help();
         return Ok(());
+    }
+    if options.weather_demo {
+        return weather_demo::run();
     }
     let load_options = ConfigLoadOptions {
         local_test_endpoint: options.local,
@@ -47,6 +52,7 @@ struct CliOptions {
     help: bool,
     local: bool,
     character: Option<String>,
+    weather_demo: bool,
 }
 
 impl CliOptions {
@@ -57,6 +63,14 @@ impl CliOptions {
             match arg.as_str() {
                 "--help" | "-h" => options.help = true,
                 "--local" => options.local = true,
+                "--demo" => {
+                    if options.weather_demo || args.next().as_deref() != Some("weather") {
+                        return Err(MudClientError::Cli(
+                            "use --demo weather once to preview weather offline".into(),
+                        ));
+                    }
+                    options.weather_demo = true;
+                }
                 "--character" => {
                     if options.character.is_some() {
                         return Err(MudClientError::Cli(
@@ -75,19 +89,44 @@ impl CliOptions {
                 _ => return Err(MudClientError::Cli(format!("unknown argument `{arg}`"))),
             }
         }
+        if options.weather_demo && (options.local || options.character.is_some()) {
+            return Err(MudClientError::Cli(
+                "--demo weather cannot be combined with --local or --character".into(),
+            ));
+        }
         Ok(options)
     }
 }
 
 fn print_help() {
     println!(
-        "mud-client\n\nUsage:\n  mud-client [--local] [--character NAME]\n\nOptions:\n  --local   Force localhost:3791 even when config points elsewhere\n  --character NAME  Load characters/NAME.toml over shared config.toml (lowercase filename)\n  -h, --help  Show this help"
+        "mud-client\n\nUsage:\n  mud-client [--local] [--character NAME]\n  mud-client --demo weather\n\nOptions:\n  --local   Force localhost:3791 even when config points elsewhere\n  --character NAME  Load characters/NAME.toml over shared config.toml (lowercase filename)\n  --demo weather  Preview all weather offline without loading configuration\n  -h, --help  Show this help"
     );
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cli_weather_demo_is_explicit_and_isolated() {
+        assert!(
+            CliOptions::parse(["--demo", "weather"].map(str::to_owned))
+                .unwrap()
+                .weather_demo
+        );
+        for args in [
+            vec!["--demo"],
+            vec!["--demo", "other"],
+            vec!["--demo", "weather", "--demo", "weather"],
+            vec!["--demo", "weather", "--local"],
+            vec!["--local", "--demo", "weather"],
+            vec!["--demo", "weather", "--character", "test"],
+            vec!["--character", "test", "--demo", "weather"],
+        ] {
+            assert!(CliOptions::parse(args.into_iter().map(str::to_owned)).is_err());
+        }
+    }
 
     #[test]
     fn cli_parses_local_and_help() {

@@ -52,7 +52,10 @@ fn render_info_panel(
             WeatherKind::classify(weather),
             state.world.weather_frame,
             theme,
-            crate::animation::daylight::Daylight::from_world_time(state.world.time.as_deref()),
+            state.world.displayed_sky.unwrap_or_else(|| {
+                crate::animation::daylight::SkyClock::from_world_time(state.world.time.as_deref())
+            }),
+            state.world.lightning_bolts,
         );
     }
 }
@@ -1319,6 +1322,42 @@ mod tests {
     }
 
     #[test]
+    fn world_panel_consumes_fade_state_without_mutating_it() {
+        let config = crate::config::AppConfig::default();
+        let mut state = AppState::new(&config);
+        state.world.weather = Some("Clear".into());
+        state.world.time = Some("6:00 AM".into());
+        let mut sky =
+            crate::animation::daylight::SkyClock::from_world_time(state.world.time.as_deref());
+        let area = Rect::new(0, 0, 40, 10);
+        let mut hidden = Buffer::empty(area);
+        sky.opacity = 0;
+        state.world.displayed_sky = Some(sky);
+        render_info_panel(
+            area,
+            &mut hidden,
+            &state,
+            &theme(),
+            "World",
+            &config.weather,
+        );
+        assert_eq!(state.world.displayed_sky, Some(sky));
+        let mut visible = Buffer::empty(area);
+        sky.opacity = 255;
+        state.world.displayed_sky = Some(sky);
+        render_info_panel(
+            area,
+            &mut visible,
+            &state,
+            &theme(),
+            "World",
+            &config.weather,
+        );
+        assert_ne!(visible, hidden);
+        assert_eq!(state.world.displayed_sky, Some(sky));
+    }
+
+    #[test]
     fn world_time_changes_weather_tint_without_changing_its_animation_phase() {
         let config = crate::config::AppConfig::default();
         let mut state = AppState::new(&config);
@@ -1326,9 +1365,9 @@ mod tests {
         let area = Rect::new(0, 0, 40, 10);
         let theme = theme();
         for (time, expected) in [
-            ("It is about 6:00 AM on ", theme.warning),
-            ("It is about 12:00 PM on ", theme.accent),
-            ("It is about 12:00 AM on ", theme.muted),
+            ("It is about 6:00 AM on ", theme.rain),
+            ("It is about 12:00 PM on ", theme.rain),
+            ("It is about 12:00 AM on ", theme.rain),
         ] {
             state.world.time = Some(time.into());
             let mut buffer = Buffer::empty(area);

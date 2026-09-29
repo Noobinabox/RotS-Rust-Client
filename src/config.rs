@@ -121,6 +121,16 @@ impl AppConfig {
 
     pub fn validate(&self) -> Result<()> {
         crate::macros::MacroEngine::new(&self.macros).map_err(MudClientError::ConfigValidation)?;
+        for (name, value) in [
+            ("rain", &self.colors.rain),
+            ("lightning", &self.colors.lightning),
+        ] {
+            if parse_color(value).is_none() {
+                return Err(MudClientError::ConfigValidation(format!(
+                    "invalid color colors.{name}: {value}"
+                )));
+            }
+        }
         if self.connection.host.trim().is_empty() {
             return Err(MudClientError::ConfigValidation(
                 "connection.host must not be empty".to_string(),
@@ -230,6 +240,8 @@ impl AppConfig {
                     "border",
                     "title",
                     "accent",
+                    "rain",
+                    "lightning",
                     "success",
                     "warning",
                     "danger",
@@ -314,6 +326,25 @@ impl AppConfig {
                 "map.doors.glyph must be exactly one terminal cell when doors are shown"
                     .to_string(),
             ));
+        }
+        if self.map.doors.show {
+            for (name, glyph) in [
+                ("open_glyph", &self.map.doors.open_glyph),
+                ("closed_glyph", &self.map.doors.closed_glyph),
+                ("pickable_glyph", &self.map.doors.pickable_glyph),
+                ("locked_glyph", &self.map.doors.locked_glyph),
+                ("gate_ns_glyph", &self.map.doors.gate_ns_glyph),
+                ("gate_ew_glyph", &self.map.doors.gate_ew_glyph),
+            ] {
+                if glyph
+                    .as_deref()
+                    .is_some_and(|glyph| !is_fixed_width_map_symbol(glyph, 1))
+                {
+                    return Err(MudClientError::ConfigValidation(format!(
+                        "map.doors.{name} must be exactly one terminal cell when doors are shown"
+                    )));
+                }
+            }
         }
         if self.map.teleport.show && !is_fixed_width_map_symbol(&self.map.teleport.glyph, 1) {
             return Err(MudClientError::ConfigValidation(
@@ -1113,6 +1144,8 @@ pub struct ThemeConfig {
     pub border: String,
     pub title: String,
     pub accent: String,
+    pub rain: String,
+    pub lightning: String,
     pub success: String,
     pub warning: String,
     pub danger: String,
@@ -1129,6 +1162,8 @@ impl Default for ThemeConfig {
             border: "#806f4a".to_string(),
             title: "#d8b365".to_string(),
             accent: "#c49a50".to_string(),
+            rain: "#61afef".to_string(),
+            lightning: "#ffff00".to_string(),
             success: "#65b875".to_string(),
             warning: "#d6ad55".to_string(),
             danger: "#d45c5c".to_string(),
@@ -1198,6 +1233,7 @@ impl Default for GaugeConfig {
 #[serde(default)]
 pub struct MapRenderConfig {
     pub show_links: bool,
+    pub show_legend: bool,
     pub room_spacing_columns: i32,
     pub room_spacing_rows: i32,
     pub current_room_symbol: String,
@@ -1220,6 +1256,7 @@ impl Default for MapRenderConfig {
     fn default() -> Self {
         Self {
             show_links: true,
+            show_legend: true,
             room_spacing_columns: 3,
             room_spacing_rows: 2,
             current_room_symbol: "X".to_string(),
@@ -1263,6 +1300,12 @@ impl Default for MapPersistenceConfig {
 pub struct MapDoorConfig {
     pub show: bool,
     pub glyph: String,
+    pub open_glyph: Option<String>,
+    pub closed_glyph: Option<String>,
+    pub pickable_glyph: Option<String>,
+    pub locked_glyph: Option<String>,
+    pub gate_ns_glyph: Option<String>,
+    pub gate_ew_glyph: Option<String>,
     pub open_color: String,
     pub closed_color: String,
     pub pickable_color: String,
@@ -1276,6 +1319,12 @@ impl Default for MapDoorConfig {
         Self {
             show: true,
             glyph: "╬".to_string(),
+            open_glyph: None,
+            closed_glyph: None,
+            pickable_glyph: None,
+            locked_glyph: None,
+            gate_ns_glyph: None,
+            gate_ew_glyph: None,
             open_color: "#65b875".to_string(),
             closed_color: "#d6ad55".to_string(),
             pickable_color: "#61afef".to_string(),
@@ -1951,6 +2000,74 @@ mod tests {
     use super::*;
 
     #[test]
+    fn map_legend_defaults_on_and_can_be_disabled() {
+        let default: AppConfig = toml::from_str("[map]\nshow_links = true\n").unwrap();
+        assert!(default.map.show_legend);
+        let disabled: AppConfig = toml::from_str("[map]\nshow_legend = false\n").unwrap();
+        assert!(!disabled.map.show_legend);
+        disabled.validate().unwrap();
+        let restored: AppConfig = toml::from_str(&toml::to_string(&disabled).unwrap()).unwrap();
+        assert_eq!(restored, disabled);
+    }
+
+    #[test]
+    fn rain_color_defaults_and_panel_overrides_validate() {
+        let config: AppConfig = toml::from_str("[colors]\naccent = 'red'\n").unwrap();
+        assert_eq!(config.colors.rain, "#61afef");
+        config.validate().unwrap();
+        let config: AppConfig = toml::from_str(
+            "[colors]\nrain = 'blue'\n[panels.character]\ntitle = 'World'\n[panels.character.theme]\nrain = 'index:123'\n",
+        )
+        .unwrap();
+        config.validate().unwrap();
+        let restored: AppConfig = toml::from_str(&toml::to_string(&config).unwrap()).unwrap();
+        assert_eq!(restored, config);
+    }
+
+    #[test]
+    fn rain_color_rejects_invalid_global_and_panel_values() {
+        for key in ["colors", "panels.character.theme"] {
+            let config: AppConfig =
+                toml::from_str(&format!("[{key}]\nrain = 'invalid'\n")).unwrap();
+            let error = config.validate().unwrap_err().to_string();
+            assert!(error.contains(&format!("{key}.rain")), "{error}");
+        }
+    }
+
+    #[test]
+    fn lightning_color_defaults_overrides_and_validation() {
+        let mut config: AppConfig = toml::from_str("").unwrap();
+        assert_eq!(config.colors.lightning, "#ffff00");
+        config
+            .panels
+            .info
+            .theme
+            .insert("lightning".into(), "lightyellow".into());
+        config.validate().unwrap();
+        config.colors.lightning = "invalid".into();
+        assert!(
+            config
+                .validate()
+                .unwrap_err()
+                .to_string()
+                .contains("colors.lightning")
+        );
+        config.colors.lightning = "yellow".into();
+        config
+            .panels
+            .info
+            .theme
+            .insert("lightning".into(), "invalid".into());
+        assert!(
+            config
+                .validate()
+                .unwrap_err()
+                .to_string()
+                .contains("panels.info.theme.lightning")
+        );
+    }
+
+    #[test]
     fn panel_customization_defaults_and_round_trip() {
         let config: AppConfig = toml::from_str("[panels.output]\ntitle = 'Output'\nborder_style = 'rounded'\nalignment = 'right'\nrefresh_ms = 250\n[panels.output.theme]\nforeground = 'index:123'\nbackground = '#123456'\n").unwrap();
         config.validate().unwrap();
@@ -2127,6 +2244,63 @@ glyph = "#"
         assert_eq!(config.map.doors.glyph, "#");
         assert_eq!(config.map.doors.trigger_color, "#c678dd");
         assert_eq!(config.map.doors.locked_color, "#d45c5c");
+        assert_eq!(config.map.doors.open_glyph, None);
+        assert_eq!(config.map.doors.closed_glyph, None);
+        assert_eq!(config.map.doors.pickable_glyph, None);
+        assert_eq!(config.map.doors.locked_glyph, None);
+        assert_eq!(config.map.doors.gate_ns_glyph, None);
+        assert_eq!(config.map.doors.gate_ew_glyph, None);
+        config.validate().expect("legacy door config remains valid");
+    }
+
+    #[test]
+    fn custom_door_glyphs_round_trip() {
+        let config: AppConfig = toml::from_str(
+            r#"
+[map.doors]
+open_glyph = "□"
+closed_glyph = "▣"
+pickable_glyph = "⊞"
+locked_glyph = "⊠"
+gate_ns_glyph = "╪"
+gate_ew_glyph = "╫"
+"#,
+        )
+        .expect("custom door glyphs parse");
+        config.validate().expect("custom door glyphs are one cell");
+        assert_eq!(config.map.doors.open_glyph.as_deref(), Some("□"));
+        assert_eq!(config.map.doors.closed_glyph.as_deref(), Some("▣"));
+        assert_eq!(config.map.doors.pickable_glyph.as_deref(), Some("⊞"));
+        assert_eq!(config.map.doors.locked_glyph.as_deref(), Some("⊠"));
+        assert_eq!(config.map.doors.gate_ns_glyph.as_deref(), Some("╪"));
+        assert_eq!(config.map.doors.gate_ew_glyph.as_deref(), Some("╫"));
+        let serialized = toml::to_string(&config).expect("custom config serializes");
+        let restored: AppConfig = toml::from_str(&serialized).expect("custom config deserializes");
+        assert_eq!(restored.map.doors, config.map.doors);
+    }
+
+    #[test]
+    fn custom_door_glyphs_validate_width_only_when_shown() {
+        for field in [
+            "open_glyph",
+            "closed_glyph",
+            "pickable_glyph",
+            "locked_glyph",
+            "gate_ns_glyph",
+            "gate_ew_glyph",
+        ] {
+            for invalid in ["", "##", "界", "\n", "\u{301}"] {
+                let encoded = toml::Value::String(invalid.to_string());
+                let input = format!("[map.doors]\n{field} = {encoded}");
+                let mut config: AppConfig = toml::from_str(&input).expect("glyph config parses");
+                let error = config.validate().expect_err("invalid width rejected");
+                assert!(error.to_string().contains(&format!("map.doors.{field}")));
+                config.map.doors.show = false;
+                config
+                    .validate()
+                    .expect("hidden door glyphs are not rendered");
+            }
+        }
     }
 
     #[test]

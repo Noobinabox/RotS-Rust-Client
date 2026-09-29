@@ -164,6 +164,7 @@ visible_modes = []
 
 [map]
 show_links = true
+show_legend = true
 room_spacing_columns = 3
 room_spacing_rows = 2
 current_room_symbol = "X"
@@ -185,9 +186,15 @@ save_on_exit = false
 [map.doors]
 show = true
 glyph = "╬"
+open_glyph = "□"
+closed_glyph = "▣"
+pickable_glyph = "⊞"
+locked_glyph = "⊠"
+gate_ns_glyph = "╪"
+gate_ew_glyph = "╫"
 open_color = "#65b875"
 closed_color = "#d6ad55"
-pickable_color = "#61afef"
+pickable_color = "#d6ad55"
 locked_color = "#d45c5c"
 trigger_color = "#c678dd"
 unknown_color = "#777777"
@@ -232,7 +239,7 @@ double = false
 [map.terrain.Forest]
 symbol = "♣"
 color = "lightgreen"
-density = "dense"
+density = "scant"
 spread = "wide"
 fade = "fadeout"
 double = false
@@ -242,7 +249,7 @@ symbol = "♠"
 color = "green"
 density = "dense"
 spread = "vast"
-fade = "fadeout"
+fade = "fadein"
 double = false
 
 [map.terrain."Dense Forest"]
@@ -250,7 +257,7 @@ symbol = "♠"
 color = "green"
 density = "dense"
 spread = "vast"
-fade = "fadeout"
+fade = "fadein"
 double = false
 
 [map.terrain.Hills]
@@ -302,10 +309,10 @@ fade = ""
 double = false
 
 [map.terrain.Swamp]
-symbol = "∼"
-color = "#6d7a2e"
+symbol = "%"
+color = "#7e3285"
 density = ""
-spread = ""
+spread = "wide"
 fade = ""
 double = false
 

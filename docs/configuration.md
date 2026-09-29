@@ -92,6 +92,8 @@ These are the global Tokyo Night themed defaults used by panels and widgets unle
 | `border` | Panel borders. |
 | `title` | Panel titles. |
 | `accent` | Selected or emphasized UI elements. |
+| `rain` | Rain/storm particle color; defaults to blue (`#61afef`). |
+| `lightning` | Bright lightning bolt color; defaults to yellow (`#ffff00`). |
 | `success` | Healthy or positive state. |
 | `warning` | Warning state. |
 | `danger` | Low health, errors, or dangerous state. |
@@ -129,13 +131,33 @@ scenes; generic fog, wind, ash, and dust also have scenes. Backgrounds stay insi
 the World pane's content area and do not obscure text. Lighting follows the
 server's `WORLD_TIME`, not the local clock: warm theme `warning` colors at dawn/dusk,
 weather-specific non-dimmed colors by day, and dimmed `muted`/`accent` colors at
-night. Clear nights show a crescent, not a lunar-phase simulation. Unknown time
+night. Clear and cloudy skies use north-up orientation: the sun/cratered moon travels right (east) to left (west),
+highest and brightest at noon/midnight. The sun uses theme `danger`, `warning`,
+and `foreground`; the moon uses `muted` and `foreground`, with dim horizons.
+This is a decorative night cycle, not a lunar-phase simulation. Unknown time
 retains the dimmed `muted`/`accent` palette. The normal RoTS hour-only time uses
 6 AM dawn and 6 PM dusk as display fallbacks, rather than seasonal sunrise data.
 See the animation guide for the complete theme mapping.
 
+Rain and storm particles are an exception to the general lighting palette:
+`[colors] rain = "#61afef"` supplies their blue color at every hour, dimmed outside
+daytime. `[panels.info.theme] rain = "blue"` overrides it just for the World pane.
+Lightning uses non-dimmed `lightning` (default `#ffff00`) and shows one to three
+simultaneous half-second bolts at randomized 1–5-second start intervals,
+independent of weather FPS. Reduced motion keeps two static bolts where space
+permits. These visual strikes do not represent spell-casting windows.
+
+Clouds drift in front of the sun/moon, hiding overlapping parts (including cloud
+interiors) while leaving gaps visible. Without recognized time, cloudy weather
+shows only clouds. Switching between clear and cloudy does not restart fades.
+
+Clear/cloudy-weather sun/moon changes fade out for two seconds and in for two seconds;
+the first appearance fades in. RGB themes blend into the background; terminal
+palettes use dimming and glyph reveal. `animation.weather_fps` controls fade
+steps. Reduced motion or disabled animation bypasses these transitions.
+
 Disabled animation or reduced motion retains a static first-frame scene;
-game-time lighting still updates. Low-performance mode caps weather motion at 2 FPS. Visible
+game-time lighting and sun/moon positions still update. Low-performance mode caps weather motion at 2 FPS. Visible
 motion is limited by terminal ticks and the World pane's configured refresh interval.
 
 ## substitutions
@@ -187,7 +209,7 @@ border = "cyan"
 title = "lightcyan"
 ```
 
-Theme keys are `background`, `foreground`, `border`, `title`, `accent`, `success`, `warning`, `danger`, `muted`, `player`, and `enemy`; unknown keys and invalid colors are rejected. Explicit MUD ANSI colors, highlights, map marker/terrain colors, and existing gauge-specific colors retain precedence over generic foreground overrides. The compact status strip is not a bordered panel and continues to use the global theme. Nearby Map shares `panels.map` styling and refresh settings, with its existing distinct title.
+Theme keys are `background`, `foreground`, `border`, `title`, `accent`, `rain`, `lightning`, `success`, `warning`, `danger`, `muted`, `player`, and `enemy`; unknown keys and invalid colors are rejected. Explicit MUD ANSI colors, highlights, map marker/terrain colors, and existing gauge-specific colors retain precedence over generic foreground overrides. The compact status strip is not a bordered panel and continues to use the global theme. Nearby Map shares `panels.map` styling and refresh settings, with its existing distinct title.
 
 Refresh intervals throttle only rendering, never networking, scripting, or state updates. A due panel refreshes on the next application draw, so the timer cadence (`terminal.tick_rate_ms`) and event traffic also affect observed refresh timing. Cached content is copied into every frame; it is not erased between refreshes. Keyboard/mouse input, resize, successful `/reload`, changed panel settings/geometry, and hiding/revealing a panel invalidate cached content. Input and completion remain immediate. Use short intervals for output or combat panels if delayed information is undesirable.
 
@@ -208,7 +230,8 @@ The Social panel captures incoming and outgoing tells, chats, says, narrates, gr
 | Option | Meaning |
 |---|---|
 | `show_links` | Draws links between rooms. |
-| `room_spacing_columns` | Horizontal distance between room centers. Must leave enough space for links and doors. |
+| `show_legend` | Shows notes for visible rooms below the regular map and map snapshots (default `true`). Does not affect Nearby Map. Apply changes with `/reload`. |
+| `room_spacing_columns` | Horizontal distance between room centers. Rendering increases spacing when multi-character room symbols need space for links and doors. |
 | `room_spacing_rows` | Vertical distance between room centers. |
 | `current_room_symbol` | One-cell symbol for the current room. |
 | `current_room_color` | Color for the current room symbol. |
@@ -231,19 +254,44 @@ The Social panel captures incoming and outgoing tells, chats, says, narrates, gr
 
 ### map.doors
 
-Doors use one shared glyph and state-specific colors so door identity stays consistent.
+Doors support optional state-specific glyphs, falling back to the shared `glyph` when omitted. Existing configurations keep their shared symbol. Every configured glyph must occupy exactly one terminal cell when doors are shown.
+Tag a door as a gate with `/map exitflag n gate on`. The tag applies only to exits with door metadata; it does not create a door or change movement behavior. Cardinal gates use the configured directional gate glyph instead of the state glyph: `gate_ns_glyph` for north/south and `gate_ew_glyph` for east/west. Omitted gate glyphs, diagonal exits, and up/down exits fall back to the state glyph, then the shared glyph. Gates retain their door state's color.
 Door movement behavior is state-driven: `trigger`, `unknown`, and `open` add no automatic command; `closed` opens the named door; `pickable` picks the named door; `locked` unlocks and then opens the named door.
 
 | Option | Meaning |
 |---|---|
 | `show` | Enables door glyphs on map links. |
 | `glyph` | One-cell door symbol. Default is `╬`. |
+| `open_glyph` | Optional open door symbol, such as `□`. |
+| `closed_glyph` | Optional closed door symbol, such as `▣`. |
+| `pickable_glyph` | Optional pickable door symbol, such as `⊞`. |
+| `locked_glyph` | Optional locked door symbol, such as `⊠`. |
+| `gate_ns_glyph` | Optional north/south gate symbol, such as `╪`. |
+| `gate_ew_glyph` | Optional east/west gate symbol, such as `╫`. |
 | `open_color` | Door exists and is open. |
 | `closed_color` | Door is closed. |
 | `pickable_color` | Door can be picked. |
 | `locked_color` | Door needs a key. |
 | `trigger_color` | Door is opened by a trigger such as a lever or spoken word. |
 | `unknown_color` | Door state is unknown. |
+
+Example matching the supplied `config.toml` (open green, closed/pickable yellow, locked red):
+
+```toml
+[map.doors]
+show = true
+glyph = "╬"
+open_glyph = "□"
+closed_glyph = "▣"
+pickable_glyph = "⊞"
+locked_glyph = "⊠"
+gate_ns_glyph = "╪"
+gate_ew_glyph = "╫"
+open_color = "#65b875"
+closed_color = "#d6ad55"
+pickable_color = "#d6ad55"
+locked_color = "#d45c5c"
+```
 
 ### map.teleport
 

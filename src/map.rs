@@ -5,6 +5,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
+use unicode_width::UnicodeWidthChar;
 
 use crate::network::msdp::MsdpValue;
 
@@ -151,6 +152,7 @@ pub enum ExitFlag {
     Hide,
     Invis,
     Teleport,
+    Gate,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -259,9 +261,11 @@ impl MapState {
                 Ok(self.message("Left the map. Use /map return to restore the previous room."))
             }
             "set" => {
-                let option = required(parts.next(), "usage: /map set <option> <value>")?;
+                let option = required(parts.next(), "usage: /map set <option> [value]")?;
                 let value = parts.collect::<Vec<_>>().join(" ");
-                if value.is_empty() {
+                if value.is_empty()
+                    && !matches!(option, "roomnote" | "note" | "roomsymbol" | "symbol")
+                {
                     return Err("usage: /map set <option> <value>".to_string());
                 }
                 self.set(option, &value)?;
@@ -429,7 +433,7 @@ impl MapState {
         id: Option<String>,
         name: Option<String>,
         exits: Vec<RoomExitUpdate>,
-        replace_exits: bool,
+        update_exits: bool,
     ) {
         let Some(id) = id.filter(|value| !value.trim().is_empty()) else {
             if let Some(name) = name {
@@ -464,7 +468,7 @@ impl MapState {
         {
             room.name = name;
         }
-        if replace_exits {
+        if update_exits {
             self.sync_current_room_exits(&id, exits);
         }
     }
@@ -516,17 +520,12 @@ impl MapState {
     }
 
     fn sync_current_room_exits(&mut self, id: &str, exits: Vec<RoomExitUpdate>) {
-        let reported_directions = exits
-            .iter()
-            .map(|exit| normalize_direction(&exit.direction))
-            .collect::<BTreeSet<_>>();
         if let Some(room) = self.rooms.get_mut(id) {
-            room.exits
-                .retain(|direction, _| reported_directions.contains(direction));
+            // Reports may omit hidden exits. Keep the learned graph, while this
+            // list continues to describe only the server's visible exit order.
             room.exit_order = exits
                 .iter()
                 .map(|exit| normalize_direction(&exit.direction))
-                .filter(|direction| reported_directions.contains(direction))
                 .collect();
         }
         for exit in exits {
@@ -898,7 +897,16 @@ impl MapState {
             "roomarea" | "area" => room.area = value.to_string(),
             "roomnote" | "note" => room.note = value.to_string(),
             "roomterrain" | "terrain" => room.set_terrain(value.to_string()),
-            "roomsymbol" | "symbol" => room.symbol = value.chars().take(3).collect(),
+            "roomsymbol" | "symbol" => {
+                if value.chars().count() > 3
+                    || value
+                        .chars()
+                        .any(|character| character.is_control() || character.width() != Some(1))
+                {
+                    return Err("Room symbols must contain at most three single-cell characters (for example Zzz); omit the value to clear the symbol.".to_string());
+                }
+                room.symbol = value.to_string();
+            }
             "roomweight" | "weight" => {
                 room.weight = value
                     .parse::<f32>()
@@ -1186,7 +1194,7 @@ impl MapState {
             return format!("Map room {} is missing.", current);
         };
         format!(
-            "Room {}: {}\nCoords: {},{},{}\nArea: {}\nTerrain: {}\nWeight: {}\nExits: {}",
+            "Room {}: {}\nCoords: {},{},{}\nArea: {}\nTerrain: {}\nWeight: {}\nSymbol: {}\nNote: {}\nExits: {}",
             room.id,
             room.name_or_default(),
             room.x,
@@ -1195,6 +1203,8 @@ impl MapState {
             room.area,
             room.terrain_or_default(),
             room.weight,
+            room.symbol,
+            room.note,
             room.exits.keys().cloned().collect::<Vec<_>>().join(", ")
         )
     }
@@ -1630,8 +1640,9 @@ fn parse_exit_flag(flag: &str) -> Result<ExitFlag, String> {
         "hide" => Ok(ExitFlag::Hide),
         "invis" => Ok(ExitFlag::Invis),
         "teleport" | "tp" => Ok(ExitFlag::Teleport),
+        "gate" => Ok(ExitFlag::Gate),
         _ => Err(format!(
-            "Unknown exit flag `{}`. Use avoid, block, hide, invis, or teleport.",
+            "Unknown exit flag `{}`. Use avoid, block, hide, invis, teleport, or gate.",
             flag
         )),
     }
@@ -1668,7 +1679,7 @@ fn non_empty_text(value: &str) -> Option<String> {
     (!trimmed.is_empty()).then(|| trimmed.to_string())
 }
 
-fn normalize_direction(value: impl AsRef<str>) -> String {
+pub(crate) fn normalize_direction(value: impl AsRef<str>) -> String {
     match value.as_ref().trim().to_ascii_lowercase().as_str() {
         "north" => "n",
         "northeast" => "ne",
@@ -1779,6 +1790,38 @@ mod tests {
     use std::collections::HashMap;
 
     use super::*;
+
+    #[test]
+    fn room_annotations_validate_clear_and_survive_msdp_and_persistence() {
+        let mut map = MapState::default();
+        map.create();
+        map.execute("set roomsymbol Zzz").unwrap();
+        map.execute("set roomnote Dol-Goldur Innkeeper").unwrap();
+        let info = map.execute("info").unwrap().message;
+        assert!(info.contains("Symbol: Zzz"));
+        assert!(info.contains("Note: Dol-Goldur Innkeeper"));
+
+        for invalid in ["four", "界", "e\u{301}", "\u{1b}"] {
+            assert!(map.set("roomsymbol", invalid).is_err());
+            assert_eq!(map.rooms["1"].symbol, "Zzz");
+        }
+        map.sync_room(Some("2".to_string()), None, Vec::new(), true);
+        map.sync_room(
+            Some("1".to_string()),
+            Some("Server room name".to_string()),
+            Vec::new(),
+            true,
+        );
+        let mut restored: MapState = toml::from_str(&toml::to_string(&map).unwrap()).unwrap();
+        assert_eq!(restored.rooms["1"].symbol, "Zzz");
+        assert_eq!(restored.rooms["1"].note, "Dol-Goldur Innkeeper");
+        restored.execute("set symbol □").unwrap();
+        assert_eq!(restored.rooms["1"].symbol, "□");
+        restored.execute("set roomsymbol").unwrap();
+        restored.execute("set roomnote").unwrap();
+        assert!(restored.rooms["1"].symbol.is_empty());
+        assert!(restored.rooms["1"].note.is_empty());
+    }
 
     #[test]
     fn map_command_requests_full_output_snapshot() {
@@ -2242,6 +2285,30 @@ mod tests {
     }
 
     #[test]
+    fn gate_tag_is_persistent_directional_and_keeps_door_movement_behavior() {
+        let mut map = MapState::default();
+        map.create();
+        map.execute("link n 2 both").unwrap();
+        map.execute("door n locked iron gate").unwrap();
+        map.execute("exitflag n gate on").unwrap();
+        assert!(map.rooms["1"].exits["n"].flags.contains(&ExitFlag::Gate));
+        assert!(!map.rooms["2"].exits["s"].flags.contains(&ExitFlag::Gate));
+        assert_eq!(
+            map.mud_commands_for_movement("n"),
+            ["unlock iron gate n", "open iron gate n", "n"]
+        );
+        let saved = toml::to_string(&map).unwrap();
+        let mut loaded: MapState = toml::from_str(&saved).unwrap();
+        assert_eq!(loaded.rooms["1"].exits["n"], map.rooms["1"].exits["n"]);
+        loaded.sync_room(Some("1".into()), None, Vec::new(), true);
+        assert!(loaded.rooms["1"].exits["n"].flags.contains(&ExitFlag::Gate));
+        loaded.execute("exitflag n gate off").unwrap();
+        assert!(!loaded.rooms["1"].exits["n"].flags.contains(&ExitFlag::Gate));
+        assert_eq!(loaded.rooms["1"].exits["n"].door, Some(DoorState::Locked));
+        assert!(loaded.execute("exitflag e gate on").is_err());
+    }
+
+    #[test]
     fn door_command_sets_exit_door_state() {
         let mut map = MapState::default();
         map.create();
@@ -2412,7 +2479,7 @@ mod tests {
     }
 
     #[test]
-    fn msdp_sync_replaces_stale_current_room_exits() {
+    fn msdp_sync_preserves_unreported_current_room_exits() {
         let mut map = MapState::default();
 
         map.sync_room(
@@ -2441,13 +2508,67 @@ mod tests {
         );
 
         assert!(map.rooms["2811"].exits.contains_key("e"));
-        assert!(!map.rooms["2811"].exits.contains_key("n"));
+        assert!(map.rooms["2811"].exits.contains_key("n"));
         assert!(map.rooms["2811"].exits.contains_key("s"));
         assert!(map.rooms["2811"].exits.contains_key("w"));
         assert_eq!(
             map.rooms["2811"].exit_order,
             vec!["e".to_string(), "s".to_string(), "w".to_string()]
         );
+    }
+
+    #[test]
+    fn msdp_sync_preserves_manual_hidden_link_metadata_and_explicit_removal() {
+        let mut map = MapState::default();
+        map.create();
+        map.execute("link north 12 both").unwrap();
+        map.execute("door n locked secret").unwrap();
+        map.execute("exitflag n hide on").unwrap();
+        let hidden_exit = map.rooms["1"].exits["n"].clone();
+        let reverse_exit = map.rooms["12"].exits["s"].clone();
+
+        map.sync_room(Some("12".to_string()), None, Vec::new(), true);
+        map.sync_room(
+            Some("1".to_string()),
+            None,
+            merge_room_exits(vec!["e".to_string()], vec!["13".to_string()]),
+            true,
+        );
+        assert_eq!(map.rooms["1"].exits["n"], hidden_exit);
+        assert_eq!(map.rooms["12"].exits["s"], reverse_exit);
+        assert_eq!(map.rooms["1"].exits["e"].to.as_deref(), Some("13"));
+
+        // Empty reports and direction-only reports must not erase learned data.
+        map.sync_room(Some("1".to_string()), None, Vec::new(), true);
+        map.sync_room(
+            Some("1".to_string()),
+            None,
+            merge_room_exits(vec!["north".to_string()], Vec::new()),
+            true,
+        );
+        assert_eq!(map.rooms["1"].exits["n"], hidden_exit);
+
+        map.execute("unlink n").unwrap();
+        map.sync_room(Some("1".to_string()), None, Vec::new(), true);
+        assert!(!map.rooms["1"].exits.contains_key("n"));
+        map.execute("delete e").unwrap();
+        assert!(!map.rooms["1"].exits.contains_key("e"));
+    }
+
+    #[test]
+    fn msdp_sync_still_updates_explicitly_reported_targets() {
+        let mut map = MapState::default();
+        map.create();
+        map.execute("link n 12").unwrap();
+        map.execute("exitflag n hide on").unwrap();
+        map.sync_room(
+            Some("1".to_string()),
+            None,
+            merge_room_exits(vec!["n".to_string()], vec!["13".to_string()]),
+            true,
+        );
+        assert_eq!(map.rooms["1"].exits["n"].to.as_deref(), Some("13"));
+        assert!(map.rooms["1"].exits["n"].flags.contains(&ExitFlag::Hide));
     }
 
     #[test]
@@ -2508,7 +2629,7 @@ mod tests {
         assert!(!map.rooms.contains_key("2"));
         assert_eq!(map.current_room.as_deref(), Some("2906"));
         assert_eq!(map.rooms["1"].exits["n"].to.as_deref(), Some("2906"));
-        assert!(!map.rooms["2906"].exits.contains_key("s"));
+        assert_eq!(map.rooms["2906"].exits["s"].to.as_deref(), Some("1"));
         assert_eq!((map.rooms["2906"].x, map.rooms["2906"].y), (0, -1));
     }
 
