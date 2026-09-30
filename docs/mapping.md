@@ -50,7 +50,7 @@ When multiple mapped rooms resolve to the same display position, the map keeps t
 /map set roomweight <value>
 /map flag <static|nofollow|direction|unicode|asciigraphics|asciivnums> [on|off]
 /map roomflag [<avoid|block|curved|fog|hide|invis|leave|noglobal|static|void>[;...] [on|off|get <variable>]]
-/map exitflag <dir> <avoid|block|hide|invis|teleport|gate> [on|off]
+/map exitflag <dir> <avoid|block|hide|invis|teleport|gate|boundary> [on|off]
 /map list [query]
 /map landmark [query]
 /map landmarks [query]
@@ -175,8 +175,31 @@ Exit flags:
 - `invis`
 - `teleport`
 - `gate`
+- `boundary`
 
 Omitting `on` or `off` toggles the current flag value.
+
+## Area boundaries
+
+Use a boundary for an exit into another area whose rooms overlap the current map:
+
+```text
+/map exitflag n boundary on
+/map write maps/rots.toml
+n
+```
+
+Display traversal stops at that exit, leaving a short marked stub. Crossing it shows the destination side through the normal current-room view. The regular map, Nearby Map, map snapshots, and visible-room legend all respect boundaries. Movement and pathfinding do not change, and MSDP updates preserve this manually assigned flag.
+
+Unlike other exit flags, setting or clearing `boundary` also updates the existing opposite-direction exit if it points back to the source room. No return exit is created. A reverse link discovered later is not automatically marked: rerun `boundary on` once it exists. Every alternate connection between the two areas must also be a boundary; `/map set roomarea` labels do not isolate the display.
+
+```text
+/map exitflag n boundary off
+/map exitflag n boundary
+/map write maps/rots.toml
+```
+
+The first command clears the boundary; the second toggles it. Save after making your intended change. Customize `[map.boundary]` in `config.toml`, then `/reload`: `glyph` defaults to `¦`, optional `color` inherits the theme accent when omitted, and `show = false` hides the marker without joining the views. ASCII mode uses `|`. Hidden exits remain hidden; visible door/gate markers take priority over the boundary marker.
 
 ## Doors
 

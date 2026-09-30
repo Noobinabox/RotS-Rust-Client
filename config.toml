@@ -11,7 +11,7 @@
 # command = "north"
 
 [connection]
-host = "localhost"
+host = "rotsmud.org"
 port = 3791
 username = ""
 password = ""
@@ -22,7 +22,7 @@ line_ending = "\r\n"
 input_mode = "vim"
 multiline_input = false
 tick_rate_ms = 100
-animation_fps = 30
+animation_fps = 60
 mouse = true
 true_color = true
 echo_commands = true
@@ -84,8 +84,8 @@ width = 14
 enabled = true
 reduced_motion = false
 low_performance = false
-map_fps = 12
-weather_fps = 2
+map_fps = 30
+weather_fps = 5
 
 [weather]
 enabled = true
@@ -199,6 +199,12 @@ locked_color = "#d45c5c"
 trigger_color = "#c678dd"
 unknown_color = "#777777"
 
+[map.boundary]
+show = true
+glyph = "¦"
+# Omit color to inherit colors.accent; uncomment to override.
+# color = "yellow"
+
 [map.teleport]
 show = true
 glyph = "◇"
@@ -248,16 +254,16 @@ double = false
 symbol = "♠"
 color = "green"
 density = "dense"
-spread = "vast"
-fade = "fadein"
+spread = ""
+fade = "fadeout"
 double = false
 
 [map.terrain."Dense Forest"]
 symbol = "♠"
 color = "green"
 density = "dense"
-spread = "vast"
-fade = "fadein"
+spread = ""
+fade = "fadeout"
 double = false
 
 [map.terrain.Hills]

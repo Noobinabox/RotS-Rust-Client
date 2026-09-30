@@ -16,7 +16,10 @@ use crate::animation::{
     weather_playback::SCENE_PHASES,
 };
 
-use super::{clouds::cloud_cover, theme::Theme};
+use super::{
+    clouds::cloud_cover,
+    theme::{SNOW_SOFT_WHITE, SNOW_WHITE, Theme},
+};
 
 #[derive(Clone, Copy)]
 pub struct WeatherVisual {
@@ -120,7 +123,11 @@ pub fn render_weather_blend(
                             buf[(x, y)].fg
                         };
                         buf[(x, y)] = cell.clone();
-                        buf[(x, y)].set_fg(super::celestial::blend(from, target_color, amount));
+                        // Snow uses spatial fading only: blending with colored
+                        // clouds/backgrounds would tint otherwise white flakes.
+                        if !matches!(layer, WeatherLayer::Snow | WeatherLayer::Blizzard) {
+                            buf[(x, y)].set_fg(super::celestial::blend(from, target_color, amount));
+                        }
                     }
                 }
             }
@@ -266,6 +273,15 @@ pub fn render_weather(
 }
 
 fn palette(kind: WeatherKind, daylight: Daylight, theme: &Theme) -> (Style, Style) {
+    if matches!(kind, WeatherKind::Snow | WeatherKind::Blizzard) {
+        let mut soft = Style::default().fg(SNOW_SOFT_WHITE);
+        let mut bright = Style::default().fg(SNOW_WHITE);
+        if daylight != Daylight::Day {
+            soft = soft.add_modifier(Modifier::DIM);
+            bright = bright.add_modifier(Modifier::DIM);
+        }
+        return (soft, bright);
+    }
     if matches!(kind, WeatherKind::Rain | WeatherKind::Storm) {
         let mut rain = Style::default().fg(theme.rain);
         if daylight != Daylight::Day {
@@ -278,7 +294,6 @@ fn palette(kind: WeatherKind, daylight: Daylight, theme: &Theme) -> (Style, Styl
     // Reuse configurable theme roles without forcing RGB output on ANSI themes.
     let base = match kind {
         WeatherKind::Clear | WeatherKind::Dust => theme.warning,
-        WeatherKind::Snow | WeatherKind::Blizzard => theme.foreground,
         _ => theme.muted,
     };
     let (body, highlight) = match daylight {
@@ -397,7 +412,7 @@ fn weather_glyph(
                     } else {
                         "."
                     },
-                    false,
+                    (x + y + step).rem_euclid(3) == 0,
                 ))
             } else {
                 None
@@ -988,6 +1003,77 @@ mod tests {
     }
 
     #[test]
+    fn snow_stays_white_at_every_hour_and_during_colored_transitions() {
+        use crate::animation::weather_transition::{WeatherBlend, WeatherLayer};
+        use ratatui::style::Color;
+        let mut theme = theme();
+        theme.foreground = Color::Rgb(255, 0, 0);
+        theme.warning = Color::Indexed(208);
+        theme.accent = Color::Magenta;
+        theme.muted = Color::Blue;
+        theme.background = Color::Rgb(0, 100, 200);
+        let area = Rect::new(0, 0, 40, 12);
+        for (kind, layer) in [
+            (WeatherKind::Snow, WeatherLayer::Snow),
+            (WeatherKind::Blizzard, WeatherLayer::Blizzard),
+        ] {
+            for hour in 0..24 {
+                let sky = SkyClock::from_world_time(Some(&format!("{hour}:00")));
+                for opacity in [1, 64, 127, 254, 255] {
+                    let mut blend = WeatherBlend::settled(WeatherKind::Cloudy);
+                    blend.opacity[layer as usize] = opacity;
+                    let mut buf = Buffer::empty(area);
+                    render_weather_blend(
+                        area,
+                        &mut buf,
+                        97,
+                        &theme,
+                        sky,
+                        WeatherVisual {
+                            kind,
+                            blend,
+                            lightning_bolts: 0,
+                        },
+                    );
+                    let flakes: Vec<_> = buf
+                        .content
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(index, cell)| {
+                            let x = (index % area.width as usize) as i32;
+                            let y = (index / area.width as usize) as i32;
+                            let threshold =
+                                ((x as u32).wrapping_mul(73) ^ (y as u32).wrapping_mul(151)) % 255;
+                            let (symbol, _) = weather_glyph(kind, x, y, 40, 12, 97)?;
+                            (opacity == 255 || threshold < u32::from(opacity)).then(|| {
+                                assert_eq!(cell.symbol(), symbol);
+                                cell
+                            })
+                        })
+                        .collect();
+                    if opacity == 255 {
+                        assert!(!flakes.is_empty());
+                    }
+                    for cell in flakes {
+                        assert_eq!(
+                            cell.fg,
+                            if cell.symbol() == "*" {
+                                SNOW_WHITE
+                            } else {
+                                SNOW_SOFT_WHITE
+                            }
+                        );
+                    }
+                }
+            }
+            assert_eq!(
+                palette(kind, Daylight::Unknown, &theme).0.fg,
+                Some(SNOW_SOFT_WHITE)
+            );
+        }
+    }
+
+    #[test]
     fn every_scene_uses_daylight_and_preserves_theme_color_formats() {
         let mut theme = theme();
         theme.warning = ratatui::style::Color::Indexed(208);
@@ -1006,13 +1092,29 @@ mod tests {
         ] {
             let dawn = palette(kind, Daylight::Dawn, &theme);
             let wet = matches!(kind, WeatherKind::Rain | WeatherKind::Storm);
+            let snow = matches!(kind, WeatherKind::Snow | WeatherKind::Blizzard);
             assert_eq!(
                 dawn.0.fg,
-                Some(if wet { theme.rain } else { theme.warning })
+                Some(if wet {
+                    theme.rain
+                } else if snow {
+                    SNOW_SOFT_WHITE
+                } else {
+                    theme.warning
+                })
             );
             assert_eq!(dawn, palette(kind, Daylight::Dusk, &theme));
             let night = palette(kind, Daylight::Night, &theme);
-            assert_eq!(night.0.fg, Some(if wet { theme.rain } else { theme.muted }));
+            assert_eq!(
+                night.0.fg,
+                Some(if wet {
+                    theme.rain
+                } else if snow {
+                    SNOW_SOFT_WHITE
+                } else {
+                    theme.muted
+                })
+            );
             assert!(night.0.add_modifier.contains(Modifier::DIM));
             assert!(
                 !palette(kind, Daylight::Day, &theme)
@@ -1292,7 +1394,7 @@ mod tests {
     }
 
     #[test]
-    fn indoor_and_unknown_are_noops_and_weather_uses_only_dim_theme_colors() {
+    fn indoor_and_unknown_are_noops_and_weather_uses_dim_colors_except_lightning() {
         for kind in [WeatherKind::Indoor, WeatherKind::Unknown] {
             assert_eq!(scene(kind, 0), Buffer::empty(Rect::new(0, 0, 40, 9)));
         }
@@ -1316,6 +1418,8 @@ mod tests {
                             cell.fg == theme.muted
                                 || cell.fg == theme.accent
                                 || cell.fg == theme.rain
+                                || (matches!(kind, WeatherKind::Snow | WeatherKind::Blizzard)
+                                    && matches!(cell.fg, SNOW_WHITE | SNOW_SOFT_WHITE))
                         );
                     }
                 }

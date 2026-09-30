@@ -100,6 +100,16 @@ fn nearby_map_lines<'a>(
     let positions = visible_positions(map, current_id);
     let markers = MapMarkers::new(map);
 
+    draw_boundary_exits(
+        &mut cells,
+        &mut styles,
+        map,
+        &positions,
+        config,
+        theme,
+        ((center_x, center_y), (1, 1)),
+    );
+
     for (room_id, (room_x, room_y)) in &positions {
         if room_x.abs() > max_x || room_y.abs() > max_y {
             continue;
@@ -297,7 +307,7 @@ fn map_lines<'a>(
             continue;
         }
         for exit in room.exits.values() {
-            if exit.flags.contains(&ExitFlag::Hide) {
+            if exit.flags.contains(&ExitFlag::Hide) || exit.flags.contains(&ExitFlag::Boundary) {
                 continue;
             }
             let Some(target_id) = exit.to.as_ref() else {
@@ -370,6 +380,19 @@ fn map_lines<'a>(
     for overlay in exit_overlays.into_values() {
         draw_exit_overlay(&mut cells, &mut styles, overlay);
     }
+
+    draw_boundary_exits(
+        &mut cells,
+        &mut styles,
+        map,
+        &positions,
+        config,
+        theme,
+        (
+            (center_x, center_y),
+            (column_spacing, config.room_spacing_rows),
+        ),
+    );
 
     for (room_id, (room_x, room_y)) in &positions {
         if room_id != current_id {
@@ -680,7 +703,12 @@ fn draw_vertical_exit_indicators(
     position: (i32, i32),
 ) {
     let mut offset = 1;
-    if room.exits.contains_key("u") {
+    let visible = |direction| {
+        room.exits.get(direction).is_some_and(|exit| {
+            !exit.flags.contains(&ExitFlag::Hide) && !exit.flags.contains(&ExitFlag::Boundary)
+        })
+    };
+    if visible("u") {
         put_char(
             cells,
             styles,
@@ -689,9 +717,15 @@ fn draw_vertical_exit_indicators(
             '↑',
             theme.warning,
         );
+    }
+    if room
+        .exits
+        .get("u")
+        .is_some_and(|exit| !exit.flags.contains(&ExitFlag::Hide))
+    {
         offset += 1;
     }
-    if room.exits.contains_key("d") {
+    if visible("d") {
         put_char(
             cells,
             styles,
@@ -700,6 +734,78 @@ fn draw_vertical_exit_indicators(
             '↓',
             theme.warning,
         );
+    }
+}
+
+// Boundaries are exit stubs, not destination rooms. Draw over decorative terrain
+// but before room markers so compact layouts and annotations remain readable.
+fn draw_boundary_exits(
+    cells: &mut [Vec<char>],
+    styles: &mut BTreeMap<(usize, usize), Color>,
+    map: &MapState,
+    positions: &BTreeMap<String, (i32, i32)>,
+    config: &MapRenderConfig,
+    theme: &Theme,
+    geometry: ((i32, i32), (i32, i32)),
+) {
+    if !config.show_links {
+        return;
+    }
+    let (center, spacing) = geometry;
+    for (id, &(rx, ry)) in positions {
+        let Some(room) = map.rooms.get(id) else {
+            continue;
+        };
+        if room.flags.contains(&RoomFlag::Hide)
+            || (room.flags.contains(&RoomFlag::Void) && map.current_room.as_ref() != Some(id))
+        {
+            continue;
+        }
+        let origin = (center.0 + rx * spacing.0, center.1 + ry * spacing.1);
+        if !inside(
+            cells.first().map_or(0, Vec::len),
+            cells.len(),
+            origin.0,
+            origin.1,
+        ) {
+            continue;
+        }
+        for exit in room.exits.values() {
+            if !exit.flags.contains(&ExitFlag::Boundary) || exit.flags.contains(&ExitFlag::Hide) {
+                continue;
+            }
+            let offset = match exit.direction.as_str() {
+                "u" => (1, 0),
+                "d" => (2, 0),
+                direction => {
+                    let Some((dx, dy)) = direction_offset(direction) else {
+                        continue;
+                    };
+                    (dx * (spacing.0 / 2).max(1), dy * (spacing.1 / 2).max(1))
+                }
+            };
+            let x = origin.0 + offset.0;
+            let y = origin.1 + offset.1;
+            let marker = door_marker(config, exit, theme).or_else(|| {
+                config.boundary.show.then(|| {
+                    let glyph = if map.unicode {
+                        config.boundary.glyph.clone()
+                    } else {
+                        "|".into()
+                    };
+                    let color = config
+                        .boundary
+                        .color
+                        .as_deref()
+                        .and_then(parse_color)
+                        .unwrap_or(theme.accent);
+                    (glyph, color)
+                })
+            });
+            if let Some((glyph, color)) = marker {
+                put_text(cells, styles, x, y, &glyph, color);
+            }
+        }
     }
 }
 
@@ -734,6 +840,9 @@ impl<'a> MapMarkers<'a> {
                     continue;
                 }
                 for exit in source.exits.values() {
+                    if exit.flags.contains(&ExitFlag::Boundary) {
+                        continue;
+                    }
                     let Some(target_id) = exit.to.as_deref() else {
                         continue;
                     };
@@ -764,6 +873,9 @@ impl<'a> MapMarkers<'a> {
             .exits
             .values()
             .filter_map(|exit| {
+                if exit.flags.contains(&ExitFlag::Boundary) {
+                    return None;
+                }
                 let target = exit
                     .to
                     .as_ref()
@@ -1072,7 +1184,7 @@ fn visible_positions(map: &MapState, current_id: &str) -> BTreeMap<String, (i32,
             node.from_id.as_deref(),
             node.incoming_direction.as_deref(),
         ) {
-            if exit.flags.contains(&ExitFlag::Hide) {
+            if exit.flags.contains(&ExitFlag::Hide) || exit.flags.contains(&ExitFlag::Boundary) {
                 continue;
             }
             let Some(target_id) = exit.to.as_ref() else {
@@ -1279,6 +1391,186 @@ mod tests {
     use unicode_width::UnicodeWidthStr;
 
     use super::*;
+
+    fn boundary_map() -> MapState {
+        let mut map = MapState::default();
+        map.execute("create").unwrap();
+        map.execute("link e 2 both").unwrap();
+        map.execute("set roomnote Outside").unwrap();
+        map.execute("exitflag e boundary on").unwrap();
+        map.execute("goto 2").unwrap();
+        map.execute("set roomnote Inside").unwrap();
+        map.execute("link n 3 both").unwrap();
+        map.execute("goto 1").unwrap();
+        map
+    }
+
+    #[test]
+    fn boundary_separates_views_and_legend_after_crossing_in_both_directions() {
+        let mut map = boundary_map();
+        // Stored coordinates may overlap; the boundary, not coordinates, isolates views.
+        map.rooms.get_mut("2").unwrap().x = 0;
+        map.rooms.get_mut("2").unwrap().y = 0;
+        let config = MapRenderConfig::default();
+        for (id, visible, hidden) in [
+            ("1", "Outside", "Inside"),
+            ("2", "Inside", "Outside"),
+            ("1", "Outside", "Inside"),
+        ] {
+            map.execute(&format!("goto {id}")).unwrap();
+            let positions = visible_positions(&map, id);
+            assert_eq!(positions.contains_key("1"), id == "1");
+            assert_eq!(positions.contains_key("2"), id == "2");
+            assert_eq!(positions.contains_key("3"), id == "2");
+            let rendered =
+                plain_lines(map_lines(Rect::new(0, 0, 41, 17), &map, &theme(), &config)).join("\n");
+            assert!(rendered.contains(visible));
+            assert!(!rendered.contains(hidden));
+        }
+    }
+
+    #[test]
+    fn boundary_marker_uses_config_and_preserves_hidden_and_door_precedence() {
+        let mut map = boundary_map();
+        let mut config = map_config();
+        config.boundary.glyph = "!".into();
+        config.boundary.color = Some("red".into());
+        for nearby in [false, true] {
+            let draw = if nearby { nearby_map_lines } else { map_lines };
+            let lines = draw(Rect::new(0, 0, 21, 9), &map, &theme(), &config);
+            assert_eq!(plain_lines(lines.clone())[4].chars().nth(11), Some('!'));
+            assert_eq!(lines[4].spans[11].style.fg, Some(Color::Red));
+            map.execute("door e closed gate").unwrap();
+            let rendered = plain_lines(draw(Rect::new(0, 0, 21, 9), &map, &theme(), &config));
+            assert_eq!(rendered[4].chars().nth(11), Some('╬'));
+            map.execute("exitflag e hide on").unwrap();
+            assert!(
+                !plain_lines(draw(Rect::new(0, 0, 21, 9), &map, &theme(), &config))
+                    .join("")
+                    .contains('╬')
+            );
+            map.execute("exitflag e hide off").unwrap();
+            map.execute("door e none").unwrap();
+        }
+        config.boundary.show = false;
+        assert!(
+            !plain_lines(map_lines(Rect::new(0, 0, 21, 9), &map, &theme(), &config))
+                .join("")
+                .contains('!')
+        );
+        assert_eq!(visible_positions(&map, "1").len(), 1);
+        config.boundary.show = true;
+        map.unicode = false;
+        assert_eq!(
+            plain_lines(map_lines(Rect::new(0, 0, 21, 9), &map, &theme(), &config))[4]
+                .chars()
+                .nth(11),
+            Some('|')
+        );
+    }
+
+    #[test]
+    fn boundary_markers_handle_vertical_exits_and_tiny_panes() {
+        let mut map = boundary_map();
+        map.execute("link u 4 both").unwrap();
+        map.execute("exitflag u boundary on").unwrap();
+        let mut config = map_config();
+        config.boundary.glyph = "!".into();
+        map.execute("exitflag e hide on").unwrap();
+        assert_eq!(
+            plain_lines(map_lines(Rect::new(0, 0, 21, 9), &map, &theme(), &config))[4]
+                .chars()
+                .nth(11),
+            Some('!')
+        );
+        for width in 0..5 {
+            for height in 0..5 {
+                for draw in [map_lines, nearby_map_lines] {
+                    let lines = plain_lines(draw(
+                        Rect::new(0, 0, width, height),
+                        &map,
+                        &theme(),
+                        &config,
+                    ));
+                    assert!(lines.len() <= height as usize);
+                    assert!(lines.iter().all(|line| line.width() <= width as usize));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn boundary_markers_cover_decoration_but_not_room_symbols() {
+        let mut map = boundary_map();
+        let mut config = map_config();
+        config.boundary.glyph = "!".into();
+        let mut cells = vec![vec!['#'; 21]; 9];
+        let mut styles = BTreeMap::new();
+        draw_boundary_exits(
+            &mut cells,
+            &mut styles,
+            &map,
+            &visible_positions(&map, "1"),
+            &config,
+            &theme(),
+            ((10, 4), (3, 2)),
+        );
+        assert_eq!(cells[4][11], '!');
+        assert_eq!(styles[&(11, 4)], theme().accent);
+        map.execute("door e closed gate").unwrap();
+        draw_boundary_exits(
+            &mut cells,
+            &mut styles,
+            &map,
+            &visible_positions(&map, "1"),
+            &config,
+            &theme(),
+            ((10, 4), (3, 2)),
+        );
+        assert_eq!(cells[4][11], '╬');
+        // Nearby rooms occupy adjacent cells, so real room markers must win.
+        map.execute("link ne 3").unwrap();
+        let rendered = plain_lines(nearby_map_lines(
+            Rect::new(0, 0, 21, 9),
+            &map,
+            &theme(),
+            &config,
+        ));
+        assert_ne!(rendered[4].chars().nth(11), Some('╬'));
+        assert_ne!(rendered[4].chars().nth(11), Some('!'));
+    }
+
+    #[test]
+    fn boundary_vertical_slots_do_not_collide_with_normal_vertical_exits() {
+        let mut map = boundary_map();
+        map.execute("exitflag e hide on").unwrap();
+        map.execute("link u 4 both").unwrap();
+        map.execute("link d 5 both").unwrap();
+        let mut config = map_config();
+        config.boundary.glyph = "!".into();
+        for (boundary, first, second) in [("u", '!', '↓'), ("d", '↑', '!')] {
+            map.execute(&format!("exitflag {boundary} boundary on"))
+                .unwrap();
+            for draw in [map_lines, nearby_map_lines] {
+                let rendered = plain_lines(draw(Rect::new(0, 0, 21, 9), &map, &theme(), &config));
+                assert_eq!(rendered[4].chars().nth(11), Some(first));
+                assert_eq!(rendered[4].chars().nth(12), Some(second));
+            }
+            map.execute(&format!("exitflag {boundary} boundary off"))
+                .unwrap();
+        }
+    }
+
+    #[test]
+    fn boundary_does_not_hide_alternate_routes_or_create_incoming_road_links() {
+        let mut map = boundary_map();
+        map.rooms.get_mut("1").unwrap().terrain = "Road".into();
+        map.rooms.get_mut("2").unwrap().terrain = "Road".into();
+        assert_eq!(MapMarkers::new(&map).route_symbol("1"), '∘');
+        assert_eq!(MapMarkers::new(&map).route_symbol("2"), '∘');
+        map.execute("link ne 3").unwrap();
+        assert!(visible_positions(&map, "1").contains_key("2"));
+    }
 
     #[test]
     fn nearby_map_ignores_custom_symbols_with_or_without_notes() {

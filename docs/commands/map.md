@@ -97,6 +97,30 @@ These commands require an existing mapped north exit. Gate tags and door metadat
 
 Customize `[map.doors]` in `config.toml`, then `/reload`. The supplied configuration uses `□` open (green), `▣` closed (yellow), `⊞` pickable (yellow), and `⊠` locked (red). Tagged gates use `╪` north/south or `╫` east/west, retaining the door-state color. Diagonal and up/down gates use the ordinary state symbol. Trigger/unknown doors use the shared `glyph`; absent per-state settings also fall back to that shared symbol. Gate tagging alone does not create a door.
 
+## Separate overlapping areas
+
+Mark the exit into a new area as a boundary:
+
+```text
+/map exitflag n boundary on
+/map write maps/rots.toml
+n
+```
+
+The map draws a short marked exit stub instead of drawing rooms beyond it. Walking north shows the destination side using the normal current-room view. This also separates the Nearby Map, map snapshots, and visible-room legend. Movement, doors, and pathfinding are unchanged.
+
+The command applies the same value to an existing opposite-direction exit only when it points back to your room. It never creates a return exit. If the return link is learned later, rerun the command with `on` after both links exist. Mark every alternate connection between the areas to fully separate them; room area names alone do not filter the map.
+
+Clear a boundary or toggle its current value:
+
+```text
+/map exitflag n boundary off
+/map exitflag n boundary
+/map write maps/rots.toml
+```
+
+Customize the marker in `[map.boundary]` and use `/reload`. Its default is `¦` in the theme accent color (`|` in ASCII mode). Hidden exits stay hidden, and door/gate markers take priority. `show = false` hides only the marker, not the boundary behavior.
+
 ## Routing examples
 
 ```text
@@ -112,4 +136,4 @@ Customize `[map.doors]` in `config.toml`, then `/reload`. The supplied configura
 
 Relative map file paths resolve beside the active `config.toml`, normally `~/.config/mud-client`.
 
-Room flags are `avoid`, `block`, `curved`, `fog`, `hide`, `invis`, `leave`, `noglobal`, `static`, and `void`. Exit flags are `avoid`, `block`, `hide`, `invis`, `teleport`, and `gate`. Door states are `trigger`, `unknown`, `open`, `closed`, `pickable`, `locked`, and `none`.
+Room flags are `avoid`, `block`, `curved`, `fog`, `hide`, `invis`, `leave`, `noglobal`, `static`, and `void`. Exit flags are `avoid`, `block`, `hide`, `invis`, `teleport`, `gate`, and `boundary`. Door states are `trigger`, `unknown`, `open`, `closed`, `pickable`, `locked`, and `none`.

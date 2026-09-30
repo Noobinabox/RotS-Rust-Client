@@ -354,6 +354,23 @@ impl AppConfig {
                 }
             }
         }
+        if self.map.boundary.show && !is_fixed_width_map_symbol(&self.map.boundary.glyph, 1) {
+            return Err(MudClientError::ConfigValidation(
+                "map.boundary.glyph must be exactly one terminal cell when boundary markers are shown"
+                    .to_string(),
+            ));
+        }
+        if self
+            .map
+            .boundary
+            .color
+            .as_deref()
+            .is_some_and(|color| parse_color(color).is_none())
+        {
+            return Err(MudClientError::ConfigValidation(
+                "map.boundary.color must be a valid terminal color or RGB hex color".to_string(),
+            ));
+        }
         if self.map.teleport.show && !is_fixed_width_map_symbol(&self.map.teleport.glyph, 1) {
             return Err(MudClientError::ConfigValidation(
                 "map.teleport.glyph must be exactly one terminal cell when teleport markers are shown"
@@ -1256,6 +1273,7 @@ pub struct MapRenderConfig {
     pub void_color: String,
     pub persistence: MapPersistenceConfig,
     pub doors: MapDoorConfig,
+    pub boundary: MapBoundaryConfig,
     pub teleport: MapTeleportConfig,
     pub terrain: BTreeMap<String, MapTerrainConfig>,
 }
@@ -1279,6 +1297,7 @@ impl Default for MapRenderConfig {
             void_color: "#414868".to_string(),
             persistence: MapPersistenceConfig::default(),
             doors: MapDoorConfig::default(),
+            boundary: MapBoundaryConfig::default(),
             teleport: MapTeleportConfig::default(),
             terrain: default_map_terrain(),
         }
@@ -1339,6 +1358,25 @@ impl Default for MapDoorConfig {
             locked_color: "#d45c5c".to_string(),
             trigger_color: "#c678dd".to_string(),
             unknown_color: "#777777".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default)]
+pub struct MapBoundaryConfig {
+    pub show: bool,
+    pub glyph: String,
+    /// None inherits the active theme's accent color.
+    pub color: Option<String>,
+}
+
+impl Default for MapBoundaryConfig {
+    fn default() -> Self {
+        Self {
+            show: true,
+            glyph: "¦".to_string(),
+            color: None,
         }
     }
 }
@@ -2237,6 +2275,52 @@ report_variables = ["ROOM_NAME", "ROOM_VNUM", "ROOM_EXITS"]
         );
         assert!(config.msdp.report_variables.contains(&"GROUP".to_string()));
         assert!(config.msdp.report_variables.contains(&"RACE".to_string()));
+    }
+
+    #[test]
+    fn map_boundary_defaults_and_custom_style_round_trip() {
+        let defaults: AppConfig = toml::from_str("").expect("legacy config parses");
+        assert!(defaults.map.boundary.show);
+        assert_eq!(defaults.map.boundary.glyph, "¦");
+        assert_eq!(defaults.map.boundary.color, None);
+        defaults.validate().expect("defaults are valid");
+
+        let config: AppConfig =
+            toml::from_str("[map.boundary]\nshow = false\nglyph = \"+\"\ncolor = \"yellow\"")
+                .expect("custom boundary config parses");
+        config.validate().expect("custom boundary config is valid");
+        let serialized = toml::to_string(&config).expect("config serializes");
+        let restored: AppConfig = toml::from_str(&serialized).expect("config deserializes");
+        assert_eq!(restored.map.boundary, config.map.boundary);
+    }
+
+    #[test]
+    fn map_boundary_rejects_invalid_glyphs_and_colors() {
+        for glyph in ["", "##", "界", "\n", "\u{301}"] {
+            let mut config = AppConfig::default();
+            config.map.boundary.glyph = glyph.to_string();
+            assert!(
+                config
+                    .validate()
+                    .expect_err("invalid glyph rejected")
+                    .to_string()
+                    .contains("map.boundary.glyph")
+            );
+            config.map.boundary.show = false;
+            config.validate().expect("hidden glyph is not rendered");
+        }
+        for show in [true, false] {
+            let mut config = AppConfig::default();
+            config.map.boundary.show = show;
+            config.map.boundary.color = Some("not-a-color".to_string());
+            assert!(
+                config
+                    .validate()
+                    .expect_err("invalid color rejected")
+                    .to_string()
+                    .contains("map.boundary.color")
+            );
+        }
     }
 
     #[test]

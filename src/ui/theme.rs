@@ -4,6 +4,10 @@ use crate::config::{PanelAlignment, PanelBorderStyle, PanelOptions, ThemeConfig}
 
 pub use crate::color::parse_color;
 
+// Snow stays neutral even when general theme roles use warm or saturated colors.
+pub const SNOW_WHITE: Color = Color::White;
+pub const SNOW_SOFT_WHITE: Color = Color::Gray;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Theme {
     pub background: Color,

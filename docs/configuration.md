@@ -143,6 +143,12 @@ retains the dimmed `muted`/`accent` palette. The normal RoTS hour-only time uses
 6 AM dawn and 6 PM dusk as display fallbacks, rather than seasonal sunrise data.
 See the animation guide for the complete theme mapping.
 
+Snow and blizzard flakes always use neutral white shades: soft white dots and
+bright white stars, dimmed outside daytime. They do not inherit colored theme
+roles or sunrise/sunset hues. Transitions reveal/fade flakes spatially without
+tinting them toward colored clouds or backgrounds. Terminal palette customization
+can still affect how ANSI white and gray appear.
+
 Rain and storm particles are an exception to the general lighting palette:
 `[colors] rain = "#61afef"` supplies their blue color at every hour, dimmed outside
 daytime. `[panels.info.theme] rain = "blue"` overrides it just for the World pane.
@@ -315,6 +321,25 @@ closed_color = "#d6ad55"
 pickable_color = "#d6ad55"
 locked_color = "#d45c5c"
 ```
+
+### map.boundary
+
+Boundary exits separate connected areas visually. Mark an existing exit with `/map exitflag n boundary on`, then save the map with `/map write maps/rots.toml`. Movement and pathfinding still cross these exits normally.
+
+| Option | Meaning |
+|---|---|
+| `show` | Show boundary markers on exit stubs; default `true`. Disabling markers does not remove area separation. |
+| `glyph` | One-cell boundary marker; default `¦`. ASCII rendering uses `\|`. |
+| `color` | Optional marker color. Omit it to inherit the active theme's `colors.accent`. |
+
+```toml
+[map.boundary]
+show = true
+glyph = "¦"
+color = "yellow"
+```
+
+Apply marker changes with `/reload`. Hidden exits remain hidden; visible door/gate markers take precedence over boundary markers. See [map boundaries](mapping.md#area-boundaries) for pairing and alternate-route rules.
 
 ### map.teleport
 
@@ -521,7 +546,7 @@ A highlight must define at least one color or style.
 
 - Required names and patterns must not be empty.
 - Regex patterns are compiled during config validation.
-- Map room, stub, door, and teleport glyphs must occupy one terminal cell.
+- Map room, stub, door, boundary, and teleport glyphs must occupy one terminal cell when rendered.
 - Double terrain symbols must be exactly two one-cell characters.
 - Required panel visibility cannot remove the map, output, or command input from all modes.
 - Lua, trigger, event, variable, animation, and terminal limits must be greater than zero.

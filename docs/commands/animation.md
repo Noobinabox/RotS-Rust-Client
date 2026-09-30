@@ -43,14 +43,21 @@ state, so the fallback uses the 6 AM hour for dawn and the 6 PM hour for dusk.
 Daytime runs from 7 AM through 5 PM; the remaining hours are night. These are
 display-lighting rules, not a claim about the server's season-specific sunrise.
 
-Colors come from the World pane's theme, including any panel-specific overrides:
+Colors come from the World pane's theme, including panel-specific overrides,
+except snow/blizzard flakes, which stay neutral white:
 
 | Lighting | Scene colors |
 |---|---|
-| Dawn or dusk | Cloud gradients use `muted`, `danger`, and `warning`; other non-clear weather uses warm `warning` except rain/storm. |
-| Day | Rain/storm use `rain`; snow/blizzard use `foreground`; clouds/fog/wind/ash use `muted`; dust uses `warning`. Day scenes are not dimmed. |
-| Night | Rain/storm keep their dimmed `rain` color; other non-clear weather uses dimmed `muted` scenery with `accent` highlights. |
-| Missing or unrecognized time | Dimmed `muted`/`accent`, except rain/storm keep `rain`. |
+| Dawn or dusk | Cloud gradients use `muted`, `danger`, and `warning`; other non-clear weather uses warm `warning` except rain/storm and snow/blizzard. |
+| Day | Rain/storm use `rain`; snow/blizzard use soft and bright whites; clouds/fog/wind/ash use `muted`; dust uses `warning`. Day scenes are not dimmed. |
+| Night | Rain/storm keep dimmed `rain`; snow/blizzard keep dimmed whites; other non-clear weather uses dimmed `muted` scenery with `accent` highlights. |
+| Missing or unrecognized time | Dimmed `muted`/`accent`, except rain/storm keep `rain` and snow/blizzard keep whites. |
+
+Snow dots use soft white and star-shaped flakes use bright white, dimmed outside
+daytime. Theme accents and sunrise/sunset do not tint flakes. Snow transitions
+use spatial reveal instead of blending with colored backgrounds or clouds.
+These whites use terminal gray/white palette entries, so terminal palette
+customization can affect their appearance. Clouds retain their own lighting.
 
 Rain uses a dedicated blue `rain` theme color at every time of day, dimmed outside
 daytime rather than turning gold or gray. Lightning uses non-dimmed bright-yellow `lightning`

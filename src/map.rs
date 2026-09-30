@@ -153,6 +153,7 @@ pub enum ExitFlag {
     Invis,
     Teleport,
     Gate,
+    Boundary,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1006,6 +1007,22 @@ impl MapState {
             return Err(format!("No mapped exit {}.", direction));
         };
         set_membership(&mut exit.flags, flag, enabled);
+        // A boundary separates views on both sides, unlike directional door tags.
+        // Only synchronize a real reciprocal link; never infer or create one.
+        if flag == ExitFlag::Boundary {
+            let enabled = exit.flags.contains(&flag);
+            let target = exit.to.clone();
+            if let Some(reverse) = direction_by_name(&direction).map(|dir| dir.reverse)
+                && let Some(target) = target
+                && let Some(return_exit) = self
+                    .rooms
+                    .get_mut(&target)
+                    .and_then(|room| room.exits.get_mut(reverse))
+                && return_exit.to.as_deref() == Some(current.as_str())
+            {
+                set_membership(&mut return_exit.flags, flag, Some(enabled));
+            }
+        }
         Ok(())
     }
 
@@ -1645,8 +1662,9 @@ fn parse_exit_flag(flag: &str) -> Result<ExitFlag, String> {
         "invis" => Ok(ExitFlag::Invis),
         "teleport" | "tp" => Ok(ExitFlag::Teleport),
         "gate" => Ok(ExitFlag::Gate),
+        "boundary" => Ok(ExitFlag::Boundary),
         _ => Err(format!(
-            "Unknown exit flag `{}`. Use avoid, block, hide, invis, teleport, or gate.",
+            "Unknown exit flag `{}`. Use avoid, block, hide, invis, teleport, gate, or boundary.",
             flag
         )),
     }
@@ -2286,6 +2304,83 @@ mod tests {
 
         assert!(result.message.contains("Terrain: Forest"));
         assert!(result.message.contains("Weight: 2.5"));
+    }
+
+    #[test]
+    fn boundary_flags_pair_toggle_persist_and_preserve_navigation() {
+        let mut map = MapState::default();
+        map.create();
+        map.execute("link n 2 both").unwrap();
+        map.execute("door n closed gate").unwrap();
+        let path = map.execute("find 2").unwrap().message;
+        map.execute("exitflag north boundary on").unwrap();
+        for (id, dir) in [("1", "n"), ("2", "s")] {
+            assert!(map.rooms[id].exits[dir].flags.contains(&ExitFlag::Boundary));
+        }
+        assert_eq!(map.execute("find 2").unwrap().message, path);
+        assert_eq!(map.mud_commands_for_movement("n"), ["open gate n", "n"]);
+        let mut loaded: MapState = toml::from_str(&toml::to_string(&map).unwrap()).unwrap();
+        loaded.sync_room(
+            Some("1".into()),
+            None,
+            merge_room_exits(vec!["n".into()], vec!["2".into()]),
+            true,
+        );
+        loaded.sync_room(Some("1".into()), None, Vec::new(), true);
+        assert!(
+            loaded.rooms["1"].exits["n"]
+                .flags
+                .contains(&ExitFlag::Boundary)
+        );
+        assert!(
+            loaded.rooms["2"].exits["s"]
+                .flags
+                .contains(&ExitFlag::Boundary)
+        );
+        loaded.execute("move n").unwrap();
+        assert_eq!(loaded.current_room.as_deref(), Some("2"));
+        loaded.execute("exitflag s boundary").unwrap();
+        for (id, dir) in [("1", "n"), ("2", "s")] {
+            assert!(
+                !loaded.rooms[id].exits[dir]
+                    .flags
+                    .contains(&ExitFlag::Boundary)
+            );
+        }
+        loaded.execute("exitflag s boundary on").unwrap();
+        loaded.execute("exitflag s boundary off").unwrap();
+        assert!(
+            !loaded.rooms["1"].exits["n"]
+                .flags
+                .contains(&ExitFlag::Boundary)
+        );
+    }
+
+    #[test]
+    fn boundary_never_creates_or_changes_unrelated_return_exits() {
+        let mut map = MapState::default();
+        map.create();
+        map.execute("link e 2").unwrap();
+        map.execute("exitflag e boundary on").unwrap();
+        assert!(map.rooms["2"].exits.is_empty());
+        map.set_exit("2", "w", Some("3".into()));
+        let unrelated = map.rooms["2"].exits["w"].clone();
+        map.execute("exitflag e boundary").unwrap();
+        map.execute("exitflag e boundary on").unwrap();
+        assert_eq!(map.rooms["2"].exits["w"], unrelated);
+        map.set_exit("2", "w", Some("1".into()));
+        assert!(
+            !map.rooms["2"].exits["w"]
+                .flags
+                .contains(&ExitFlag::Boundary)
+        );
+        map.execute("exitflag e boundary on").unwrap();
+        assert!(
+            map.rooms["2"].exits["w"]
+                .flags
+                .contains(&ExitFlag::Boundary)
+        );
+        assert!(map.execute("exitflag n boundary on").is_err());
     }
 
     #[test]
