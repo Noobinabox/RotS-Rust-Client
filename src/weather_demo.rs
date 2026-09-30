@@ -10,7 +10,10 @@ use mud_client::{
     config::{AnimationConfig, ThemeConfig, WeatherConfig},
     error::Result,
     terminal::TerminalGuard,
-    ui::{theme::Theme, weather::render_weather},
+    ui::{
+        theme::Theme,
+        weather::{WeatherVisual, render_weather_blend},
+    },
 };
 use ratatui::{
     Frame,
@@ -135,7 +138,13 @@ pub fn run() -> Result<()> {
                 phase,
                 sky,
                 &theme,
-                weather_playback.lightning_bolts(),
+                WeatherVisual {
+                    kind,
+                    blend: weather_playback.blend().unwrap_or_else(|| {
+                        mud_client::animation::weather_transition::WeatherBlend::settled(kind)
+                    }),
+                    lightning_bolts: weather_playback.lightning_bolts(),
+                },
             )
         })?;
         if event::poll(FRAME_INTERVAL)?
@@ -153,7 +162,7 @@ fn render(
     phase: usize,
     sky: SkyClock,
     theme: &Theme,
-    lightning_bolts: u8,
+    visual: WeatherVisual,
 ) {
     let [header, world, controls] = Layout::vertical([
         Constraint::Length(2),
@@ -184,17 +193,9 @@ fn render(
         .title(" World — West ← East (north up) ");
     let inner = block.inner(world);
     frame.render_widget(block, world);
-    render_weather(
-        inner,
-        frame.buffer_mut(),
-        WEATHER[state.weather].0,
-        phase,
-        theme,
-        sky,
-        lightning_bolts,
-    );
+    render_weather_blend(inner, frame.buffer_mut(), phase, theme, sky, visual);
     frame.render_widget(Paragraph::new(
-        "Left/Right: weather | Up/Down: hour | Space: pause/resume | q/Esc/Ctrl-C: quit\nClear/cloudy skies show sun/moon. No connection; no configuration loaded or saved."
+        "Left/Right: weather | Up/Down: hour | Space: pause/resume | q/Esc/Ctrl-C: quit\nSun/moon fade: 0.5s; other weather: 1.5s. No connection; no configuration loaded or saved."
     ).wrap(Wrap { trim: false }), controls);
 }
 
@@ -282,7 +283,13 @@ mod tests {
                             15,
                             SkyClock::from_world_time(Some("12:00 PM")),
                             &theme,
-                            3,
+                            WeatherVisual {
+                                kind: WEATHER[weather].0,
+                                blend: mud_client::animation::weather_transition::WeatherBlend::settled(
+                                    WEATHER[weather].0,
+                                ),
+                                lightning_bolts: 3,
+                            },
                         )
                     })
                     .unwrap();

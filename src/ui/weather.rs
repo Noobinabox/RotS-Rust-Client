@@ -16,7 +16,138 @@ use crate::animation::{
     weather_playback::SCENE_PHASES,
 };
 
-use super::theme::Theme;
+use super::{clouds::cloud_cover, theme::Theme};
+
+#[derive(Clone, Copy)]
+pub struct WeatherVisual {
+    pub kind: WeatherKind,
+    pub blend: crate::animation::weather_transition::WeatherBlend,
+    pub lightning_bolts: u8,
+}
+
+/// Composite independently fading layers over an immutable text baseline.
+/// Lightning is intentionally outside the blend: the server's storm state wins.
+pub fn render_weather_blend(
+    area: Rect,
+    buf: &mut Buffer,
+    phase: usize,
+    theme: &Theme,
+    sky: SkyClock,
+    visual: WeatherVisual,
+) {
+    use crate::animation::weather_transition::WeatherLayer;
+    let clipped = area.intersection(buf.area);
+    if clipped.is_empty() || matches!(visual.kind, WeatherKind::Indoor | WeatherKind::Unknown) {
+        return;
+    }
+    // Include one left-hand cell so a wide glyph beginning just outside the
+    // weather area still protects its continuation cell and halo.
+    let left = clipped.left().saturating_sub(1).max(buf.area.left());
+    let snapshot = Rect::new(left, clipped.y, clipped.right() - left, clipped.height);
+    let mut baseline = Buffer::empty(snapshot);
+    for y in clipped.top()..clipped.bottom() {
+        for x in snapshot.left()..snapshot.right() {
+            baseline[(x, y)] = buf[(x, y)].clone();
+        }
+    }
+    for layer in WeatherLayer::ALL {
+        let opacity = visual.blend.opacity(layer);
+        if opacity == 0
+            || (layer == WeatherLayer::Sky
+                && sky.celestial.is_none()
+                && visual.kind != WeatherKind::Clear)
+        {
+            continue;
+        }
+        let kind = match layer {
+            WeatherLayer::Sky => WeatherKind::Clear,
+            WeatherLayer::Clouds => WeatherKind::Cloudy,
+            WeatherLayer::Rain => WeatherKind::Rain,
+            WeatherLayer::Snow => WeatherKind::Snow,
+            WeatherLayer::Blizzard => WeatherKind::Blizzard,
+            WeatherLayer::Fog => WeatherKind::Fog,
+            WeatherLayer::Wind => WeatherKind::Wind,
+            WeatherLayer::Ash => WeatherKind::Ash,
+            WeatherLayer::Dust => WeatherKind::Dust,
+        };
+        let mut source = baseline.clone();
+        let layer_sky = if layer == WeatherLayer::Sky {
+            sky
+        } else {
+            SkyClock {
+                celestial: None,
+                ..sky
+            }
+        };
+        render_weather(area, &mut source, kind, phase, theme, layer_sky, 0);
+        for y in clipped.top()..clipped.bottom() {
+            let protected = protected_span(&baseline, clipped, y);
+            for x in clipped.left()..clipped.right() {
+                if protected.is_some_and(|(l, r)| x >= l && x < r) {
+                    continue;
+                }
+                let local_x = i32::from(x) - i32::from(area.x);
+                let local_y = i32::from(y) - i32::from(area.y);
+                let cloud = layer == WeatherLayer::Clouds
+                    && cloud_cover(local_x, local_y, (phase % SCENE_PHASES) as i32).is_some();
+                let cell = &source[(x, y)];
+                if cell.symbol() == " " && !cloud {
+                    continue;
+                }
+                let target_color = if cell.symbol() == " " {
+                    theme.background
+                } else {
+                    cell.fg
+                };
+                let amount = f32::from(opacity) / 255.0;
+                if cell.symbol() == " " {
+                    // Opaque cloud interiors hide sky/back layers, not just outlines.
+                    if opacity == 255 {
+                        buf[(x, y)] = cell.clone();
+                    } else {
+                        let old = buf[(x, y)].fg;
+                        buf[(x, y)].set_fg(super::celestial::blend(old, target_color, amount));
+                    }
+                } else {
+                    // Stable spatial reveal works for palette colors and differing glyphs.
+                    let threshold = ((local_x as u32).wrapping_mul(73)
+                        ^ (local_y as u32).wrapping_mul(151))
+                        % 255;
+                    if opacity == 255 || threshold < u32::from(opacity) {
+                        let from = if buf[(x, y)].symbol() == " " {
+                            theme.background
+                        } else {
+                            buf[(x, y)].fg
+                        };
+                        buf[(x, y)] = cell.clone();
+                        buf[(x, y)].set_fg(super::celestial::blend(from, target_color, amount));
+                    }
+                }
+            }
+        }
+    }
+    if visual.kind == WeatherKind::Storm {
+        for y in clipped.top()..clipped.bottom() {
+            let protected = protected_span(&baseline, clipped, y);
+            for x in clipped.left()..clipped.right() {
+                if protected.is_some_and(|(l, r)| x >= l && x < r) {
+                    continue;
+                }
+                if let Some(symbol) = lightning_glyph(
+                    i32::from(x) - i32::from(area.x),
+                    i32::from(y) - i32::from(area.y),
+                    i32::from(area.width),
+                    i32::from(area.height),
+                    visual.lightning_bolts,
+                ) {
+                    buf[(x, y)]
+                        .set_symbol(symbol)
+                        .set_style(Style::default().fg(theme.lightning));
+                }
+            }
+        }
+    }
+}
 
 /// Add a sparse, low-contrast background without overwriting existing content.
 /// Each occupied row protects its entire text span, including internal spaces,
@@ -60,10 +191,16 @@ pub fn render_weather(
             // Resolve this layer before celestial glyphs so the body cannot shine
             // through an enclosed cloud, and its fade never dims the clouds.
             if kind == WeatherKind::Cloudy
-                && let Some(symbol) = cloud_cover(local_x, local_y, phase)
+                && let Some(cloud) = cloud_cover(local_x, local_y, phase)
             {
-                if symbol != " " {
-                    buf[(x, y)].set_symbol(symbol).set_style(muted);
+                if cloud.symbol != " " {
+                    buf[(x, y)].set_symbol(cloud.symbol).set_style(cloud_style(
+                        theme,
+                        daylight,
+                        (local_x, local_y),
+                        area,
+                        cloud.layer,
+                    ));
                 }
                 continue;
             }
@@ -166,6 +303,39 @@ fn palette(kind: WeatherKind, daylight: Daylight, theme: &Theme) -> (Style, Styl
     (body, highlight)
 }
 
+/// Warm light comes from the eastern (right) horizon at dawn and the western
+/// (left) horizon at dusk. Theme colors keep RGB and terminal palettes usable.
+fn cloud_style(
+    theme: &Theme,
+    daylight: Daylight,
+    position: (i32, i32),
+    area: Rect,
+    layer: u8,
+) -> Style {
+    if !matches!(daylight, Daylight::Dawn | Daylight::Dusk) {
+        return palette(WeatherKind::Cloudy, daylight, theme).0;
+    }
+    let horizontal = position.0 as f32 / f32::from(area.width.saturating_sub(1).max(1));
+    let toward_sun = if daylight == Daylight::Dawn {
+        horizontal
+    } else {
+        1.0 - horizontal
+    };
+    let lower = position.1 as f32 / f32::from(area.height.saturating_sub(1).max(1));
+    let light = (toward_sun * 0.75 + lower * 0.25).clamp(0.0, 1.0);
+    let color = if light < 0.5 {
+        super::celestial::blend(theme.muted, theme.danger, light * 2.0)
+    } else {
+        super::celestial::blend(theme.danger, theme.warning, (light - 0.5) * 2.0)
+    };
+    // Back layers are slightly shaded; foreground edges catch the warm light.
+    Style::default().fg(super::celestial::blend(
+        color,
+        theme.muted,
+        f32::from(2 - layer.min(2)) * 0.10,
+    ))
+}
+
 fn protected_span(buf: &Buffer, area: Rect, y: u16) -> Option<(u16, u16)> {
     let mut span: Option<(u16, u16)> = None;
     // A wide glyph may start immediately outside the clipped area while its
@@ -211,8 +381,8 @@ fn weather_glyph(
             silhouette(shape, x - center + 3, row).map(|symbol| (symbol, true))
         }
         WeatherKind::Cloudy => cloud_cover(x, y, phase)
-            .filter(|symbol| *symbol != " ")
-            .map(|symbol| (symbol, false)),
+            .filter(|cloud| cloud.symbol != " ")
+            .map(|cloud| (cloud.symbol, false)),
         WeatherKind::Rain | WeatherKind::Storm => rain(x, y, phase).map(|symbol| (symbol, false)),
         WeatherKind::Snow | WeatherKind::Blizzard => {
             let dense = kind == WeatherKind::Blizzard;
@@ -266,17 +436,6 @@ fn lightning_glyph(x: i32, y: i32, width: i32, height: i32, bolts: u8) -> Option
         }
     }
     None
-}
-
-fn cloud_cover(x: i32, y: i32, phase: i32) -> Option<&'static str> {
-    const CLOUD: [&str; 3] = ["   .--.    ", " .(    ).  ", "(___.__)__)"];
-    let row = *CLOUD.get(y.rem_euclid(6) as usize)?;
-    let column = (x - phase / 12).rem_euclid(23) as usize;
-    let left = row.len() - row.trim_start().len();
-    let right = row.trim_end().len();
-    (left..right)
-        .contains(&column)
-        .then(|| &row[column..column + 1])
 }
 
 fn rain(x: i32, y: i32, phase: i32) -> Option<&'static str> {
@@ -334,9 +493,261 @@ mod tests {
     }
 
     #[test]
+    fn sun_and_moon_fade_out_under_incoming_precipitation() {
+        use crate::animation::weather_transition::{WeatherBlend, WeatherLayer};
+        let area = Rect::new(0, 0, 40, 12);
+        for time in ["12:00 PM", "12:00 AM"] {
+            let sky = SkyClock::from_world_time(Some(time));
+            for kind in [
+                WeatherKind::Rain,
+                WeatherKind::Storm,
+                WeatherKind::Snow,
+                WeatherKind::Blizzard,
+            ] {
+                let mut images = Vec::new();
+                for opacity in [255, 127, 0] {
+                    // Isolate the outgoing body to verify its blend independently
+                    // of clouds that may happen to cover it at this phase.
+                    let mut blend = WeatherBlend::default();
+                    blend.opacity[WeatherLayer::Sky as usize] = opacity;
+                    let mut buf = Buffer::empty(area);
+                    render_weather_blend(
+                        area,
+                        &mut buf,
+                        0,
+                        &theme(),
+                        sky,
+                        WeatherVisual {
+                            kind,
+                            blend,
+                            lightning_bolts: 0,
+                        },
+                    );
+                    images.push(buf);
+                }
+                assert_ne!(images[0], images[1]);
+                assert_ne!(images[1], images[2]);
+                assert_eq!(images[2], Buffer::empty(area));
+            }
+        }
+    }
+
+    #[test]
+    fn shared_layers_preserve_text_and_clip_during_crossfades() {
+        use crate::animation::weather_transition::{WeatherBlend, WeatherLayer};
+        let theme = theme();
+        for (width, height) in [(0, 0), (1, 1), (8, 3), (40, 12)] {
+            let area = Rect::new(0, 0, width, height);
+            let mut base = Buffer::empty(area);
+            if width >= 8 {
+                base.set_string(1, 1, "HP 100", Style::default().fg(theme.danger));
+            }
+            for opacity in [0, 1, 127, 254, 255] {
+                let mut blend = WeatherBlend::default();
+                for layer in WeatherLayer::ALL {
+                    blend.opacity[layer as usize] = opacity;
+                }
+                let mut buf = base.clone();
+                render_weather_blend(
+                    area,
+                    &mut buf,
+                    97,
+                    &theme,
+                    SkyClock::from_world_time(Some("6:00 PM")),
+                    WeatherVisual {
+                        kind: WeatherKind::Snow,
+                        blend,
+                        lightning_bolts: 3,
+                    },
+                );
+                if opacity == 0 {
+                    assert_eq!(buf, base);
+                }
+                if width >= 8 {
+                    for x in 0..8 {
+                        assert_eq!(buf[(x, 1)], base[(x, 1)]);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn transition_layers_protect_wide_text_crossing_the_left_clip_boundary() {
+        use crate::animation::weather_transition::WeatherBlend;
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 12, 5));
+        buffer.set_string(1, 2, "界", Style::default().fg(theme().danger));
+        let before = buffer.clone();
+        let area = Rect::new(2, 1, 8, 3);
+        let mut blend = WeatherBlend::settled(WeatherKind::Storm);
+        blend.opacity.fill(127);
+        render_weather_blend(
+            area,
+            &mut buffer,
+            55,
+            &theme(),
+            SkyClock::from_world_time(Some("6:00 PM")),
+            WeatherVisual {
+                kind: WeatherKind::Storm,
+                blend,
+                lightning_bolts: 3,
+            },
+        );
+        for x in 0..4 {
+            assert_eq!(buffer[(x, 2)], before[(x, 2)]);
+        }
+        for y in 0..5 {
+            for x in 0..12 {
+                if !area.contains((x, y).into()) {
+                    assert_eq!(buffer[(x, y)], before[(x, y)]);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn shared_weather_lightning_is_immediate_and_never_fades_after_storm() {
+        use crate::animation::weather_transition::WeatherBlend;
+        let area = Rect::new(0, 0, 40, 12);
+        let sky = SkyClock::from_world_time(None);
+        let theme = theme();
+        let mut storm = Buffer::empty(area);
+        render_weather_blend(
+            area,
+            &mut storm,
+            0,
+            &theme,
+            sky,
+            WeatherVisual {
+                kind: WeatherKind::Storm,
+                blend: WeatherBlend::default(),
+                lightning_bolts: 3,
+            },
+        );
+        assert!(
+            storm
+                .content
+                .iter()
+                .any(|cell| cell.fg == theme.lightning && cell.symbol() != " ")
+        );
+        let mut rain = Buffer::empty(area);
+        render_weather_blend(
+            area,
+            &mut rain,
+            0,
+            &theme,
+            sky,
+            WeatherVisual {
+                kind: WeatherKind::Rain,
+                blend: WeatherBlend::settled(WeatherKind::Storm),
+                lightning_bolts: 3,
+            },
+        );
+        assert!(!rain.content.iter().any(|cell| cell.fg == theme.lightning));
+        for kind in [WeatherKind::Indoor, WeatherKind::Unknown] {
+            let mut buf = Buffer::empty(area);
+            render_weather_blend(
+                area,
+                &mut buf,
+                0,
+                &theme,
+                sky,
+                WeatherVisual {
+                    kind,
+                    blend: WeatherBlend::settled(WeatherKind::Storm),
+                    lightning_bolts: 3,
+                },
+            );
+            assert_eq!(buf, Buffer::empty(area));
+        }
+    }
+
+    #[test]
+    fn settled_cloud_layers_match_original_scene_and_preserve_missing_time() {
+        use crate::animation::weather_transition::WeatherBlend;
+        let area = Rect::new(0, 0, 40, 12);
+        for clock in [None, Some("6:00 AM"), Some("12:00 AM")] {
+            let sky = SkyClock::from_world_time(clock);
+            let mut original = Buffer::empty(area);
+            super::render_weather(
+                area,
+                &mut original,
+                WeatherKind::Cloudy,
+                57,
+                &theme(),
+                sky,
+                0,
+            );
+            let mut layers = Buffer::empty(area);
+            render_weather_blend(
+                area,
+                &mut layers,
+                57,
+                &theme(),
+                sky,
+                WeatherVisual {
+                    kind: WeatherKind::Cloudy,
+                    blend: WeatherBlend::settled(WeatherKind::Cloudy),
+                    lightning_bolts: 0,
+                },
+            );
+            assert_eq!(layers, original);
+        }
+    }
+
+    #[test]
+    fn twilight_cloud_gradient_follows_sun_horizon_and_theme_palette() {
+        use ratatui::style::Color;
+        let area = Rect::new(0, 0, 41, 9);
+        let mut theme = theme();
+        theme.muted = Color::Rgb(50, 50, 80);
+        theme.danger = Color::Rgb(220, 80, 90);
+        theme.warning = Color::Rgb(255, 190, 70);
+        for x in 0..41 {
+            assert_eq!(
+                cloud_style(&theme, Daylight::Dawn, (x, 4), area, 0),
+                cloud_style(&theme, Daylight::Dusk, (40 - x, 4), area, 0)
+            );
+        }
+        let shades = (0..41)
+            .map(|x| {
+                format!(
+                    "{:?}",
+                    cloud_style(&theme, Daylight::Dawn, (x, 4), area, 0).fg
+                )
+            })
+            .collect::<std::collections::BTreeSet<_>>();
+        assert!(shades.len() > 10);
+        assert_ne!(
+            cloud_style(&theme, Daylight::Dawn, (20, 0), area, 0),
+            cloud_style(&theme, Daylight::Dawn, (20, 8), area, 0)
+        );
+        assert_ne!(
+            cloud_style(&theme, Daylight::Dusk, (20, 4), area, 0),
+            cloud_style(&theme, Daylight::Dusk, (20, 4), area, 2)
+        );
+        theme.muted = Color::DarkGray;
+        theme.danger = Color::Red;
+        theme.warning = Color::Indexed(220);
+        for x in 0..41 {
+            let fg = cloud_style(&theme, Daylight::Dawn, (x, 4), area, 0).fg;
+            assert!(matches!(
+                fg,
+                Some(Color::DarkGray | Color::Red | Color::Indexed(220))
+            ));
+        }
+        for daylight in [Daylight::Day, Daylight::Night, Daylight::Unknown] {
+            assert_eq!(
+                cloud_style(&theme, daylight, (0, 0), area, 0),
+                palette(WeatherKind::Cloudy, daylight, &theme).0
+            );
+        }
+    }
+
+    #[test]
     fn clouds_occlude_both_bodies_without_inheriting_their_fade() {
         let area = Rect::new(0, 0, 40, 9);
-        for clock in ["12:00 PM", "12:00 AM"] {
+        for clock in ["12:00 PM", "12:00 AM", "6:00 AM", "6:00 PM"] {
             let mut visible = 0;
             let mut hidden = 0;
             for phase in 0..SCENE_PHASES {
@@ -373,10 +784,23 @@ mod tests {
                 );
                 for y in 0..9 {
                     for x in 0..40 {
-                        if let Some(symbol) = cloud_cover(i32::from(x), i32::from(y), phase as i32)
-                        {
-                            assert_eq!(cloudy[(x, y)].symbol(), symbol);
+                        if let Some(cloud) = cloud_cover(i32::from(x), i32::from(y), phase as i32) {
+                            assert_eq!(cloudy[(x, y)].symbol(), cloud.symbol);
                             assert_eq!(cloudy[(x, y)], faded[(x, y)]);
+                            if cloud.symbol != " " {
+                                assert_eq!(
+                                    cloudy[(x, y)].fg,
+                                    cloud_style(
+                                        &theme(),
+                                        sky.daylight,
+                                        (i32::from(x), i32::from(y)),
+                                        area,
+                                        cloud.layer
+                                    )
+                                    .fg
+                                    .unwrap()
+                                );
+                            }
                             hidden += usize::from(clear[(x, y)].symbol() != " ");
                         } else if clear[(x, y)].symbol() != " " {
                             assert_eq!(cloudy[(x, y)], clear[(x, y)]);
@@ -385,10 +809,14 @@ mod tests {
                     }
                 }
             }
-            assert!(hidden > 0 && visible > 0, "{clock}");
+            if matches!(clock, "12:00 PM" | "12:00 AM") {
+                assert!(hidden > 0 && visible > 0, "{clock}");
+            } else {
+                // A horizon body occupies an edge: some pane geometries keep it
+                // entirely under a cloud or in a gap throughout this cycle.
+                assert!(hidden + visible > 0, "{clock}");
+            }
         }
-        assert_eq!(cloud_cover(4, 1, 0), Some(" "));
-        assert_eq!(cloud_cover(0, 1, 0), None);
     }
 
     #[test]

@@ -150,11 +150,30 @@ permits. These visual strikes do not represent spell-casting windows.
 Clouds drift in front of the sun/moon, hiding overlapping parts (including cloud
 interiors) while leaving gaps visible. Without recognized time, cloudy weather
 shows only clouds. Switching between clear and cloudy does not restart fades.
+Cloud layers have seeded irregular spacing and different slow drift speeds,
+creating overlapping silhouettes; motion follows `animation.weather_fps` and
+freezes with reduced motion/disabled animation. The scene repeats on the existing
+weather phase cycle. Dawn/dusk clouds use a horizon-facing gradient from `muted`
+through `danger` to `warning`, brightest toward east/right at dawn and west/left
+at dusk, with shaded rear layers. RGB themes blend smoothly; other palettes use
+stepped colors. Day/night/unknown-time palettes remain unchanged.
 
-Clear/cloudy-weather sun/moon changes fade out for two seconds and in for two seconds;
+Outdoor sun/moon changes fade out for 0.5 seconds and in for 0.5 seconds;
 the first appearance fades in. RGB themes blend into the background; terminal
-palettes use dimming and glyph reveal. `animation.weather_fps` controls fade
-steps. Reduced motion or disabled animation bypasses these transitions.
+palettes use dimming and glyph reveal. Celestial appearance/body-change fade steps
+use at least 10 FPS in normal mode (capped at 2 FPS in low-performance mode),
+independent of slower particle motion. Reduced motion or disabled animation bypasses these transitions.
+
+Weather-type changes use a shared layer blend: 0.5 seconds for sun/moon and
+1.5 seconds for clouds and particles. Rain, storm,
+snow, and blizzard retain clouds, but only clear/cloudy weather keeps the sky body
+visible. Other outdoor weather fades the sun/moon out over 0.5 seconds; returning
+to clear/cloudy fades it back in at its current game-time position.
+Cloud and particle motion does not restart when the weather changes. Rapid
+changes blend from the current appearance. Labels and storm lightning respond
+immediately; indoor/unknown/disabled weather clears immediately. Reduced motion
+or disabled animation snaps directly to the target. Blending uses elapsed time,
+with visible steps limited by draws and pane refresh; no extra setting is needed.
 
 Disabled animation or reduced motion retains a static first-frame scene;
 game-time lighting and sun/moon positions still update. Low-performance mode caps weather motion at 2 FPS. Visible

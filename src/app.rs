@@ -2317,6 +2317,7 @@ impl App {
             now,
         );
         self.state.world.lightning_bolts = self.weather_playback.lightning_bolts();
+        self.state.world.weather_blend = self.weather_playback.blend();
         self.state.world.displayed_sky = Some(self.celestial_playback.update(
             crate::animation::daylight::SkyClock::from_world_time(self.state.world.time.as_deref()),
             kind,
@@ -2927,7 +2928,55 @@ mod tests {
         assert!(sky.celestial.unwrap().moon);
         app.state.world.weather = Some("rain".into());
         app.update_weather_animation(now + Duration::from_secs(5));
-        assert!(app.state.world.displayed_sky.unwrap().celestial.is_none());
+        assert!(
+            app.state
+                .world
+                .displayed_sky
+                .unwrap()
+                .celestial
+                .unwrap()
+                .moon
+        );
+    }
+
+    #[test]
+    fn weather_layers_follow_immediate_server_labels_and_storm_signals() {
+        use crate::animation::weather_transition::WeatherLayer;
+        let mut app = App::new(AppConfig::default());
+        let now = Instant::now();
+        app.state.world.time = Some("12:00 PM".into());
+        app.state.world.weather = Some("cloudy".into());
+        app.update_weather_animation(now);
+        app.state.world.weather = Some("lightning storm".into());
+        app.update_weather_animation(now + Duration::from_secs(1));
+        assert_eq!(app.state.world.weather.as_deref(), Some("lightning storm"));
+        assert!(app.state.world.lightning_bolts > 0);
+        assert_eq!(
+            app.state
+                .world
+                .weather_blend
+                .unwrap()
+                .opacity(WeatherLayer::Rain),
+            0
+        );
+        app.update_weather_animation(now + Duration::from_millis(1750));
+        let blend = app.state.world.weather_blend.unwrap();
+        assert_eq!(blend.opacity(WeatherLayer::Clouds), 255);
+        assert!((1..255).contains(&blend.opacity(WeatherLayer::Rain)));
+        app.state.world.weather = Some("clear".into());
+        app.update_weather_animation(now + Duration::from_millis(1800));
+        assert_eq!(app.state.world.lightning_bolts, 0);
+        assert!(app.state.world.displayed_sky.unwrap().celestial.is_some());
+        app.config.animation.reduced_motion = true;
+        app.update_weather_animation(now + Duration::from_millis(1801));
+        assert_eq!(
+            app.state
+                .world
+                .weather_blend
+                .unwrap()
+                .opacity(WeatherLayer::Clouds),
+            0
+        );
     }
 
     #[test]

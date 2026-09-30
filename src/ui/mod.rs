@@ -1,5 +1,6 @@
 mod celestial;
 pub mod character;
+mod clouds;
 pub mod gauges;
 pub mod input;
 pub mod layout;

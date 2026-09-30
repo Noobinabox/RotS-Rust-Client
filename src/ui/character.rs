@@ -46,16 +46,22 @@ fn render_info_panel(
         .wrap(Wrap { trim: false })
         .render(inner, buf);
     if weather_config.enabled && weather_config.show_info_marker {
-        super::weather::render_weather(
+        let kind = WeatherKind::classify(weather);
+        super::weather::render_weather_blend(
             inner,
             buf,
-            WeatherKind::classify(weather),
             state.world.weather_frame,
             theme,
             state.world.displayed_sky.unwrap_or_else(|| {
                 crate::animation::daylight::SkyClock::from_world_time(state.world.time.as_deref())
             }),
-            state.world.lightning_bolts,
+            super::weather::WeatherVisual {
+                kind,
+                blend: state.world.weather_blend.unwrap_or_else(|| {
+                    crate::animation::weather_transition::WeatherBlend::settled(kind)
+                }),
+                lightning_bolts: state.world.lightning_bolts,
+            },
         );
     }
 }
@@ -1362,6 +1368,10 @@ mod tests {
         let config = crate::config::AppConfig::default();
         let mut state = AppState::new(&config);
         state.world.weather = Some("Rain".into());
+        // Isolate precipitation: layered skies also contain slash-shaped rays.
+        let mut blend = crate::animation::weather_transition::WeatherBlend::default();
+        blend.opacity[crate::animation::weather_transition::WeatherLayer::Rain as usize] = 255;
+        state.world.weather_blend = Some(blend);
         let area = Rect::new(0, 0, 40, 10);
         let theme = theme();
         for (time, expected) in [

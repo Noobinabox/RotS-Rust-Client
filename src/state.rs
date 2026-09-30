@@ -172,6 +172,7 @@ pub struct WorldState {
     pub weather: Option<String>,
     pub weather_frame: usize,
     pub lightning_bolts: u8,
+    pub weather_blend: Option<crate::animation::weather_transition::WeatherBlend>,
     pub displayed_sky: Option<crate::animation::daylight::SkyClock>,
 }
 

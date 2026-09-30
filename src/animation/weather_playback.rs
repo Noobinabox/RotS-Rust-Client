@@ -17,8 +17,10 @@ const LIGHTNING_MAX_INTERVAL_MS: u64 = 5_000;
 /// Owns weather timing; widgets only consume the resulting frame index.
 #[derive(Debug, Default)]
 pub struct WeatherPlayback {
-    active: Option<(WeatherKind, u64)>,
+    active: Option<u64>,
     lightning: LightningPlayback,
+    transition: super::weather_transition::WeatherTransition,
+    blend: Option<super::weather_transition::WeatherBlend>,
 }
 
 #[derive(Debug)]
@@ -90,6 +92,10 @@ impl LightningPlayback {
 }
 
 impl WeatherPlayback {
+    pub fn blend(&self) -> Option<super::weather_transition::WeatherBlend> {
+        self.blend
+    }
+
     pub fn lightning_bolts(&self) -> u8 {
         if self.lightning.visible {
             self.lightning.bolts
@@ -106,6 +112,7 @@ impl WeatherPlayback {
         scheduler: &mut AnimationScheduler,
         now: Instant,
     ) -> usize {
+        self.blend = Some(self.transition.update(kind, weather, animation, now));
         let moving = weather.enabled
             && weather.show_info_marker
             && animation.enabled
@@ -121,10 +128,11 @@ impl WeatherPlayback {
         } else {
             animation.weather_fps
         };
-        let desired = moving.then_some((kind, fps));
+        // Keep layer motion continuous when only the weather target changes.
+        let desired = moving.then_some(fps);
         if desired != self.active {
             scheduler.cancel(EFFECT);
-            if let Some((_, fps)) = desired {
+            if let Some(fps) = desired {
                 scheduler.start(
                     AnimationDefinition {
                         name: EFFECT.into(),
@@ -293,7 +301,7 @@ mod tests {
     }
 
     #[test]
-    fn elapsed_time_drives_frames_and_weather_changes_restart() {
+    fn elapsed_time_drives_frames_continuously_across_weather_changes() {
         let animation = AnimationConfig::default();
         let weather = WeatherConfig::default();
         let mut scheduler = AnimationScheduler::new(&animation);
@@ -331,7 +339,7 @@ mod tests {
                 &mut scheduler,
                 now + Duration::from_millis(550)
             ),
-            0
+            1
         );
     }
 

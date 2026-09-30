@@ -16,11 +16,11 @@ cloudless description still means clear weather.
 | RoTS state | Background scene |
 |---|---|
 | Clear | Sunshine by day; a round, cratered moon at night. |
-| Cloudy | Drifting clouds in front of the sun or moon. |
-| Rain | Falling rain. |
-| Lightning | A storm scene with lightning. |
-| Snow | Falling snow. |
-| Blizzard | Wind-driven snow. |
+| Cloudy | Overlapping cloud layers drifting in front of the sun or moon, with sunrise/sunset gradients. |
+| Rain | Falling rain over clouds; no sun/moon after the transition. |
+| Lightning | Rain and clouds with immediate bright lightning. |
+| Snow | Falling snow over clouds; no sun/moon after the transition. |
+| Blizzard | Wind-driven snow over clouds; no sun/moon after the transition. |
 
 Scenes animate without shifting the text. Indoor, empty, and
 unrecognized descriptions have no scene; the
@@ -47,7 +47,7 @@ Colors come from the World pane's theme, including any panel-specific overrides:
 
 | Lighting | Scene colors |
 |---|---|
-| Dawn or dusk | Warm `warning` colors for non-clear weather except rain/storm. |
+| Dawn or dusk | Cloud gradients use `muted`, `danger`, and `warning`; other non-clear weather uses warm `warning` except rain/storm. |
 | Day | Rain/storm use `rain`; snow/blizzard use `foreground`; clouds/fog/wind/ash use `muted`; dust uses `warning`. Day scenes are not dimmed. |
 | Night | Rain/storm keep their dimmed `rain` color; other non-clear weather uses dimmed `muted` scenery with `accent` highlights. |
 | Missing or unrecognized time | Dimmed `muted`/`accent`, except rain/storm keep `rain`. |
@@ -92,14 +92,17 @@ up the eastern sky; `3:00 PM` places it on the descending western side.
 Positions update with server time (normally hourly), not every animation tick;
 there is no guessed wall-clock interpolation between server updates.
 
-Sun/moon changes now fade the outgoing body out over two seconds, then fade
-the incoming body in over two seconds. First appearance also fades in.
+Sun/moon changes fade the outgoing body out over 0.5 seconds, then fade
+the incoming body in over 0.5 seconds. First appearance also fades in.
 Repeated time reports and ordinary same-body position updates do not restart
 the fade. These short transitions use elapsed animation time, not a guessed
-game clock, and respect `weather_fps` (capped at 2 FPS in low-performance mode).
+game clock. Celestial appearance/body-change fades use at least 10 animation
+steps per second so the short fade remains visible with the default particle FPS;
+low-performance mode caps those steps at 2 FPS. Actual display steps depend on draws.
 Reduced motion or disabled animation shows the current body immediately.
-Switching between clear and cloudy weather preserves the celestial transition.
-Other weather, indoor areas, and invalid time cancel it.
+Outdoor weather changes preserve the celestial clock and transition, even while
+other outdoor weather hides the body after its 0.5-second weather-layer fade-out.
+Indoor areas, unknown weather, and invalid time cancel it immediately.
 
 The sun transitions from theme `danger` at the horizon through `warning` to
 `foreground` overhead, then reverses toward sunset. The moon transitions from
@@ -114,8 +117,42 @@ partially or completely hide a body. Missing/unrecognized time retains the old
 fixed-position, dimmed sunshine fallback in clear weather; cloudy weather shows
 only clouds without a recognized time. Moving clouds cover the sun/moon where
 their outlines or interiors overlap, revealing it through gaps. Cloud colors
-and movement remain independent of the body's fade. Rain, storms, and other
-weather retain their existing scenes without a sun or moon.
+and movement remain independent of the body's fade. Rain, storms, snow, and
+blizzards share the cloud layer, but only clear/cloudy weather keeps the sun/moon visible.
+
+## Shared weather transitions
+
+Weather changes blend clouds and particles over 1.5 seconds; the sun/moon layer
+fades in or out more quickly, over 0.5 seconds.
+Cloudy → rain keeps the clouds while rain appears; rain → snow fades between
+particle types; cloudy → clear thins the clouds to reveal the same sun/moon.
+Changing from clear/cloudy to rain, storms, snow, blizzard, fog, wind, ash, or dust
+fades the sun/moon out over 0.5 seconds. It stays hidden until clear/cloudy
+weather returns, then fades back in at the current game-time position.
+Repeated reports do not restart the transition. Rapid changes continue from the
+current blend without accumulating old scenes, and particle/cloud motion stays continuous.
+
+The weather label always changes immediately. Lightning starts immediately on
+storm entry and stops immediately on storm exit; it never fades with precipitation.
+Indoor/unknown weather or hidden/disabled weather clears effects immediately.
+Reduced motion or disabled animation switches layers instantly. Initial weather
+is shown immediately; existing sun/moon appearance fades remain separate.
+RGB colors blend toward the background while glyphs use stable spatial reveal;
+terminal palettes use stepped colors and the same reveal. Preview by switching
+weather with Left/Right in the offline demo; Space freezes transitions too.
+
+At sunrise, cloud colors grade toward warm light on the right (east); at sunset,
+the gradient reverses toward the left (west). Lower edges catch warmer light,
+while rear layers are shaded. Colors reuse `muted`, `danger`, and `warning`:
+RGB themes blend smoothly; named/256-color themes use stepped palette colors.
+Day, night, and unknown-time cloud palettes keep their existing behavior.
+
+Cloud layers use seeded spacing and different slow drift speeds, so they overlap
+at irregular intervals. Foreground clouds hide background outlines and interiors.
+This deterministic scene repeats with the existing weather phase cycle; overlap
+timing follows `weather_fps`, not a separate real-time timer. Reduced motion or
+disabled animation freezes the layers. Preview with `cargo run -- --demo weather`,
+Right once for cloudy, then Up/Down to 6 AM or 6 PM.
 
 ## Configuration example
 

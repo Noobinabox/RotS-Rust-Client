@@ -11,7 +11,9 @@ use super::{
 };
 
 const EFFECT: &str = "celestial-fade";
-const FADE_DURATION: Duration = Duration::from_secs(2);
+const FADE_DURATION: Duration = Duration::from_millis(500);
+// Slow particle rates must still leave intermediate frames in the short fade.
+const MIN_FADE_FPS: u64 = 10;
 
 #[derive(Debug)]
 struct Fade {
@@ -41,7 +43,7 @@ impl CelestialPlayback {
         let (weather, animation) = settings;
         let visible = weather.enabled
             && weather.show_info_marker
-            && matches!(kind, WeatherKind::Clear | WeatherKind::Cloudy)
+            && !matches!(kind, WeatherKind::Indoor | WeatherKind::Unknown)
             && target.celestial.is_some();
         if !visible {
             self.displayed = None;
@@ -66,7 +68,7 @@ impl CelestialPlayback {
         let fps = if animation.low_performance {
             animation.weather_fps.min(2)
         } else {
-            animation.weather_fps
+            animation.weather_fps.max(MIN_FADE_FPS)
         }
         .clamp(1, 1000);
 
@@ -214,9 +216,9 @@ mod tests {
         for clock in ["6:00 AM", "7:00 PM"] {
             let mut test = Harness::new();
             assert_eq!(test.clear(0, clock).opacity, 0);
-            assert_eq!(test.clear(499, clock).opacity, 0);
-            assert_eq!(test.clear(1000, clock).opacity, 127);
-            assert_eq!(test.clear(2000, clock).opacity, 255);
+            assert_eq!(test.clear(99, clock).opacity, 0);
+            assert_eq!(test.clear(250, clock).opacity, 102);
+            assert_eq!(test.clear(500, clock).opacity, 255);
             assert_eq!(test.clear(3000, clock).opacity, 255);
             assert!(test.scheduler.frame(EFFECT, test.start).is_none());
         }
@@ -229,21 +231,21 @@ mod tests {
             let old = test.clear(0, before).celestial;
             test.clear(2000, before);
             assert_eq!(test.clear(3000, after).celestial, old);
-            let middle = test.clear(4000, after);
+            let middle = test.clear(3200, after);
             assert_eq!(middle.celestial, old);
-            assert_eq!(middle.opacity, 127);
+            assert_eq!(middle.opacity, 153);
             assert_eq!(
                 middle.daylight,
                 SkyClock::from_world_time(Some(after)).daylight
             );
-            let boundary = test.clear(5000, after);
+            let boundary = test.clear(3500, after);
             assert_eq!(boundary.opacity, 0);
             assert_eq!(
                 boundary.celestial,
                 SkyClock::from_world_time(Some(after)).celestial
             );
-            assert_eq!(test.clear(6000, after).opacity, 127);
-            assert_eq!(test.clear(7000, after).opacity, 255);
+            assert_eq!(test.clear(3700, after).opacity, 102);
+            assert_eq!(test.clear(4000, after).opacity, 255);
         }
     }
 
@@ -251,13 +253,13 @@ mod tests {
     fn same_body_position_updates_keep_fade_deadline_and_late_ticks_complete() {
         let mut test = Harness::new();
         test.clear(0, "6:00 AM");
-        let advanced = test.clear(1000, "8:00 AM");
-        assert_eq!(advanced.opacity, 127);
+        let advanced = test.clear(200, "8:00 AM");
+        assert_eq!(advanced.opacity, 102);
         assert_eq!(
             advanced.celestial,
             SkyClock::from_world_time(Some("8:00 AM")).celestial
         );
-        assert_eq!(test.clear(2000, "8:00 AM").opacity, 255);
+        assert_eq!(test.clear(500, "8:00 AM").opacity, 255);
         test.clear(3000, "8:00 PM");
         let late = test.clear(10000, "8:00 PM");
         assert_eq!(late.opacity, 255);
@@ -270,12 +272,12 @@ mod tests {
         test.clear(0, "6:00 AM");
         test.clear(2000, "6:00 AM");
         test.clear(3000, "7:00 PM");
-        assert_eq!(test.clear(4000, "7:00 AM").opacity, 127);
-        assert_eq!(test.clear(4500, "8:00 PM").opacity, 63);
-        assert_eq!(test.clear(7000, "8:00 PM").opacity, 255);
+        assert_eq!(test.clear(3200, "7:00 AM").opacity, 153);
+        assert_eq!(test.clear(3400, "8:00 PM").opacity, 51);
+        assert_eq!(test.clear(4000, "8:00 PM").opacity, 255);
         test.clear(8000, "7:00 AM");
-        test.clear(10000, "7:00 AM");
-        assert_eq!(test.clear(11000, "8:00 PM").opacity, 127);
+        test.clear(8500, "7:00 AM");
+        assert_eq!(test.clear(8700, "8:00 PM").opacity, 102);
         assert_eq!(test.clear(15000, "8:00 PM").opacity, 255);
     }
 
@@ -283,25 +285,25 @@ mod tests {
     fn clouds_preserve_celestial_fades_and_day_night_transitions() {
         let mut test = Harness::new();
         assert_eq!(test.at(0, Some("6:00 AM"), WeatherKind::Cloudy).opacity, 0);
-        assert_eq!(test.clear(1000, "6:00 AM").opacity, 127);
+        assert_eq!(test.clear(200, "6:00 AM").opacity, 102);
         assert_eq!(
-            test.at(2000, Some("6:00 AM"), WeatherKind::Cloudy).opacity,
+            test.at(500, Some("6:00 AM"), WeatherKind::Cloudy).opacity,
             255
         );
         let outgoing = test.at(3000, Some("7:00 PM"), WeatherKind::Cloudy);
         assert!(!outgoing.celestial.unwrap().moon);
-        let incoming = test.at(5000, Some("7:00 PM"), WeatherKind::Cloudy);
+        let incoming = test.at(3500, Some("7:00 PM"), WeatherKind::Cloudy);
         assert!(incoming.celestial.unwrap().moon);
         assert_eq!(incoming.opacity, 0);
         assert_eq!(
-            test.at(7000, Some("7:00 PM"), WeatherKind::Cloudy).opacity,
+            test.at(4000, Some("7:00 PM"), WeatherKind::Cloudy).opacity,
             255
         );
     }
 
     #[test]
     fn hidden_weather_invalid_time_and_visibility_toggles_clear_old_bodies() {
-        for kind in [WeatherKind::Rain, WeatherKind::Indoor, WeatherKind::Unknown] {
+        for kind in [WeatherKind::Indoor, WeatherKind::Unknown] {
             let mut test = Harness::new();
             test.clear(0, "6:00 AM");
             assert!(test.at(1000, Some("7:00 PM"), kind).celestial.is_none());
@@ -326,9 +328,10 @@ mod tests {
         test.animation.low_performance = true;
         test.clear(0, "6:00 AM");
         assert_eq!(test.clear(100, "6:00 AM").opacity, 0);
-        assert_eq!(test.clear(500, "6:00 AM").opacity, 63);
+        assert_eq!(test.clear(200, "6:00 AM").opacity, 0);
         test.animation.low_performance = false;
-        assert_eq!(test.clear(600, "6:00 AM").opacity, 76);
+        assert_eq!(test.clear(300, "6:00 AM").opacity, 153);
+        assert_eq!(test.clear(500, "6:00 AM").opacity, 255);
         test.animation.reduced_motion = true;
         assert_eq!(test.clear(700, "7:00 PM").opacity, 255);
         assert!(test.scheduler.frame(EFFECT, test.start).is_none());
@@ -338,5 +341,11 @@ mod tests {
         let day = test.clear(900, "6:00 AM");
         assert_eq!(day.opacity, 255);
         assert!(!day.celestial.unwrap().moon);
+
+        let mut limited = Harness::new();
+        limited.animation.low_performance = true;
+        limited.clear(0, "6:00 AM");
+        assert_eq!(limited.clear(499, "6:00 AM").opacity, 0);
+        assert_eq!(limited.clear(500, "6:00 AM").opacity, 255);
     }
 }

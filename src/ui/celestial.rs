@@ -88,7 +88,7 @@ impl CelestialScene {
 
 // Interpolate only RGB themes. Named/indexed colors retain terminal palette
 // semantics instead of silently forcing true color on limited terminals.
-fn blend(low: Color, high: Color, amount: f32) -> Color {
+pub(super) fn blend(low: Color, high: Color, amount: f32) -> Color {
     match (low, high) {
         (Color::Rgb(r, g, b), Color::Rgb(rr, gg, bb)) => {
             let channel = |a: u8, z: u8| {
