@@ -20,6 +20,21 @@ function smart_kill(ctx)
 end
 
 ---@param ctx MudAliasContext
+function regen_and_vit(ctx)
+    local target = ctx.captures[2]
+    local regeneration = "cast regeneration"
+    local vitality = "cast vitality"
+    if target == nil or target == "" then
+        client.send(regeneration)
+        client.send(vitality)
+        return
+    end
+
+    client.send(regeneration .. target)
+    client.send(vitality .. target)
+end
+
+---@param ctx MudAliasContext
 function run_path(ctx)
   local destination = ctx.captures[1]
   if destination == nil or destination == "" then

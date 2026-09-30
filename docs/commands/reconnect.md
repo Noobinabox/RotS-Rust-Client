@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Send a reconnect request to the client network task. **Currently incomplete:** the network task does not act on this request, so this command does not establish a new connection.
+Close the current connection, if any, and open a fresh connection to the same server. This also works after the server disconnects or a connection attempt fails.
 
 ## Syntax
 
@@ -10,20 +10,20 @@ Send a reconnect request to the client network task. **Currently incomplete:** t
 /reconnect
 ```
 
-The client reports `Reconnect requested.`, but that message is not evidence of a new connection. Restart the client to recover from a dropped connection or use a changed host/port.
+The client reports `Reconnect requested.` followed by a connection result. You may need to log into the MUD again. Your client remains running, preserving session-only settings.
 
 ## Examples
 
-This demonstrates the request command only; do not rely on it to recover a connection:
+To replace a live connection or recover a dropped connection:
 
 ```text
 /reconnect
 ```
 
-For a working recovery, exit the client:
+To connect to a different host or port, save the active `config.toml`, exit the client, and launch it again:
 
 ```text
 /quit
 ```
 
-Then launch it again using your usual terminal command. If you changed the host or port, save the active `config.toml` before relaunching. `/reload` does not replace the existing connection, and `--local` still forces the local test endpoint. Restarting may require logging into the MUD again and loses session-only settings.
+`/reconnect` reuses the network settings selected at launch, including `--local`; `/reload` does not replace those settings. Reconnection is explicit, not an automatic retry loop. Commands entered while disconnected or connecting are discarded rather than replayed into a new session.

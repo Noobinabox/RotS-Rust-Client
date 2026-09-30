@@ -435,9 +435,9 @@ max_expanded_commands = 256
 
 [[aliases.rules]]
 name = "Regeneration and Vit"
-match_type = "exact"
-pattern = "rr"
-commands = ["cast regen", "cast vit"]
+match_type = "regex"
+pattern = "^rr(.*)"
+lua = "regen_and_vit"
 
 # Example Lua alias hooks from scripts/init.lua:
 [[aliases.rules]]

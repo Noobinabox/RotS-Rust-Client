@@ -13,7 +13,7 @@ Type one command at a time into the client and press Enter. These are independen
 | Quit | `/quit` | Disconnects and closes the client. |
 | Reload | `/reload` | Applies your saved configuration changes. |
 | Save | `/save` | Saves current runtime variables, macros, aliases, triggers, highlights, and substitutions for restart. |
-| Reconnect | `/reconnect` | Reports a request only; currently requires a client restart to reconnect. |
+| Reconnect | `/reconnect` | Close the current connection and reconnect to the same server. |
 | MSDP | `/msdp` | Shows server variables received so far. |
 | Toggle | `/toggle group on` | Enables the Group panel where the layout allows it. |
 | Echo | `/echo --fg yellow Ready` | Prints a yellow local message. |
@@ -39,7 +39,7 @@ Examples that add aliases, macros, triggers, or handlers change session behavior
 - [`/quit`](commands/quit.md) — exit the client safely.
 - [`/reload`](commands/reload.md) — reload configuration and scripts.
 - [`/save`](commands/save.md) — persist runtime automation without rewriting `config.toml`.
-- [`/reconnect`](commands/reconnect.md) — reconnect request placeholder; restart workaround documented.
+- [`/reconnect`](commands/reconnect.md) — replace a live connection or recover a dropped connection to the same server.
 - [`/msdp`](commands/msdp.md) — inspect stored MSDP values.
 - [`/toggle`](commands/toggle.md) — toggle optional panels for the session.
 - [`/echo`](commands/echo.md) — add styled local output without sending to the MUD.

@@ -20,7 +20,7 @@ See [key macro configuration](commands/macro.md#persistent-configuration): `[[ma
 | `port` | MUD TCP port. RoTS uses `3791`. |
 | `username` | Optional stored login username. Empty string disables stored username behavior. |
 | `password` | Optional stored password. Avoid committing real credentials. |
-| `auto_reconnect` | Whether disconnects should request reconnect behavior. |
+| `auto_reconnect` | Reserved; automatic retry is not implemented. Use `/reconnect` to reconnect explicitly. |
 | `line_ending` | Bytes appended to sent commands. RoTS uses `"\r\n"`. |
 
 ## terminal
@@ -275,7 +275,7 @@ The Social panel captures incoming and outgoing tells, chats, says, narrates, gr
 
 Doors support optional state-specific glyphs, falling back to the shared `glyph` when omitted. Existing configurations keep their shared symbol. Every configured glyph must occupy exactly one terminal cell when doors are shown.
 Tag a door as a gate with `/map exitflag n gate on`. The tag applies only to exits with door metadata; it does not create a door or change movement behavior. Cardinal gates use the configured directional gate glyph instead of the state glyph: `gate_ns_glyph` for north/south and `gate_ew_glyph` for east/west. Omitted gate glyphs, diagonal exits, and up/down exits fall back to the state glyph, then the shared glyph. Gates retain their door state's color.
-Door movement behavior is state-driven: `trigger`, `unknown`, and `open` add no automatic command; `closed` opens the named door; `pickable` picks the named door; `locked` unlocks and then opens the named door.
+Door movement behavior is state-driven: `trigger`, `unknown`, and `open` add no automatic command; `closed` opens the named door; `pickable` picks and then opens the named door; `locked` unlocks and then opens the named door. Movement is sent last in each sequence.
 
 | Option | Meaning |
 |---|---|

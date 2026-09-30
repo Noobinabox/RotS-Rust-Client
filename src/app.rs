@@ -2341,6 +2341,7 @@ impl App {
 
 fn help_text(topic: &str) -> Option<&'static str> {
     match topic.trim().to_ascii_lowercase().as_str() {
+        "reconnect" => Some(include_str!("../docs/commands/reconnect.md")),
         "vim" => Some(include_str!("../docs/commands/vim.md")),
         "save" => Some(include_str!("../docs/commands/save.md")),
         "panels" => Some(include_str!("../docs/commands/panels.md")),
@@ -2426,7 +2427,7 @@ fn help_text(topic: &str) -> Option<&'static str> {
             "# /map exitflag\n\n## Usage\n- `/map exitflag <direction> <flag> [on|off]`\n\n## Description\nToggles a flag on an exit from the current room.\n\n## Flags\n`avoid`, `block`, `hide`, `invis`, `teleport`, `gate`.\n\n## Gate example\n`/map exitflag n gate on` tags an existing door as a gate without changing its state. Use `off` to remove the tag.",
         ),
         "map door" => Some(
-            "# /map door\n\n## Usage\n- `/map door <direction> [state|none] [name]`\n\n## Description\nMarks a door state and optional directional door name on an exit from the current room. If the state is omitted, the door is marked `closed`. Door names are stored only on the current room's exit because the opposite side can use a different name. Door markers render centered on the map link and can appear anywhere in the world. Configure optional open/closed/pickable/locked glyphs under `[map.doors]`; missing glyphs fall back to the shared `glyph`. Use `/map exitflag n gate on` for directional gate symbols while retaining the door-state color and movement behavior. Tags apply only with door metadata and are set separately on each side.\n\n## States\n- `trigger` - door uses a manual trigger; no automatic movement command\n- `unknown` - details are unknown; no automatic movement command\n- `open` - known open door; no automatic movement command\n- `closed` - sends `open <name> <direction>` before movement\n- `pickable` - sends `pick <name> <direction>` before movement\n- `locked` - sends `unlock <name> <direction>` and `open <name> <direction>` before movement\n- `none` - clears door state and name",
+            "# /map door\n\n## Usage\n- `/map door <direction> [state|none] [name]`\n\n## Description\nMarks a door state and optional directional door name on an exit from the current room. If the state is omitted, the door is marked `closed`. Door names are stored only on the current room's exit because the opposite side can use a different name. Door markers render centered on the map link and can appear anywhere in the world. Configure optional open/closed/pickable/locked glyphs under `[map.doors]`; missing glyphs fall back to the shared `glyph`. Use `/map exitflag n gate on` for directional gate symbols while retaining the door-state color and movement behavior. Tags apply only with door metadata and are set separately on each side.\n\n## States\n- `trigger` - door uses a manual trigger; no automatic movement command\n- `unknown` - details are unknown; no automatic movement command\n- `open` - known open door; no automatic movement command\n- `closed` - sends `open <name> <direction>` before movement\n- `pickable` - sends `pick <name> <direction>` and `open <name> <direction>` before movement\n- `locked` - sends `unlock <name> <direction>` and `open <name> <direction>` before movement\n- `none` - clears door state and name",
         ),
         "map read" => Some(
             "# /map read\n\n## Usage\n- `/map read <file>`\n\n## Description\nLoads map state from a TOML map file.",
@@ -5686,6 +5687,14 @@ enabled = true
         );
     }
 
+    #[test]
+    fn reconnect_help_uses_the_command_guide() {
+        assert_eq!(
+            help_text("reconnect"),
+            Some(include_str!("../docs/commands/reconnect.md"))
+        );
+    }
+
     #[tokio::test]
     async fn reload_command_applies_valid_config_and_preserves_panel_toggles() {
         let path = std::env::temp_dir().join(format!(
@@ -6235,24 +6244,39 @@ port = 3791
     }
 
     #[tokio::test]
-    async fn movement_commands_open_closed_named_doors_first() {
-        let mut app = App::new(AppConfig::default());
-        app.state.map.create();
-        app.state.map.execute("dig w").unwrap();
-        app.state.map.execute("door w closed stone door").unwrap();
-        let (tx, mut rx) = mpsc::channel(4);
+    async fn movement_commands_prepare_named_doors_in_order() {
+        for (state, commands) in [
+            ("closed", vec!["open stone door w", "w"]),
+            (
+                "pickable",
+                vec!["pick stone door w", "open stone door w", "w"],
+            ),
+            (
+                "locked",
+                vec!["unlock stone door w", "open stone door w", "w"],
+            ),
+        ] {
+            let mut app = App::new(AppConfig::default());
+            app.state.map.create();
+            app.state.map.execute("dig w").unwrap();
+            app.state
+                .map
+                .execute(&format!("door w {state} stone door"))
+                .unwrap();
+            let (tx, mut rx) = mpsc::channel(4);
 
-        app.handle_command(ClientCommand::SendText("west".to_string()), &tx)
-            .await;
+            app.handle_command(ClientCommand::SendText("west".to_string()), &tx)
+                .await;
 
-        assert_eq!(
-            rx.recv().await,
-            Some(ClientCommand::SendText("open stone door w".to_string()))
-        );
-        assert_eq!(
-            rx.recv().await,
-            Some(ClientCommand::SendText("w".to_string()))
-        );
+            for command in commands {
+                assert_eq!(
+                    rx.try_recv().unwrap(),
+                    ClientCommand::SendText(command.to_string()),
+                    "{state}"
+                );
+            }
+            assert!(rx.try_recv().is_err(), "{state}");
+        }
     }
 
     #[tokio::test]

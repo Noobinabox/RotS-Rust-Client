@@ -196,7 +196,7 @@ Automatic movement commands only run for named doors:
 
 - `trigger`, `unknown`, and `open` add no special commands.
 - `closed` sends `open <name> <direction>` before movement.
-- `pickable` sends `pick <name> <direction>` before movement.
+- `pickable` sends `pick <name> <direction>` and `open <name> <direction>` before movement.
 - `locked` sends `unlock <name> <direction>` and then `open <name> <direction>` before movement.
 
 For example, `/map door w locked gate` followed by `w` sends `unlock gate w`, `open gate w`, and then `w`.

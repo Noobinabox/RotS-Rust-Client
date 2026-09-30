@@ -1053,7 +1053,11 @@ impl MapState {
                     return vec![format!("open {name} {direction}"), direction];
                 }
                 Some(DoorState::Pickable) => {
-                    return vec![format!("pick {name} {direction}"), direction];
+                    return vec![
+                        format!("pick {name} {direction}"),
+                        format!("open {name} {direction}"),
+                        direction,
+                    ];
                 }
                 Some(DoorState::Locked) => {
                     return vec![
@@ -2362,7 +2366,7 @@ mod tests {
     }
 
     #[test]
-    fn pickable_named_door_picks_before_movement() {
+    fn pickable_named_door_picks_and_opens_before_movement() {
         let mut map = MapState::default();
         map.create();
         map.execute("dig w").unwrap();
@@ -2370,7 +2374,11 @@ mod tests {
 
         assert_eq!(
             map.mud_commands_for_movement("west"),
-            vec!["pick stone door w".to_string(), "w".to_string()]
+            vec![
+                "pick stone door w".to_string(),
+                "open stone door w".to_string(),
+                "w".to_string()
+            ]
         );
     }
 
