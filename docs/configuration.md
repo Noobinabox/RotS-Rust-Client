@@ -12,6 +12,10 @@ Runtime variables, macros, aliases, triggers, and highlights can also be saved w
 
 See [key macro configuration](commands/macro.md#persistent-configuration): `[[macros.rules]]` accepts `key`, `command`, `enabled`, `override_builtin`, and `allow_repeat`. No macros are installed by default. Printable-key mode is session-only and starts off.
 
+## keybindings
+
+`[[keybindings.bindings]]` maps a `key` to a typed client `action`, such as `key = "F6"` and `action = "search_output"`. Entries override that key's default shortcut; `action = "none"` disables it. Apply changes with `/reload`. See [shortcut actions, examples, and precedence](commands/keybindings.md). Ctrl-C and Escape remain protected; `/save` does not write these file-managed bindings.
+
 ## connection
 
 | Option | Meaning |

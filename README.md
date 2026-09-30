@@ -50,6 +50,7 @@ Need more detail, ran into an error, or want to set things up by hand instead? S
 - **Want to change how things look or work?** Almost everything is adjustable — colors, panel layout, and more. See the [Configuration Reference](docs/configuration.md).
 - **Want the game to react automatically** (like auto-attacking or warning you when your health is low)? See [Scripting](docs/scripting.md) for simple, no-programming-required options.
 - **Curious what a key or `/command` does?** See the [Command Reference](docs/commands.md).
+- **Want different shortcuts?** Configure [built-in keybindings](docs/commands/keybindings.md), then `/reload`.
 
 ## Learn more
 

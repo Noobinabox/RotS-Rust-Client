@@ -13,6 +13,8 @@ use tokio::{sync::mpsc, task::JoinHandle, time::timeout};
 
 mod character_profiles;
 mod formatting;
+#[cfg(test)]
+mod keybinding_tests;
 mod local_commands;
 mod macros;
 mod mouse;
@@ -86,6 +88,7 @@ pub struct App {
     theme: Theme,
     aliases: AliasEngine,
     macros: crate::macros::MacroEngine,
+    keybindings: crate::keybindings::KeybindingEngine,
     triggers: TriggerEngine,
     events: EventEngine,
     variables: VariableStore,
@@ -182,6 +185,14 @@ impl App {
             );
             crate::macros::MacroEngine::default()
         });
+        let keybindings = crate::keybindings::KeybindingEngine::new(&config.keybindings)
+            .unwrap_or_else(|error| {
+                state.push_output(
+                    format!("Shortcut setup failed: {error}"),
+                    OutputCategory::Error,
+                );
+                crate::keybindings::KeybindingEngine::default()
+            });
         let mut substitutions =
             crate::scripting::substitutions::SubstitutionEngine::new(&config.substitutions)
                 .unwrap_or_else(|error| {
@@ -226,6 +237,7 @@ impl App {
         let lua = LuaEngine::new(&config.lua, config_path.as_deref(), &state, &variables);
         Self {
             config,
+            keybindings,
             config_path,
             character_path,
             msdp_character: None,
@@ -954,6 +966,10 @@ impl App {
             .macros
             .with_config(&config.macros)
             .map_err(|error| format!("Config reload failed: {error}"))?;
+        let keybindings = crate::keybindings::KeybindingEngine::new(&config.keybindings)?;
+        for rule in macros.runtime_configs() {
+            keybindings.validate_macro(&rule)?;
+        }
         let runtime_triggers = self.triggers.runtime_configs();
         let runtime_handlers = self.events.runtime_configs();
         let runtime_highlights = self.highlights.runtime_configs();
@@ -1024,6 +1040,7 @@ impl App {
         self.state.input_mode = self.config.terminal.input_mode;
         self.state.vim.reset();
         self.macros = macros;
+        self.keybindings = keybindings;
         self.full_hd_overrides = LayoutOverrides::default();
         self.ultrawide_overrides = LayoutOverrides::default();
         self.stacked_overrides = LayoutOverrides::default();
@@ -1987,9 +2004,11 @@ impl App {
                     && (self.state.vim.history_search_active()
                         || crate::input::vim::VimEditor::owns(key));
                 if !vim_owns
-                    && let Some(action) = self
-                        .macros
-                        .action(key, self.state.output_view.search_active)
+                    && let Some(action) = self.macros.action_for_shortcut(
+                        key,
+                        self.state.output_view.search_active,
+                        self.keybindings.is_bound(key),
+                    )
                 {
                     let command = match action {
                         crate::macros::MacroAction::Execute(command) => command.to_string(),
@@ -1999,7 +2018,20 @@ impl App {
                         .handle_command(ClientCommand::SendText(command), command_tx)
                         .await;
                 }
-                match handle_key(&mut self.state, key) {
+                let shortcut = (!vim_owns && !self.state.output_view.search_active)
+                    .then(|| self.keybindings.lookup(key))
+                    .flatten();
+                let action = if let Some(shortcut) = shortcut {
+                    if key.kind == crossterm::event::KeyEventKind::Repeat
+                        && !shortcut.allow_repeat()
+                    {
+                        return false;
+                    }
+                    crate::input::handle_shortcut(&mut self.state, shortcut)
+                } else {
+                    handle_key(&mut self.state, key)
+                };
+                match action {
                     InputAction::None => false,
                     InputAction::Command(ClientCommand::SendText(text)) if text.contains('\n') => {
                         if text.split('\n').count() > crate::input::MAX_INPUT_LINES {
@@ -2341,6 +2373,7 @@ impl App {
 
 fn help_text(topic: &str) -> Option<&'static str> {
     match topic.trim().to_ascii_lowercase().as_str() {
+        "keybindings" | "shortcuts" => Some(include_str!("../docs/commands/keybindings.md")),
         "reconnect" => Some(include_str!("../docs/commands/reconnect.md")),
         "vim" => Some(include_str!("../docs/commands/vim.md")),
         "save" => Some(include_str!("../docs/commands/save.md")),

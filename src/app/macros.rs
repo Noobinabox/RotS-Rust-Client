@@ -55,6 +55,7 @@ impl App {
         }
         rule.key = fields[0].clone();
         rule.command = fields[1].clone();
+        self.keybindings.validate_macro(&rule)?;
         self.macros.add(rule)?;
         Ok(format!(
             "Macro `{}` added for this session. Printable keys require /macro mode on.",

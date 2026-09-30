@@ -800,15 +800,19 @@ Validation: 466 tests passed; one optional timing probe ignored. Thranduil, Magu
 
 ### 58. Configurable Built-In Shortcuts
 
-Status: `Next`
+Status: `Done`
 
 - Bind editing, navigation, search, and other client actions through a general keybinding configuration.
 - Define precedence between built-in actions and macros, with protected recovery controls.
 - Validate conflicts and reload behavior; retain existing default shortcuts.
 
+Implemented typed `[[keybindings.bindings]]` overlays for editing, navigation, search, and client actions; `none` explicitly disables a key. Defaults remain unchanged without overrides. Shared and character configuration reload atomically against runtime macro conflicts. Ctrl-C/Escape are protected, modal search/Vim ownership remains intact, and macro overrides remain explicit. Custom editor actions are suppressed in Vim to preserve undo/register semantics. Settings remain file-managed, separate from `/save`.
+
+Validation: 664 tests passed; one optional probe ignored. Thranduil, Magus, and Sauron review passes completed; documentation includes action examples, Escape-macro migration, and Enter-unbinding recovery guidance. Formatting/diff checks passed. Strict Clippy remains blocked by two pre-existing map warnings (`derivable_impls`, `too_many_arguments`). Terminal-dependent key reporting and Vim scope are documented in `/help keybindings`.
+
 ### 59. Session Transcripts and Output Export
 
-Status: `Planned`
+Status: `Next`
 
 - Provide opt-in gameplay transcripts and retained-output export, separate from diagnostic logging.
 - Define timestamp and plain-text/ANSI options, file-size limits, and sensitive-input exclusions.

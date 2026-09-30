@@ -11,7 +11,7 @@
 # command = "north"
 
 [connection]
-host = "rotsmud.org"
+host = "localhost"
 port = 3791
 username = ""
 password = ""

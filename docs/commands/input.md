@@ -55,6 +55,8 @@ Safety depends on terminal support: terminals that do not report bracketed paste
 
 ## Output navigation
 
+Defaults below can be customized through [keybindings](keybindings.md), also available with `/help keybindings`.
+
 - `PageUp` and `PageDown` scroll by page.
 - `Ctrl-Up` and `Ctrl-Down` scroll one line.
 - `Ctrl-E` follows newest output.

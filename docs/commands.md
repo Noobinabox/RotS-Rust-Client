@@ -34,6 +34,8 @@ Examples that add aliases, macros, triggers, or handlers change session behavior
 
 ## Core commands
 
+For configurable editing and navigation actions, see [`/help keybindings`](commands/keybindings.md).
+
 - [`/help`](commands/help.md) — command and topic help.
 - [`/clear`](commands/clear.md) — clear output and reset output styling.
 - [`/quit`](commands/quit.md) — exit the client safely.

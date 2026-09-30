@@ -23,6 +23,7 @@ Topics are case-insensitive. Topic aliases are accepted where documented, for ex
 /help lua
 /help panels
 /help macro
+/help keybindings
 /help save
 /help vim
 /help substitute

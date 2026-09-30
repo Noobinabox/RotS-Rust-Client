@@ -1,6 +1,17 @@
 use mud_client::config::AppConfig;
 
 #[test]
+fn shortcut_examples_validate() {
+    let guide = include_str!("../docs/commands/keybindings.md");
+    let snippets: Vec<_> = guide.split("```toml\n").skip(1).collect();
+    assert_eq!(snippets.len(), 2);
+    for snippet in snippets {
+        let config: AppConfig = toml::from_str(snippet.split("```").next().unwrap()).unwrap();
+        config.validate().unwrap();
+    }
+}
+
+#[test]
 fn substitution_guide_toml_is_valid() {
     let guide = include_str!("../docs/commands/substitute.md");
     for snippet in guide.split("```toml\n").skip(1) {

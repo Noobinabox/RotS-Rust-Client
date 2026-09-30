@@ -2,10 +2,10 @@
 
 ## Active Slice
 
-None. Vim editing milestones 64–66 are complete and reviewed. Standard input remains the default; opt in with `[terminal] input_mode = "vim"` and see `/help vim`.
+None. Slice 58 (Configurable Built-In Shortcuts) is complete and reviewed. See `/help keybindings` for typed actions, examples, modal precedence, and recovery guidance.
 
-## Next Slice: 58. Configurable Built-In Shortcuts
+## Next Slice: 59. Session Transcripts and Output Export
 
-- Bind editing, navigation, search, and client actions through configurable shortcuts.
-- Define precedence with macros and protect recovery controls.
-- Validate conflicts and reload behavior while retaining existing defaults.
+- Add opt-in gameplay transcripts and retained-output export, separate from diagnostic logging.
+- Define timestamps, plain-text/ANSI options, size limits, and sensitive-input exclusions.
+- Keep file writes off UI/network paths; test file failures and shutdown flushing.

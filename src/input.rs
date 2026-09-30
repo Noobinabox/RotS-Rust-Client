@@ -1,7 +1,9 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
+mod shortcuts;
 pub mod vim;
 mod word_edit;
+pub use shortcuts::handle_shortcut;
 use word_edit::WordEdit;
 
 pub(crate) fn is_word_edit_key(key: KeyEvent) -> bool {
@@ -102,6 +104,13 @@ pub enum InputAction {
 pub fn handle_key(state: &mut AppState, key: KeyEvent) -> InputAction {
     let recovery = key.modifiers.contains(KeyModifiers::CONTROL)
         && matches!(key.code, KeyCode::Char('c' | 'C'));
+    if recovery && state.input_mode != crate::config::InputMode::Vim {
+        if state.output_view.search_active {
+            state.cancel_output_search();
+        }
+        clear_current_input(state);
+        return InputAction::None;
+    }
     if state.input_mode == crate::config::InputMode::Vim
         && (!state.output_view.search_active || recovery)
     {

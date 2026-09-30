@@ -33,13 +33,29 @@ impl Default for MacroRule {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct KeyBinding {
+pub(crate) struct KeyBinding {
     code: KeyCode,
     modifiers: KeyModifiers,
     keypad: bool,
 }
 
 impl KeyBinding {
+    pub(crate) fn from_event(event: KeyEvent) -> Self {
+        if event.state.contains(KeyEventState::KEYPAD) {
+            Self::keypad(event.code, event.modifiers)
+        } else {
+            Self::normalized(event.code, event.modifiers)
+        }
+    }
+
+    pub(crate) fn generic_event(event: KeyEvent) -> Self {
+        Self::normalized(event.code, event.modifiers)
+    }
+
+    pub(crate) fn escape(self) -> bool {
+        self.code == KeyCode::Esc
+    }
+
     fn normalized(code: KeyCode, mut modifiers: KeyModifiers) -> Self {
         let code = match code {
             KeyCode::BackTab => {
@@ -90,7 +106,7 @@ impl KeyBinding {
         }
     }
 
-    fn parse(input: &str) -> Result<Self, String> {
+    pub(crate) fn parse(input: &str) -> Result<Self, String> {
         let mut rest = input.trim();
         let mut modifiers = KeyModifiers::NONE;
         while let Some((prefix, suffix)) = rest.split_once('+') {
@@ -169,7 +185,7 @@ impl KeyBinding {
         Ok(Self::normalized(code, modifiers))
     }
 
-    fn printable(self) -> bool {
+    pub(crate) fn printable(self) -> bool {
         !self.keypad
             && matches!(self.code, KeyCode::Char(_))
             && !self
@@ -177,8 +193,9 @@ impl KeyBinding {
                 .intersects(KeyModifiers::CONTROL | KeyModifiers::ALT)
     }
 
-    fn protected(self) -> bool {
-        self.code == KeyCode::Char('c') && self.modifiers.contains(KeyModifiers::CONTROL)
+    pub(crate) fn protected(self) -> bool {
+        self.escape()
+            || (self.code == KeyCode::Char('c') && self.modifiers.contains(KeyModifiers::CONTROL))
     }
 
     fn builtin(self) -> bool {
@@ -237,7 +254,7 @@ impl MacroEngine {
     fn validate(rule: &MacroRule) -> Result<KeyBinding, String> {
         let key = KeyBinding::parse(&rule.key)?;
         if key.protected() {
-            return Err("Ctrl+C is reserved for clearing input and leaving macro mode".into());
+            return Err("Ctrl+C and Escape are reserved for input and modal recovery".into());
         }
         if key.builtin() && !rule.override_builtin {
             return Err(format!(
@@ -281,21 +298,29 @@ impl MacroEngine {
     }
 
     pub fn action(&self, event: KeyEvent, searching: bool) -> Option<MacroAction<'_>> {
+        self.action_for_shortcut(event, searching, false)
+    }
+
+    /// Configured shortcuts require explicit permission from the effective macro.
+    pub fn action_for_shortcut(
+        &self,
+        event: KeyEvent,
+        searching: bool,
+        custom_bound: bool,
+    ) -> Option<MacroAction<'_>> {
         if searching || event.kind == KeyEventKind::Release {
             return None;
         }
-        let generic = KeyBinding::normalized(event.code, event.modifiers);
-        let dedicated = event
-            .state
-            .contains(KeyEventState::KEYPAD)
-            .then(|| KeyBinding::keypad(event.code, event.modifiers));
-        let (key, rule) = dedicated
-            .and_then(|key| self.rule(&key).map(|rule| (key, rule)))
+        let generic = KeyBinding::generic_event(event);
+        let dedicated = KeyBinding::from_event(event);
+        let (key, rule) = self
+            .rule(&dedicated)
+            .map(|rule| (dedicated, rule))
             .or_else(|| self.rule(&generic).map(|rule| (generic, rule)))?;
         if key.protected() || (key.printable() && !self.printable_mode) {
             return None;
         }
-        if !rule.enabled {
+        if !rule.enabled || (custom_bound && !rule.override_builtin) {
             return None;
         }
         if event.kind == KeyEventKind::Repeat && !rule.allow_repeat {
@@ -544,6 +569,46 @@ mod tests {
             assert!(KeyBinding::parse(key).is_err(), "{key}");
         }
         assert!(KeyBinding::parse("é").is_ok());
+    }
+
+    #[test]
+    fn custom_shortcuts_require_permission_from_the_effective_macro() {
+        let mut engine = MacroEngine::default();
+        engine.add(rule("F6", "look")).unwrap();
+        let key = KeyEvent::new(KeyCode::F(6), KeyModifiers::NONE);
+        assert_eq!(engine.action_for_shortcut(key, false, true), None);
+        assert_eq!(
+            engine.action_for_shortcut(key, false, false),
+            Some(MacroAction::Execute("look"))
+        );
+        let mut allowed = rule("F6", "score");
+        allowed.override_builtin = true;
+        engine.add(allowed).unwrap();
+        assert_eq!(
+            engine.action_for_shortcut(key, false, true),
+            Some(MacroAction::Execute("score"))
+        );
+        let keypad = KeyEvent {
+            state: KeyEventState::KEYPAD,
+            ..key
+        };
+        engine.add(rule("F6", "look")).unwrap();
+        assert_eq!(engine.action_for_shortcut(keypad, false, true), None);
+    }
+
+    #[test]
+    fn escape_is_protected_even_with_macro_override() {
+        for key in [
+            "Esc",
+            "Shift+Esc",
+            "Ctrl+Esc",
+            "Alt+Esc",
+            "Ctrl+Alt+Shift+Esc",
+        ] {
+            let mut binding = rule(key, "look");
+            binding.override_builtin = true;
+            assert!(MacroEngine::default().add(binding).is_err(), "{key}");
+        }
     }
 
     #[test]

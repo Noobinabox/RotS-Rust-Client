@@ -28,6 +28,7 @@ pub struct AppConfig {
     pub msdp: MsdpConfig,
     pub aliases: AliasConfig,
     pub macros: crate::macros::MacroConfig,
+    pub keybindings: crate::keybindings::KeybindingConfig,
     pub triggers: TriggerConfig,
     pub events: EventConfig,
     pub lua: LuaConfig,
@@ -121,6 +122,13 @@ impl AppConfig {
 
     pub fn validate(&self) -> Result<()> {
         crate::macros::MacroEngine::new(&self.macros).map_err(MudClientError::ConfigValidation)?;
+        let keybindings = crate::keybindings::KeybindingEngine::new(&self.keybindings)
+            .map_err(MudClientError::ConfigValidation)?;
+        for rule in &self.macros.rules {
+            keybindings
+                .validate_macro(rule)
+                .map_err(MudClientError::ConfigValidation)?;
+        }
         for (name, value) in [
             ("rain", &self.colors.rain),
             ("lightning", &self.colors.lightning),

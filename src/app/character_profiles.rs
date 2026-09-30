@@ -6,6 +6,7 @@ pub(super) struct CharacterSession {
     config: AppConfig,
     aliases: AliasEngine,
     macros: crate::macros::MacroEngine,
+    keybindings: crate::keybindings::KeybindingEngine,
     triggers: TriggerEngine,
     events: EventEngine,
     variables: VariableStore,
@@ -21,6 +22,7 @@ impl CharacterSession {
             config: app.config.clone(),
             aliases: AliasEngine::disabled(),
             macros: crate::macros::MacroEngine::default(),
+            keybindings: crate::keybindings::KeybindingEngine::default(),
             triggers: TriggerEngine::disabled(),
             events: EventEngine::disabled(),
             variables: VariableStore::empty(),
@@ -47,6 +49,7 @@ impl CharacterSession {
             aliases: AliasEngine::new_with_variables(&config.aliases, &variables)
                 .map_err(|error| error.to_string())?,
             macros: crate::macros::MacroEngine::new(&config.macros)?,
+            keybindings: crate::keybindings::KeybindingEngine::new(&config.keybindings)?,
             triggers: TriggerEngine::new_with_variables(&config.triggers, &variables)
                 .map_err(|error| error.to_string())?,
             events: EventEngine::new_with_variables(&config.events, &variables)
@@ -81,6 +84,7 @@ impl CharacterSession {
         std::mem::swap(&mut self.config, &mut app.config);
         std::mem::swap(&mut self.aliases, &mut app.aliases);
         std::mem::swap(&mut self.macros, &mut app.macros);
+        std::mem::swap(&mut self.keybindings, &mut app.keybindings);
         std::mem::swap(&mut self.triggers, &mut app.triggers);
         std::mem::swap(&mut self.events, &mut app.events);
         std::mem::swap(&mut self.variables, &mut app.variables);
