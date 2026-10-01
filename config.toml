@@ -22,7 +22,7 @@ line_ending = "\r\n"
 input_mode = "vim"
 multiline_input = false
 tick_rate_ms = 100
-animation_fps = 60
+animation_fps = 30
 mouse = true
 true_color = true
 echo_commands = true
@@ -84,7 +84,7 @@ width = 14
 enabled = true
 reduced_motion = false
 low_performance = false
-map_fps = 30
+map_fps = 12
 weather_fps = 5
 
 [weather]
