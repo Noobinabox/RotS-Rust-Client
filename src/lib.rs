@@ -2,6 +2,7 @@ pub mod animation;
 pub mod app;
 pub mod color;
 pub mod commands;
+pub mod completion;
 pub mod config;
 pub mod error;
 pub mod events;

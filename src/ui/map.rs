@@ -285,6 +285,7 @@ fn map_lines<'a>(
             &mut cells,
             &mut styles,
             config,
+            theme,
             &room.terrain,
             room_id,
             (x, y),
@@ -323,11 +324,11 @@ fn map_lines<'a>(
                 && route_terrain(&target_room.terrain)
                 && target_room.z == room.z;
             let default_link_color = if route_link {
-                terrain_style(config, &room.terrain)
+                terrain_style(config, theme, &room.terrain)
                     .map(|style| style.color)
                     .unwrap_or(theme.foreground)
             } else {
-                parse_color(&config.link_color).unwrap_or(theme.muted)
+                theme.readable_map_color(parse_color(&config.link_color).unwrap_or(theme.muted))
             };
             let link_color = exit_color(config, theme, room, target_room, exit, default_link_color);
             draw_connection(
@@ -550,6 +551,13 @@ enum MapView {
     Nearby,
 }
 
+struct RoomMarkerContext<'a, 'map> {
+    markers: &'a MapMarkers<'map>,
+    theme: &'a Theme,
+    config: &'a MapRenderConfig,
+    view: MapView,
+}
+
 fn draw_room_marker(
     cells: &mut [Vec<char>],
     styles: &mut BTreeMap<(usize, usize), Color>,
@@ -562,12 +570,14 @@ fn draw_room_marker(
     draw_room_marker_internal(
         cells,
         styles,
-        markers,
-        theme,
-        config,
+        RoomMarkerContext {
+            markers,
+            theme,
+            config,
+            view: MapView::Regular,
+        },
         room_id,
         position,
-        MapView::Regular,
     );
 }
 
@@ -583,25 +593,30 @@ fn draw_room_marker_without_vertical_indicators(
     draw_room_marker_internal(
         cells,
         styles,
-        markers,
-        theme,
-        config,
+        RoomMarkerContext {
+            markers,
+            theme,
+            config,
+            view: MapView::Nearby,
+        },
         room_id,
         position,
-        MapView::Nearby,
     );
 }
 
 fn draw_room_marker_internal(
     cells: &mut [Vec<char>],
     styles: &mut BTreeMap<(usize, usize), Color>,
-    markers: &MapMarkers<'_>,
-    theme: &Theme,
-    config: &MapRenderConfig,
+    context: RoomMarkerContext<'_, '_>,
     room_id: &str,
     position: (i32, i32),
-    view: MapView,
 ) {
+    let RoomMarkerContext {
+        markers,
+        theme,
+        config,
+        view,
+    } = context;
     let map = markers.map;
     let Some(room) = map.rooms.get(room_id) else {
         return;
@@ -667,7 +682,9 @@ fn room_marker_style(
     if is_current {
         (
             config.current_room_symbol.clone(),
-            parse_color(&config.current_room_color).unwrap_or(theme.accent),
+            theme.readable_map_color(
+                parse_color(&config.current_room_color).unwrap_or(theme.accent),
+            ),
         )
     } else if !custom.is_empty() {
         (
@@ -675,14 +692,14 @@ fn room_marker_style(
             room_flag_color(config, theme, room).unwrap_or(theme.foreground),
         )
     } else if route_terrain(&room.terrain) {
-        let color = terrain_style(config, &room.terrain)
+        let color = terrain_style(config, theme, &room.terrain)
             .map(|style| style.color)
             .unwrap_or(theme.foreground);
         (
             markers.route_symbol(room_id).to_string(),
             room_flag_color(config, theme, room).unwrap_or(color),
         )
-    } else if let Some(style) = terrain_style(config, &room.terrain) {
+    } else if let Some(style) = terrain_style(config, theme, &room.terrain) {
         (
             style.symbol,
             room_flag_color(config, theme, room).unwrap_or(style.color),
@@ -799,7 +816,7 @@ fn draw_boundary_exits(
                         .as_deref()
                         .and_then(parse_color)
                         .unwrap_or(theme.accent);
-                    (glyph, color)
+                    (glyph, theme.readable_map_color(color))
                 })
             });
             if let Some((glyph, color)) = marker {
@@ -924,17 +941,17 @@ fn room_flag_color(
     room: &crate::map::Room,
 ) -> Option<Color> {
     if room.flags.contains(&RoomFlag::Invis) {
-        Some(parse_color(&config.invis_color).unwrap_or(theme.muted))
+        Some(theme.readable_map_color(parse_color(&config.invis_color).unwrap_or(theme.muted)))
     } else if room.flags.contains(&RoomFlag::Hide) {
-        Some(parse_color(&config.hide_color).unwrap_or(theme.muted))
+        Some(theme.readable_map_color(parse_color(&config.hide_color).unwrap_or(theme.muted)))
     } else if room.flags.contains(&RoomFlag::Avoid) {
-        Some(parse_color(&config.avoid_color).unwrap_or(theme.warning))
+        Some(theme.readable_map_color(parse_color(&config.avoid_color).unwrap_or(theme.warning)))
     } else if room.flags.contains(&RoomFlag::Block) {
-        Some(parse_color(&config.block_color).unwrap_or(theme.danger))
+        Some(theme.readable_map_color(parse_color(&config.block_color).unwrap_or(theme.danger)))
     } else if room.flags.contains(&RoomFlag::Fog) {
-        Some(parse_color(&config.fog_color).unwrap_or(theme.accent))
+        Some(theme.readable_map_color(parse_color(&config.fog_color).unwrap_or(theme.accent)))
     } else if room.flags.contains(&RoomFlag::Void) {
-        Some(parse_color(&config.void_color).unwrap_or(theme.muted))
+        Some(theme.readable_map_color(parse_color(&config.void_color).unwrap_or(theme.muted)))
     } else {
         None
     }
@@ -949,17 +966,17 @@ fn exit_color(
     default_color: Color,
 ) -> Color {
     if exit.flags.contains(&ExitFlag::Invis) || to.flags.contains(&RoomFlag::Invis) {
-        parse_color(&config.invis_color).unwrap_or(theme.muted)
+        theme.readable_map_color(parse_color(&config.invis_color).unwrap_or(theme.muted))
     } else if exit.flags.contains(&ExitFlag::Hide) || to.flags.contains(&RoomFlag::Hide) {
-        parse_color(&config.hide_color).unwrap_or(theme.muted)
+        theme.readable_map_color(parse_color(&config.hide_color).unwrap_or(theme.muted))
     } else if exit.flags.contains(&ExitFlag::Avoid) || to.flags.contains(&RoomFlag::Avoid) {
-        parse_color(&config.avoid_color).unwrap_or(theme.warning)
+        theme.readable_map_color(parse_color(&config.avoid_color).unwrap_or(theme.warning))
     } else if exit.flags.contains(&ExitFlag::Block) || to.flags.contains(&RoomFlag::Block) {
-        parse_color(&config.block_color).unwrap_or(theme.danger)
+        theme.readable_map_color(parse_color(&config.block_color).unwrap_or(theme.danger))
     } else if to.flags.contains(&RoomFlag::Fog) {
-        parse_color(&config.fog_color).unwrap_or(theme.accent)
+        theme.readable_map_color(parse_color(&config.fog_color).unwrap_or(theme.accent))
     } else if from.flags.contains(&RoomFlag::Void) || to.flags.contains(&RoomFlag::Void) {
-        parse_color(&config.void_color).unwrap_or(theme.muted)
+        theme.readable_map_color(parse_color(&config.void_color).unwrap_or(theme.muted))
     } else {
         default_color
     }
@@ -992,7 +1009,7 @@ fn door_marker(config: &MapRenderConfig, exit: &Exit, theme: &Theme) -> Option<(
             .or(state_glyph)
             .unwrap_or(&doors.glyph)
             .to_string(),
-        parse_color(color).unwrap_or(theme.foreground),
+        theme.readable_map_color(parse_color(color).unwrap_or(theme.foreground)),
     ))
 }
 
@@ -1009,7 +1026,7 @@ fn teleport_marker(
     }
     Some((
         config.teleport.glyph.clone(),
-        parse_color(&config.teleport.color).unwrap_or(theme.accent),
+        theme.readable_map_color(parse_color(&config.teleport.color).unwrap_or(theme.accent)),
     ))
 }
 
@@ -1040,7 +1057,7 @@ fn exit_overlay_key(kind: &str, from: &str, to: &str) -> (String, String, String
     }
 }
 
-fn terrain_style(config: &MapRenderConfig, terrain: &str) -> Option<TerrainStyle> {
+fn terrain_style(config: &MapRenderConfig, theme: &Theme, terrain: &str) -> Option<TerrainStyle> {
     let normalized = terrain.trim().to_ascii_lowercase();
     let style = config
         .terrain
@@ -1049,7 +1066,7 @@ fn terrain_style(config: &MapRenderConfig, terrain: &str) -> Option<TerrainStyle
         .map(|(_, style)| style)?;
     Some(TerrainStyle {
         symbol: style.symbol.clone(),
-        color: parse_color(&style.color).unwrap_or(Color::Gray),
+        color: theme.readable_map_color(parse_color(&style.color).unwrap_or(Color::Gray)),
     })
 }
 
@@ -1057,11 +1074,12 @@ fn draw_terrain_field(
     cells: &mut [Vec<char>],
     styles: &mut BTreeMap<(usize, usize), Color>,
     config: &MapRenderConfig,
+    theme: &Theme,
     terrain: &str,
     room_id: &str,
     center: (i32, i32),
 ) {
-    let Some(style) = terrain_style(config, terrain) else {
+    let Some(style) = terrain_style(config, theme, terrain) else {
         return;
     };
     let Some(raw_style) = terrain_config(config, terrain) else {
@@ -1439,7 +1457,10 @@ mod tests {
             let draw = if nearby { nearby_map_lines } else { map_lines };
             let lines = draw(Rect::new(0, 0, 21, 9), &map, &theme(), &config);
             assert_eq!(plain_lines(lines.clone())[4].chars().nth(11), Some('!'));
-            assert_eq!(lines[4].spans[11].style.fg, Some(Color::Red));
+            assert_eq!(
+                lines[4].spans[11].style.fg,
+                Some(theme().readable_map_color(Color::Red))
+            );
             map.execute("door e closed gate").unwrap();
             let rendered = plain_lines(draw(Rect::new(0, 0, 21, 9), &map, &theme(), &config));
             assert_eq!(rendered[4].chars().nth(11), Some('╬'));
@@ -1466,6 +1487,21 @@ mod tests {
                 .chars()
                 .nth(11),
             Some('|')
+        );
+    }
+
+    #[test]
+    fn boundary_marker_adapts_to_light_theme() {
+        let map = boundary_map();
+        let mut config = map_config();
+        config.boundary.glyph = "!".into();
+        config.boundary.color = Some("white".into());
+        let theme = Theme::from_named("catppuccin-latte").unwrap();
+        let lines = map_lines(Rect::new(0, 0, 21, 9), &map, &theme, &config);
+        assert_eq!(lines[4].spans[11].content, "!");
+        assert_eq!(
+            lines[4].spans[11].style.fg,
+            Some(theme.readable_map_color(Color::White))
         );
     }
 
@@ -2847,6 +2883,23 @@ mod tests {
             enemy: Color::Red,
             ..Theme::from_config(&crate::config::ThemeConfig::default())
         }
+    }
+
+    #[test]
+    fn light_theme_adapts_configured_terrain_colors() {
+        let theme = Theme::from_named("catppuccin-latte").unwrap();
+        let mut config = MapRenderConfig::default();
+        config.terrain.insert(
+            "Snowfield".into(),
+            crate::config::MapTerrainConfig {
+                symbol: "*".into(),
+                color: "#ffffff".into(),
+                ..crate::config::MapTerrainConfig::default()
+            },
+        );
+        let terrain = terrain_style(&config, &theme, "Snowfield").unwrap();
+        assert_ne!(terrain.color, Color::White);
+        assert_eq!(terrain.color, theme.readable_map_color(Color::White));
     }
 
     fn map_config() -> MapRenderConfig {

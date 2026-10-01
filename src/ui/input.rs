@@ -45,7 +45,7 @@ pub fn render_input(
         Line::from(Span::styled(
             viewport.text,
             Style::new()
-                .fg(theme.background_safe_foreground())
+                .fg(theme.contrasting_foreground(theme.accent))
                 .bg(theme.accent)
                 .add_modifier(Modifier::BOLD),
         ))
@@ -220,9 +220,7 @@ fn render_completion_popup(
     if !completion.active || completion.matches.len() < 2 || input_area.y == 0 {
         return;
     }
-    let height = (completion.matches.len() as u16 + 2)
-        .min(7)
-        .min(input_area.y);
+    let height = (completion.matches.len().min(5) as u16 + 2).min(input_area.y);
     let x = input_area.x.saturating_add(1);
     let y = input_area.y.saturating_sub(height);
     let available_width = buf.area.width.saturating_sub(x).min(input_area.width);
@@ -250,7 +248,7 @@ fn render_completion_popup(
         .map(|(index, value)| {
             let style = if index == selected {
                 Style::new()
-                    .fg(theme.background_safe_foreground())
+                    .fg(theme.contrasting_foreground(theme.accent))
                     .bg(theme.accent)
                     .add_modifier(Modifier::BOLD)
             } else {

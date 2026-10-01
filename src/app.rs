@@ -12,6 +12,7 @@ use ratatui::{Frame, layout::Rect};
 use tokio::{sync::mpsc, task::JoinHandle, time::timeout};
 
 mod character_profiles;
+mod completion;
 mod formatting;
 #[cfg(test)]
 mod keybinding_tests;
@@ -73,7 +74,7 @@ use crate::{
             resolve_layout,
         },
         map::map_snapshot_lines,
-        theme::{Theme, parse_color},
+        theme::{Theme, builtin_theme_names, normalize_theme_name, parse_color, race_theme_name},
     },
 };
 
@@ -86,6 +87,8 @@ pub struct App {
     config_load_options: ConfigLoadOptions,
     state: AppState,
     theme: Theme,
+    active_theme: String,
+    auto_race_theme: bool,
     aliases: AliasEngine,
     macros: crate::macros::MacroEngine,
     keybindings: crate::keybindings::KeybindingEngine,
@@ -158,7 +161,8 @@ impl App {
         config_load_options: ConfigLoadOptions,
         character_path: Option<PathBuf>,
     ) -> Self {
-        let theme = Theme::from_config(&config.colors);
+        let (active_theme, theme) = resolve_selected_theme(&config, &config.theme.active);
+        let auto_race_theme = config.theme.auto_race;
         let mut state = AppState::new(&config);
         Self::load_startup_map(&mut state, &config, config_path.as_deref());
         let mut variables = VariableStore::new(&config.variables).unwrap_or_else(|error| {
@@ -245,6 +249,8 @@ impl App {
             config_load_options,
             state,
             theme,
+            active_theme,
+            auto_race_theme,
             aliases,
             macros,
             triggers,
@@ -634,6 +640,14 @@ impl App {
             }
             return true;
         }
+        if command == "theme" || command.starts_with("theme ") {
+            let input = command.strip_prefix("theme").unwrap_or_default().trim();
+            match self.handle_theme_command(input) {
+                Ok(message) => push_output_lines(&mut self.state, message, OutputCategory::System),
+                Err(error) => push_output_lines(&mut self.state, error, OutputCategory::Error),
+            }
+            return true;
+        }
         if command == "msdp" {
             let message = msdp_snapshot(&self.state);
             push_output_lines(&mut self.state, message, OutputCategory::System);
@@ -1017,7 +1031,8 @@ impl App {
                 &variables,
             )
             .map_err(|error| format!("Config reload failed: {error}"))?;
-        self.theme = Theme::from_config(&config.colors);
+        (self.active_theme, self.theme) = resolve_selected_theme(&config, &config.theme.active);
+        self.auto_race_theme = config.theme.auto_race;
         self.panel_cache.clear();
         self.aliases = aliases;
         self.triggers = triggers;
@@ -1045,6 +1060,83 @@ impl App {
         self.ultrawide_overrides = LayoutOverrides::default();
         self.stacked_overrides = LayoutOverrides::default();
         Ok("# Config Reloaded\n\nConfiguration was reloaded from disk. Session panel toggles were preserved.".to_string())
+    }
+
+    fn handle_theme_command(&mut self, input: &str) -> std::result::Result<String, String> {
+        let mut fields = input.split_whitespace();
+        match fields.next().unwrap_or("list") {
+            "list" => {
+                let mut names = builtin_theme_names().to_vec();
+                names.push("configured");
+                names.extend(self.config.themes.keys().map(String::as_str));
+                names.sort_unstable();
+                names.dedup();
+                let rows = names
+                    .into_iter()
+                    .filter_map(|name| {
+                        resolve_theme_option(&self.config, name).map(|theme| {
+                            format!(
+                                "| `{}` | {} |",
+                                markdown_inline(name).replace('|', "\\|"),
+                                theme.appearance.as_str()
+                            )
+                        })
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                Ok(format!(
+                    "# Available Themes\n\nUse `/theme use <name>` to switch themes.\n\n| Theme | Appearance |\n| --- | --- |\n{rows}"
+                ))
+            }
+            "current" => Ok(format!(
+                "Active theme: {} (appearance: {}, race auto-selection: {})",
+                self.active_theme,
+                self.theme.appearance.as_str(),
+                if self.auto_race_theme { "on" } else { "off" }
+            )),
+            "use" => {
+                let name = fields.next().ok_or("usage: /theme use <name>")?;
+                let normalized = normalize_theme_name(name);
+                if resolve_theme_option(&self.config, &normalized).is_none() {
+                    return Err(format!("Unknown theme `{name}`. Use /theme list."));
+                }
+                self.active_theme = normalized.clone();
+                self.theme = resolve_theme(&self.config, &self.active_theme);
+                self.auto_race_theme = false;
+                self.panel_cache.clear();
+                Ok(format!(
+                    "Theme changed to `{normalized}` ({}) for this session; race auto-selection is off.",
+                    self.theme.appearance.as_str()
+                ))
+            }
+            "auto" => match fields.next().unwrap_or_default() {
+                "on" => {
+                    self.auto_race_theme = true;
+                    if let Some(theme_name) = self
+                        .state
+                        .character
+                        .race
+                        .as_deref()
+                        .and_then(race_theme_name)
+                    {
+                        self.active_theme = theme_name.to_string();
+                        self.theme = resolve_theme(&self.config, theme_name);
+                        self.panel_cache.clear();
+                        Ok(format!(
+                            "Race theme auto-selection enabled; applied `{theme_name}`."
+                        ))
+                    } else {
+                        Ok("Race theme auto-selection enabled; no recognized race is available yet.".into())
+                    }
+                }
+                "off" => {
+                    self.auto_race_theme = false;
+                    Ok("Race theme auto-selection disabled.".into())
+                }
+                _ => Err("usage: /theme auto on|off".into()),
+            },
+            _ => Err("usage: /theme [list|current|use <name>|auto on|off]".into()),
+        }
     }
 
     fn handle_alias_command(&mut self, input: &str) -> std::result::Result<String, String> {
@@ -1802,6 +1894,17 @@ impl App {
                 }
                 self.state
                     .apply_msdp_frames(&frames, &self.config.msdp.mapping);
+                if let Some(theme_name) = self
+                    .auto_race_theme
+                    .then_some(self.state.character.race.as_deref())
+                    .flatten()
+                    .and_then(race_theme_name)
+                    && self.active_theme != theme_name
+                {
+                    self.active_theme = theme_name.to_string();
+                    self.theme = resolve_theme(&self.config, theme_name);
+                    self.panel_cache.clear();
+                }
             }
             NetworkEvent::Error(message) => {
                 self.source_style = Default::default();
@@ -2027,8 +2130,21 @@ impl App {
                     {
                         return false;
                     }
+                    if matches!(
+                        shortcut,
+                        crate::keybindings::ShortcutAction::CompleteNext
+                            | crate::keybindings::ShortcutAction::CompletePrevious
+                    ) {
+                        self.refresh_command_completions();
+                    }
                     crate::input::handle_shortcut(&mut self.state, shortcut)
                 } else {
+                    if matches!(
+                        key.code,
+                        crossterm::event::KeyCode::Tab | crossterm::event::KeyCode::BackTab
+                    ) {
+                        self.refresh_command_completions();
+                    }
                     handle_key(&mut self.state, key)
                 };
                 match action {
@@ -2371,6 +2487,29 @@ impl App {
     }
 }
 
+fn resolve_theme_option(config: &AppConfig, name: &str) -> Option<Theme> {
+    let normalized = normalize_theme_name(name);
+    config
+        .themes
+        .iter()
+        .find(|(configured, _)| normalize_theme_name(configured) == normalized)
+        .map(|(_, palette)| Theme::from_config(palette))
+        .or_else(|| Theme::from_named(&normalized))
+        .or_else(|| (normalized == "configured").then(|| Theme::from_config(&config.colors)))
+}
+
+fn resolve_theme(config: &AppConfig, name: &str) -> Theme {
+    resolve_theme_option(config, name).unwrap_or_else(|| Theme::from_config(&config.colors))
+}
+
+fn resolve_selected_theme(config: &AppConfig, name: &str) -> (String, Theme) {
+    let normalized = normalize_theme_name(name);
+    resolve_theme_option(config, &normalized).map_or_else(
+        || ("configured".into(), Theme::from_config(&config.colors)),
+        |theme| (normalized, theme),
+    )
+}
+
 fn help_text(topic: &str) -> Option<&'static str> {
     match topic.trim().to_ascii_lowercase().as_str() {
         "keybindings" | "shortcuts" => Some(include_str!("../docs/commands/keybindings.md")),
@@ -2378,9 +2517,10 @@ fn help_text(topic: &str) -> Option<&'static str> {
         "vim" => Some(include_str!("../docs/commands/vim.md")),
         "save" => Some(include_str!("../docs/commands/save.md")),
         "panels" => Some(include_str!("../docs/commands/panels.md")),
+        "theme" | "themes" => Some(include_str!("../docs/commands/theme.md")),
         "macro" | "macros" => Some(include_str!("../docs/commands/macro.md")),
         "" | "commands" => Some(concat!(
-            "# Mud Client Help\n\n## Local Commands\n- `/help [topic]` - show client help\n- `/clear` - clear output\n- `/quit` - quit the client\n- `/reload` - reload config from disk\n- `/reconnect` - request a network reconnect\n- `/msdp` - show stored MSDP values\n- `/lua [status|reload|call <function>]` - inspect and run Lua hooks\n- `/echo [--fg <color>] [--bg <color>] <text>` - write styled local output\n- `/variable` - list, set, or unset script variables\n- `/macro` - bind keys to commands; `/help macro` for details\n- `/alias` - list, add, unset, or clear runtime aliases\n- `/triggers` - list, add, unset, or clear runtime text/color triggers\n- `/highlight` - list, add, unset, or clear runtime highlights\n- `/handler` - list, add, unset, or clear runtime event handlers\n- `/event` - inspect or manually emit script events\n- `/toggle group|opponent|social [on|off]` - toggle optional panels for this session\n- `/map <command>` - mapper commands\n\n## Topics\n- `msdp` - stored MSDP values\n- `lua` - Lua scripting hooks and client API\n- `echo` - local styled output\n- `variable` - configured and runtime script variables\n- `map` - room mapping commands\n- `alias` - alias configuration\n- `trigger` - configured output reactions\n- `event` - script event dispatch and handlers\n- `highlight` - configured and runtime output styling\n- `animation` - animation timing and reduced motion\n- `diagnostics` - logging and troubleshooting\n- `toggle` - optional panel toggles\n- `social` - captured communication panel\n- `path` - path finding and path running\n- `output` - scrollback, search, triggers, and highlights\n- `input` - command input controls\n- `config` - runtime configuration notes",
+            "# Mud Client Help\n\n## Local Commands\n- `/help [topic]` - show client help\n- `/clear` - clear output\n- `/quit` - quit the client\n- `/reload` - reload config from disk\n- `/theme [list|current|use <name>|auto on|off]` - inspect or switch palettes\n- `/reconnect` - request a network reconnect\n- `/msdp` - show stored MSDP values\n- `/lua [status|reload|call <function>]` - inspect and run Lua hooks\n- `/echo [--fg <color>] [--bg <color>] <text>` - write styled local output\n- `/variable` - list, set, or unset script variables\n- `/macro` - bind keys to commands; `/help macro` for details\n- `/alias` - list, add, unset, or clear runtime aliases\n- `/triggers` - list, add, unset, or clear runtime text/color triggers\n- `/highlight` - list, add, unset, or clear runtime highlights\n- `/handler` - list, add, unset, or clear runtime event handlers\n- `/event` - inspect or manually emit script events\n- `/toggle group|opponent|social [on|off]` - toggle optional panels for this session\n- `/map <command>` - mapper commands\n\n## Topics\n- `theme` - runtime palettes and light/dark appearance\n- `msdp` - stored MSDP values\n- `lua` - Lua scripting hooks and client API\n- `echo` - local styled output\n- `variable` - configured and runtime script variables\n- `map` - room mapping commands\n- `alias` - alias configuration\n- `trigger` - configured output reactions\n- `event` - script event dispatch and handlers\n- `highlight` - configured and runtime output styling\n- `animation` - animation timing and reduced motion\n- `diagnostics` - logging and troubleshooting\n- `toggle` - optional panel toggles\n- `social` - captured communication panel\n- `path` - path finding and path running\n- `output` - scrollback, search, triggers, and highlights\n- `input` - command input controls\n- `config` - runtime configuration notes",
             "\n- `panels` - panel borders, alignment, themes, and refresh intervals\n- `save` - persist runtime rules with `/save`",
         )),
         "msdp" => Some(
@@ -2926,13 +3066,116 @@ mod tests {
     use crate::{
         config::{
             AliasMatchType, AliasRuleConfig, EventHandlerConfig, HighlightRuleConfig,
-            TriggerRuleConfig,
+            ThemeAppearance, TriggerRuleConfig,
         },
         network::msdp::MsdpValue,
         state::SocialChannel,
     };
 
     use super::*;
+
+    #[tokio::test]
+    async fn catppuccin_flavors_list_and_switch_through_local_command_pipeline() {
+        let mut app = App::new(AppConfig::default());
+        let (tx, mut rx) = mpsc::channel(8);
+        app.handle_command(ClientCommand::SendText("/theme list".into()), &tx)
+            .await;
+        assert!(
+            app.state
+                .output
+                .iter()
+                .any(|line| line.normalized == "| `configured` | dark |")
+        );
+        for (name, background, foreground) in [
+            ("catppuccin-latte", "#eff1f5", "#4c4f69"),
+            ("catppuccin-frappe", "#303446", "#c6d0f5"),
+            ("catppuccin-macchiato", "#24273a", "#cad3f5"),
+            ("catppuccin-mocha", "#1e1e2e", "#cdd6f4"),
+        ] {
+            let appearance = if name == "catppuccin-latte" {
+                "light"
+            } else {
+                "dark"
+            };
+            assert!(
+                app.state
+                    .output
+                    .iter()
+                    .any(|line| line.normalized == format!("| `{name}` | {appearance} |"))
+            );
+            app.handle_command(ClientCommand::SendText(format!("/theme use {name}")), &tx)
+                .await;
+            assert_eq!(app.active_theme, name);
+            assert_eq!(Some(app.theme.background), parse_color(background));
+            assert_eq!(Some(app.theme.foreground), parse_color(foreground));
+            assert_eq!(app.theme.appearance.as_str(), appearance);
+            assert!(rx.try_recv().is_err(), "theme commands must stay local");
+        }
+    }
+
+    #[tokio::test]
+    async fn popular_light_themes_list_and_switch_through_local_command_pipeline() {
+        let mut app = App::new(AppConfig::default());
+        let (tx, mut rx) = mpsc::channel(4);
+        app.handle_command(ClientCommand::SendText("/theme list".into()), &tx)
+            .await;
+
+        for (name, background) in [
+            ("solarized-light", "#fdf6e3"),
+            ("gruvbox-light", "#fbf1c7"),
+            ("rose-pine-dawn", "#faf4ed"),
+        ] {
+            assert!(
+                app.state
+                    .output
+                    .iter()
+                    .any(|line| line.normalized == format!("| `{name}` | light |"))
+            );
+            app.handle_command(ClientCommand::SendText(format!("/theme use {name}")), &tx)
+                .await;
+            assert_eq!(app.active_theme, name);
+            assert_eq!(Some(app.theme.background), parse_color(background));
+            assert_eq!(app.theme.appearance, ThemeAppearance::Light);
+            assert!(rx.try_recv().is_err(), "theme commands must stay local");
+        }
+    }
+
+    #[test]
+    fn manual_and_automatic_theme_selection_have_predictable_precedence() {
+        let mut app = App::new(AppConfig::default());
+        app.state.character.race = Some("Hobbit".into());
+        let message = app.handle_theme_command("auto on").unwrap();
+        assert!(message.contains("applied `hobbit`"));
+        assert_eq!(app.active_theme, "hobbit");
+        assert!(app.auto_race_theme);
+
+        let message = app.handle_theme_command("use catppuccin-latte").unwrap();
+        assert!(message.contains("auto-selection is off"));
+        assert_eq!(app.active_theme, "catppuccin-latte");
+        assert!(!app.auto_race_theme);
+        assert_eq!(app.theme.appearance, crate::config::ThemeAppearance::Light);
+
+        app.state.character.race = None;
+        assert!(
+            app.handle_theme_command("auto on")
+                .unwrap()
+                .contains("no recognized race")
+        );
+        assert!(app.auto_race_theme);
+    }
+
+    #[test]
+    fn unknown_unvalidated_startup_theme_reports_configured_fallback() {
+        let mut config = AppConfig::default();
+        config.theme.active = "missing".into();
+        let mut app = App::new(config);
+        assert_eq!(app.active_theme, "configured");
+        assert!(
+            app.handle_theme_command("current")
+                .unwrap()
+                .starts_with("Active theme: configured")
+        );
+    }
 
     #[test]
     fn celestial_fade_state_is_updated_before_read_only_rendering() {

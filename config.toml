@@ -64,6 +64,7 @@ left = "details"
 right = "map"
 
 [colors]
+appearance = "dark"
 background = "#1a1b26"
 foreground = "#c0caf5"
 border = "#3b4261"
@@ -75,6 +76,12 @@ danger = "#f7768e"
 muted = "#565f89"
 player = "#7dcfff"
 enemy = "#f7768e"
+
+[theme]
+active = "tokyo-night"
+auto_race = false
+
+# Add custom palettes under [themes.<name>] with the same keys as [colors].
 
 [gauges]
 unicode = true
@@ -244,7 +251,7 @@ double = false
 
 [map.terrain.Forest]
 symbol = "♣"
-color = "lightgreen"
+color = "#228B22"
 density = "scant"
 spread = "wide"
 fade = "fadeout"
@@ -252,7 +259,7 @@ double = false
 
 [map.terrain.Dense_forest]
 symbol = "♠"
-color = "green"
+color = "#264224"
 density = "dense"
 spread = ""
 fade = "fadeout"
@@ -260,7 +267,7 @@ double = false
 
 [map.terrain."Dense Forest"]
 symbol = "♠"
-color = "green"
+color = "#264224"
 density = "dense"
 spread = ""
 fade = "fadeout"

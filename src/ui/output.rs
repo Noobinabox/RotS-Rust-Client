@@ -18,6 +18,8 @@ use crate::{
 
 const MIN_OUTPUT_WRAP_WIDTH: usize = 20;
 
+mod tables;
+
 pub fn render_output(
     area: ratatui::layout::Rect,
     buf: &mut ratatui::buffer::Buffer,
@@ -100,6 +102,19 @@ fn output_lines(
         .collect()
 }
 
+fn heading_follows(state: &AppState, source_index: usize) -> bool {
+    let all_lines = &state.output;
+    let Some(source) = all_lines.get(source_index) else {
+        return false;
+    };
+    state.output_view.display_mode == OutputDisplayMode::Styled
+        && !plain_text(&source.normalized).trim().is_empty()
+        && all_lines.get(source_index + 1).is_some_and(|next| {
+            next.category == OutputCategory::System
+                && markdown_heading(&plain_text(&next.normalized)).is_some()
+        })
+}
+
 // Keep a logical-line anchor plus a row offset within that line. New output can
 // preserve the anchor without knowing the terminal width or rewrapping history.
 fn rendered_rows(
@@ -115,17 +130,30 @@ fn rendered_rows(
         OutputDisplayMode::Plain => plain_lines(all_lines, start, end, state, theme, false),
         OutputDisplayMode::Debug => plain_lines(all_lines, start, end, state, theme, true),
     };
+    let mut tables = if state.output_view.display_mode == OutputDisplayMode::Styled {
+        tables::render(state, start, end, width, theme)
+    } else {
+        Default::default()
+    };
     lines
         .into_iter()
         .zip(all_lines.range(start..end))
-        .map(|(line, source)| {
-            if source.category == OutputCategory::Snapshot {
+        .enumerate()
+        .map(|(offset, (line, source))| {
+            let source_index = start + offset;
+            let mut rows = if let Some(rows) = tables.remove(&source_index) {
+                rows
+            } else if source.category == OutputCategory::Snapshot {
                 vec![line.left_aligned()]
             } else if width < MIN_OUTPUT_WRAP_WIDTH {
                 vec![line]
             } else {
                 wrap_line(line, width)
+            };
+            if heading_follows(state, source_index) {
+                rows.push(Line::from(""));
             }
+            rows
         })
         .collect()
 }
@@ -280,6 +308,7 @@ fn ansi_lines(
                 remaining: prefix,
                 style: &mut mud_style,
                 default_fg,
+                theme: Some(theme),
             }
             .scan(false);
         }
@@ -295,32 +324,41 @@ fn ansi_lines(
                     remaining: &line.normalized,
                     style: &mut mud_style,
                     default_fg,
+                    theme: Some(theme),
                 }
                 .scan(false);
             }
             continue;
         }
         let rendered_line = match line.category {
-            OutputCategory::Snapshot => ansi_line(&line.normalized, default_fg),
+            OutputCategory::Snapshot => ansi_line_for_theme(&line.normalized, default_fg, theme),
             OutputCategory::Normal
             | OutputCategory::Combat
             | OutputCategory::Communication
             | OutputCategory::Triggered => {
-                ansi_line_with_style(&line.normalized, &mut mud_style, default_fg)
+                ansi_line_with_style_for_theme(&line.normalized, &mut mud_style, default_fg, theme)
             }
             OutputCategory::Prompt => {
-                let rendered_line =
-                    ansi_line_with_style(&line.normalized, &mut mud_style, default_fg);
+                let rendered_line = ansi_line_with_style_for_theme(
+                    &line.normalized,
+                    &mut mud_style,
+                    default_fg,
+                    theme,
+                );
                 mud_style = Style::new().fg(default_fg);
                 rendered_line
             }
             OutputCategory::System => markdown_system_line(&line.normalized, theme),
             OutputCategory::Error => {
                 mud_style = Style::new().fg(default_fg);
-                ansi_line(&line.normalized, color_for(line.category.clone(), theme))
+                ansi_line_for_theme(
+                    &line.normalized,
+                    color_for(line.category.clone(), theme),
+                    theme,
+                )
             }
         };
-        let rendered_line = apply_output_style(rendered_line, line.style.as_ref());
+        let rendered_line = apply_output_style(rendered_line, line.style.as_ref(), theme);
         rendered.push(if line.category == OutputCategory::Snapshot {
             rendered_line
         } else {
@@ -336,16 +374,16 @@ fn markdown_system_line(raw: &str, theme: &Theme) -> Line<'static> {
     if text.trim().is_empty() {
         return Line::from("");
     }
-    if let Some(title) = text.strip_prefix("# ") {
+    if let Some((level, title)) = markdown_heading(&text) {
         return Line::from(Span::styled(
             title.to_string(),
-            Style::new().fg(theme.title).add_modifier(Modifier::BOLD),
-        ));
-    }
-    if let Some(title) = text.strip_prefix("## ") {
-        return Line::from(Span::styled(
-            title.to_string(),
-            Style::new().fg(theme.accent).add_modifier(Modifier::BOLD),
+            Style::new()
+                .fg(if level == 1 {
+                    theme.title
+                } else {
+                    theme.accent
+                })
+                .add_modifier(Modifier::BOLD),
         ));
     }
     if let Some(item) = text.strip_prefix("- ") {
@@ -354,6 +392,14 @@ fn markdown_system_line(raw: &str, theme: &Theme) -> Line<'static> {
         return Line::from(spans);
     }
     Line::from(inline_code_spans(&text, theme))
+}
+
+fn markdown_heading(text: &str) -> Option<(usize, &str)> {
+    let level = text.bytes().take_while(|byte| *byte == b'#').count();
+    if !(1..=6).contains(&level) || text.as_bytes().get(level) != Some(&b' ') {
+        return None;
+    }
+    Some((level, &text[level + 1..]))
 }
 
 fn inline_code_spans(text: &str, theme: &Theme) -> Vec<Span<'static>> {
@@ -413,6 +459,7 @@ fn plain_lines(
                     Style::new().fg(color_for(line.category.clone(), theme)),
                 )),
                 line.style.as_ref(),
+                theme,
             );
             if line.category == OutputCategory::Snapshot {
                 rendered_line
@@ -423,7 +470,11 @@ fn plain_lines(
         .collect()
 }
 
-fn apply_output_style(line: Line<'static>, style: Option<&OutputStyle>) -> Line<'static> {
+fn apply_output_style(
+    line: Line<'static>,
+    style: Option<&OutputStyle>,
+    theme: &Theme,
+) -> Line<'static> {
     let Some(style) = style else {
         return line;
     };
@@ -454,6 +505,16 @@ fn apply_output_style(line: Line<'static>, style: Option<&OutputStyle>) -> Line<
             .into_iter()
             .map(|mut span| {
                 span.style = span.style.patch(extra);
+                if let Some(foreground) = span.style.fg {
+                    let background = span
+                        .style
+                        .bg
+                        .filter(|color| *color != Color::Reset)
+                        .unwrap_or(theme.background);
+                    span.style = span
+                        .style
+                        .fg(theme.readable_text_color(foreground, background));
+                }
                 span
             })
             .collect::<Vec<_>>(),
@@ -473,7 +534,7 @@ fn mark_search_match(
     let marker = if is_active { ">" } else { "*" };
     let marker_style = if is_active {
         Style::new()
-            .fg(theme.background_safe_foreground())
+            .fg(theme.contrasting_foreground(theme.warning))
             .bg(theme.warning)
     } else {
         Style::new().fg(theme.warning)
@@ -571,16 +632,39 @@ fn display_width(value: &str) -> usize {
     value.chars().map(|value| value.width().unwrap_or(0)).sum()
 }
 
+#[cfg(test)]
 fn ansi_line(value: &str, default_fg: Color) -> Line<'static> {
     let mut style = Style::new().fg(default_fg);
     ansi_line_with_style(value, &mut style, default_fg)
 }
 
+fn ansi_line_for_theme(value: &str, default_fg: Color, theme: &Theme) -> Line<'static> {
+    let mut style = Style::new().fg(default_fg);
+    ansi_line_with_style_for_theme(value, &mut style, default_fg, theme)
+}
+
+#[cfg(test)]
 fn ansi_line_with_style(value: &str, style: &mut Style, default_fg: Color) -> Line<'static> {
     let mut parser = AnsiParser {
         remaining: value,
         style,
         default_fg,
+        theme: None,
+    };
+    Line::from(parser.parse())
+}
+
+fn ansi_line_with_style_for_theme(
+    value: &str,
+    style: &mut Style,
+    default_fg: Color,
+    theme: &Theme,
+) -> Line<'static> {
+    let mut parser = AnsiParser {
+        remaining: value,
+        style,
+        default_fg,
+        theme: Some(theme),
     };
     Line::from(parser.parse())
 }
@@ -589,6 +673,7 @@ struct AnsiParser<'a> {
     remaining: &'a str,
     style: &'a mut Style,
     default_fg: Color,
+    theme: Option<&'a Theme>,
 }
 
 impl<'a> AnsiParser<'a> {
@@ -601,7 +686,7 @@ impl<'a> AnsiParser<'a> {
         while let Some(index) = self.remaining.find("\x1b[") {
             let (plain, rest) = self.remaining.split_at(index);
             if render_text && !plain.is_empty() {
-                spans.push(Span::styled(plain.to_string(), *self.style));
+                spans.push(Span::styled(plain.to_string(), self.readable_style()));
             }
             let Some(end) = rest.find('m') else {
                 self.remaining = "";
@@ -611,9 +696,28 @@ impl<'a> AnsiParser<'a> {
             self.remaining = &rest[end + 1..];
         }
         if render_text && !self.remaining.is_empty() {
-            spans.push(Span::styled(self.remaining.to_string(), *self.style));
+            spans.push(Span::styled(
+                self.remaining.to_string(),
+                self.readable_style(),
+            ));
         }
         spans
+    }
+
+    fn readable_style(&self) -> Style {
+        let Some(theme) = self.theme else {
+            return *self.style;
+        };
+        let Some(foreground) = self.style.fg else {
+            return *self.style;
+        };
+        let background = self
+            .style
+            .bg
+            .filter(|color| *color != Color::Reset)
+            .unwrap_or(theme.background);
+        self.style
+            .fg(theme.readable_text_color(foreground, background))
     }
 
     fn apply_sgr(&mut self, sequence: &str) {
@@ -760,6 +864,180 @@ mod tests {
         assert_eq!(output_title(&state, "MUD Output"), "MUD Output");
     }
 
+    fn table_state() -> AppState {
+        let mut state = AppState::new(&crate::config::AppConfig::default());
+        for text in [
+            "| Theme | Description |",
+            "| :--- | ---: |",
+            "| `hobbit` | Shire gardens and golden hearthlight |",
+            "| `dwarf` | Erebor |",
+        ] {
+            state.push_output(text, OutputCategory::System);
+        }
+        state
+    }
+
+    #[test]
+    fn markdown_tables_wrap_cells_align_and_preserve_viewport_anchors() {
+        let state = table_state();
+        let theme = Theme::from_config(&ThemeConfig::default());
+        for width in [11, 20, 32, 80] {
+            let rows = rendered_rows(&state, 0, 4, width, &theme);
+            assert!(line_text(&rows[0][0]).starts_with('┌'));
+            assert!(line_text(rows[3].last().unwrap()).ends_with('┘'));
+            let table_width = rows[0][0].width();
+            assert!(table_width <= width);
+            assert!(
+                rows.iter()
+                    .flatten()
+                    .all(|line| line.width() == table_width)
+            );
+            assert_eq!(rendered_rows(&state, 2, 3, width, &theme), rows[2..3]);
+            assert!(
+                !rows
+                    .iter()
+                    .flatten()
+                    .any(|line| line_text(line).contains('`'))
+            );
+            assert_eq!(
+                output_lines(&state, 2, width, &theme),
+                rows.iter()
+                    .flatten()
+                    .cloned()
+                    .collect::<Vec<_>>()
+                    .split_off(rows.iter().map(Vec::len).sum::<usize>() - 2)
+            );
+        }
+        let rows = rendered_rows(&state, 0, 4, 80, &theme);
+        assert!(line_text(&rows[3][0]).contains("                        Erebor │"));
+        assert!(rows[2].iter().flat_map(|row| &row.spans).any(|span| span.content.contains("hobbit") && span.style.fg == Some(theme.warning)));
+    }
+
+    #[test]
+    fn markdown_tables_preserve_plain_debug_and_non_table_output() {
+        let mut state = table_state();
+        let theme = Theme::from_config(&ThemeConfig::default());
+        for mode in [OutputDisplayMode::Plain, OutputDisplayMode::Debug] {
+            state.output_view.display_mode = mode;
+            let rows = rendered_rows(&state, 0, 4, 100, &theme);
+            assert!(line_text(&rows[0][0]).contains("| Theme |"));
+            assert!(
+                !rows
+                    .iter()
+                    .flatten()
+                    .any(|line| line_text(line).contains('┌'))
+            );
+        }
+        state.output_view.display_mode = OutputDisplayMode::Styled;
+        assert!(line_text(&rendered_rows(&state, 0, 4, 5, &theme)[0][0]).contains('|'));
+        for line in &mut state.output {
+            line.category = OutputCategory::Normal;
+        }
+        assert!(line_text(&rendered_rows(&state, 0, 4, 80, &theme)[0][0]).contains('|'));
+        let mut state = table_state();
+        state.output[1].normalized = "| ordinary | prose |".into();
+        assert!(line_text(&rendered_rows(&state, 0, 4, 80, &theme)[0][0]).contains('|'));
+    }
+
+    #[test]
+    fn markdown_tables_handle_unicode_escaped_pipes_fences_and_search() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let mut state = table_state();
+        state.output[2].normalized = r"| 森林 | `a\|b` |".into();
+        state.output_view.search_matches = vec![2];
+        state.output_view.active_match = Some(0);
+        for width in [13, 20, 80] {
+            let rows = rendered_rows(&state, 0, 4, width, &theme);
+            assert!(rows.iter().flatten().all(|line| line.width() <= width));
+            assert!(line_text(&rows[2][0]).starts_with("> │"));
+        }
+        let rows = rendered_rows(&state, 0, 4, 80, &theme);
+        assert!(line_text(&rows[2][0]).contains("a|b"));
+        state
+            .output
+            .push_front(output_line("```markdown", OutputCategory::System));
+        assert!(
+            !rendered_rows(&state, 1, 5, 80, &theme)
+                .iter()
+                .flatten()
+                .any(|line| line_text(line).contains('┌'))
+        );
+    }
+
+    #[test]
+    fn theme_help_table_renders_all_races_and_scrolls_through_wrapped_cells() {
+        let mut state = AppState::new(&crate::config::AppConfig::default());
+        for line in include_str!("../../docs/commands/theme.md").lines() {
+            state.push_output(line, OutputCategory::System);
+        }
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let start = state
+            .output
+            .iter()
+            .position(|line| line.normalized.starts_with("| Theme |"))
+            .unwrap();
+        for width in [20, 40, 80, 120] {
+            let rows = rendered_rows(&state, start, start + 12, width, &theme);
+            assert!(line_text(&rows[0][0]).starts_with('┌'));
+            assert!(line_text(rows[11].last().unwrap()).ends_with('┘'));
+            assert!(rows.iter().flatten().all(|line| line.width() <= width));
+            for index in start..start + 12 {
+                assert_eq!(
+                    rendered_rows(&state, index, index + 1, width, &theme),
+                    rows[index - start..index - start + 1]
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn markdown_tables_short_search_and_header_code_keep_table_styles() {
+        let mut state = AppState::new(&crate::config::AppConfig::default());
+        for text in ["| `A` | B |", "| --- | --- |", "| x | y |"] {
+            state.push_output(text, OutputCategory::System);
+        }
+        let mut theme = Theme::from_config(&ThemeConfig::default());
+        theme.foreground = theme.warning;
+        theme.title = Color::LightBlue;
+        state.output_view.search_matches = vec![2];
+        let rows = rendered_rows(&state, 0, 3, 80, &theme);
+        assert!(line_text(&rows[0][0]).starts_with("  ┌"));
+        assert!(
+            rows[0][1]
+                .spans
+                .iter()
+                .any(|span| span.content == "B" && span.style.fg == Some(theme.title))
+        );
+        assert!(rows[0][1].spans.iter().any(|span| span.content == "A"
+            && span.style.fg == Some(theme.warning)
+            && span.style.add_modifier.contains(Modifier::BOLD)));
+        for text in ["```", "````markdown"].into_iter() {
+            state
+                .output
+                .push_front(output_line(text, OutputCategory::System));
+        }
+        assert!(
+            !rendered_rows(&state, 2, 5, 80, &theme)
+                .iter()
+                .flatten()
+                .any(|line| line_text(line).contains('┌'))
+        );
+    }
+
+    #[test]
+    fn markdown_tables_wrap_joined_emoji_and_combining_marks_without_splitting() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let mut state = table_state();
+        state.output[2].normalized = "| 👩‍💻👩‍💻 | e\u{301}e\u{301} |".into();
+        for width in [11, 20, 80] {
+            let rows = rendered_rows(&state, 0, 4, width, &theme);
+            assert!(rows.iter().flatten().all(|line| line.width() <= width));
+            let content = rows[2].iter().map(line_text).collect::<Vec<_>>().join("\n");
+            assert_eq!(content.matches("👩‍💻").count(), 2);
+            assert_eq!(content.matches("e\u{301}").count(), 2);
+        }
+    }
+
     #[test]
     fn output_title_shows_mode_status_while_timer_is_active() {
         let mut state = AppState::new(&crate::config::AppConfig::default());
@@ -787,6 +1065,42 @@ mod tests {
         let line = ansi_line("\x1b[38;2;120;40;10mtruecolor", Color::White);
 
         assert_eq!(line.spans[0].style.fg, Some(Color::Rgb(120, 40, 10)));
+    }
+
+    #[test]
+    fn light_theme_adapts_low_contrast_ansi_foregrounds() {
+        let theme = Theme::from_named("catppuccin-latte").unwrap();
+        let line = ansi_line_for_theme("\x1b[37mwhite \x1b[30mblack", theme.foreground, &theme);
+        assert_ne!(line.spans[0].style.fg, Some(Color::Gray));
+        assert_eq!(line.spans[1].style.fg, Some(Color::Black));
+
+        let explicit_background = ansi_line_for_theme(
+            "\x1b[47;30mblack on white\x1b[40;37mwhite on black",
+            theme.foreground,
+            &theme,
+        );
+        assert_eq!(explicit_background.spans[0].style.fg, Some(Color::Black));
+        assert_eq!(explicit_background.spans[1].style.fg, Some(Color::Gray));
+    }
+
+    #[test]
+    fn light_theme_adapts_highlight_colors_against_their_final_background() {
+        let theme = Theme::from_named("catppuccin-latte").unwrap();
+        let low_contrast = OutputStyle {
+            foreground: Some("white".into()),
+            ..OutputStyle::default()
+        };
+        let line = apply_output_style(Line::from("highlight"), Some(&low_contrast), &theme);
+        assert_ne!(line.spans[0].style.fg, Some(Color::White));
+
+        let explicit_pair = OutputStyle {
+            foreground: Some("white".into()),
+            background: Some("black".into()),
+            ..OutputStyle::default()
+        };
+        let line = apply_output_style(Line::from("highlight"), Some(&explicit_pair), &theme);
+        assert_eq!(line.spans[0].style.fg, Some(Color::White));
+        assert_eq!(line.spans[0].style.bg, Some(Color::Black));
     }
 
     #[test]
@@ -822,9 +1136,10 @@ mod tests {
 
         let state = state_with_lines(lines);
         let rendered = ansi_lines(&state.output, 0, state.output.len(), &state, &theme);
+        let green = theme.readable_text_color(Color::Green, theme.background);
 
-        assert_eq!(rendered[0].spans[0].style.fg, Some(Color::Green));
-        assert_eq!(rendered[1].spans[0].style.fg, Some(Color::Green));
+        assert_eq!(rendered[0].spans[0].style.fg, Some(green));
+        assert_eq!(rendered[1].spans[0].style.fg, Some(green));
         assert_eq!(rendered[2].spans[0].style.fg, Some(theme.foreground));
     }
 
@@ -839,10 +1154,11 @@ mod tests {
 
         let state = state_with_lines(lines);
         let rendered = ansi_lines(&state.output, 0, state.output.len(), &state, &theme);
+        let green = theme.readable_text_color(Color::Green, theme.background);
 
-        assert_eq!(rendered[0].spans[0].style.fg, Some(Color::Green));
+        assert_eq!(rendered[0].spans[0].style.fg, Some(green));
         assert_eq!(rendered[1].spans[0].style.fg, Some(theme.foreground));
-        assert_eq!(rendered[2].spans[0].style.fg, Some(Color::Green));
+        assert_eq!(rendered[2].spans[0].style.fg, Some(green));
     }
 
     #[test]
@@ -892,6 +1208,176 @@ mod tests {
     }
 
     #[test]
+    fn styled_markdown_headings_have_one_blank_row_before_them() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let mut state = AppState::new(&crate::config::AppConfig::default());
+        for (text, category) in [
+            ("MUD output", OutputCategory::Normal),
+            ("# Heading", OutputCategory::System),
+            ("body", OutputCategory::System),
+            ("## Subheading", OutputCategory::System),
+            ("", OutputCategory::System),
+            ("### Third level", OutputCategory::System),
+        ] {
+            state.push_output(text, category);
+        }
+        let rows = rendered_rows(&state, 0, state.output.len(), 80, &theme);
+        assert_eq!(
+            rows[0].iter().map(line_text).collect::<Vec<_>>(),
+            ["MUD output", ""]
+        );
+        assert_eq!(
+            rows[1].iter().map(line_text).collect::<Vec<_>>(),
+            ["Heading"]
+        );
+        assert_eq!(
+            rows[2].iter().map(line_text).collect::<Vec<_>>(),
+            ["body", ""]
+        );
+        assert_eq!(
+            rows[3].iter().map(line_text).collect::<Vec<_>>(),
+            ["Subheading"]
+        );
+        assert_eq!(rows[4].iter().map(line_text).collect::<Vec<_>>(), [""]);
+        assert_eq!(
+            rows[5].iter().map(line_text).collect::<Vec<_>>(),
+            ["Third level"]
+        );
+        assert_eq!(rows[5][0].spans[0].style.fg, Some(theme.accent));
+    }
+
+    #[test]
+    fn heading_spacing_is_stable_at_tiny_widths_and_skipped_at_viewport_start() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let mut state = AppState::new(&crate::config::AppConfig::default());
+        state.push_output("previous", OutputCategory::Normal);
+        state.push_output("# A heading that can wrap", OutputCategory::System);
+        state.output_view.search_matches = vec![1];
+        state.output_view.active_match = Some(0);
+
+        for width in [8, 20, 80] {
+            let rows = rendered_rows(&state, 0, 2, width, &theme);
+            assert_eq!(line_text(rows[0].last().unwrap()), "");
+            assert!(line_text(&rows[1][0]).starts_with("> A"));
+            assert_eq!(
+                rows[0]
+                    .iter()
+                    .filter(|line| line_text(line).is_empty())
+                    .count(),
+                1
+            );
+
+            let anchored = rendered_rows(&state, 1, 2, width, &theme);
+            assert!(line_text(&anchored[0][0]).starts_with("> A"));
+        }
+    }
+
+    #[test]
+    fn heading_separator_remains_scrollable_when_preceding_output_wraps() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let mut state = AppState::new(&crate::config::AppConfig::default());
+        state.push_output(
+            "one two three four five six seven eight nine ten",
+            OutputCategory::Normal,
+        );
+        state.push_output("# Heading", OutputCategory::System);
+
+        let visible = output_lines(&state, 2, 20, &theme);
+
+        assert_eq!(
+            visible.iter().map(line_text).collect::<Vec<_>>(),
+            ["", "Heading"]
+        );
+    }
+
+    #[test]
+    fn heading_separator_scrolls_stably_in_both_directions() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let mut state = AppState::new(&crate::config::AppConfig::default());
+        state.push_output("normal", OutputCategory::Normal);
+        state.push_output("# Heading", OutputCategory::System);
+        state.push_output("body", OutputCategory::System);
+
+        let expected = [["Heading", "body"], ["", "Heading"], ["normal", ""]];
+        for rows in &expected {
+            assert_eq!(
+                output_lines(&state, 2, 80, &theme)
+                    .iter()
+                    .map(line_text)
+                    .collect::<Vec<_>>(),
+                *rows
+            );
+            let position = scroll_position(&state, 2, 80, &theme, 1, true);
+            (
+                state.output_view.scroll_offset,
+                state.output_view.wrapped_row_offset,
+            ) = position;
+        }
+        for rows in expected.iter().rev().skip(1) {
+            let position = scroll_position(&state, 2, 80, &theme, 1, false);
+            (
+                state.output_view.scroll_offset,
+                state.output_view.wrapped_row_offset,
+            ) = position;
+            assert_eq!(
+                output_lines(&state, 2, 80, &theme)
+                    .iter()
+                    .map(line_text)
+                    .collect::<Vec<_>>(),
+                *rows
+            );
+        }
+    }
+
+    #[test]
+    fn only_system_markdown_headings_gain_spacing() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let mut state = AppState::new(&crate::config::AppConfig::default());
+        state.push_output("previous", OutputCategory::Normal);
+        state.push_output("\x1b[31m# warning", OutputCategory::Normal);
+
+        let rows = rendered_rows(&state, 0, 2, 80, &theme);
+
+        assert_eq!(rows[1].len(), 1);
+        assert_eq!(line_text(&rows[1][0]), "# warning");
+    }
+
+    #[test]
+    fn markdown_heading_syntax_stops_at_level_six_and_requires_a_space() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+
+        assert_eq!(
+            line_text(&markdown_system_line("###### Six", &theme)),
+            "Six"
+        );
+        assert_eq!(
+            line_text(&markdown_system_line("####### Seven", &theme)),
+            "####### Seven"
+        );
+        assert_eq!(
+            line_text(&markdown_system_line("###Missing", &theme)),
+            "###Missing"
+        );
+    }
+
+    #[test]
+    fn first_heading_and_plain_debug_modes_do_not_gain_rendered_spacing() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let mut state = AppState::new(&crate::config::AppConfig::default());
+        state.push_output("# First", OutputCategory::System);
+        assert_eq!(rendered_rows(&state, 0, 1, 80, &theme)[0].len(), 1);
+
+        state.push_output("## Second", OutputCategory::System);
+        for mode in [OutputDisplayMode::Plain, OutputDisplayMode::Debug] {
+            state.output_view.display_mode = mode;
+            let rows = rendered_rows(&state, 0, 2, 80, &theme);
+            assert_eq!(rows[0].len(), 1);
+            assert_eq!(rows[1].len(), 1);
+            assert!(line_text(&rows[1][0]).contains("## Second"));
+        }
+    }
+
+    #[test]
     fn ansi_lines_carry_style_from_lines_above_visible_window() {
         let theme = Theme::from_config(&ThemeConfig::default());
         let lines = vec![
@@ -903,7 +1389,10 @@ mod tests {
         let rendered = ansi_lines(&state.output, 1, state.output.len(), &state, &theme);
 
         assert_eq!(rendered.len(), 1);
-        assert_eq!(rendered[0].spans[0].style.fg, Some(Color::Green));
+        assert_eq!(
+            rendered[0].spans[0].style.fg,
+            Some(theme.readable_text_color(Color::Green, theme.background))
+        );
     }
 
     #[test]
@@ -917,9 +1406,10 @@ mod tests {
 
         let state = state_with_lines(lines);
         let rendered = ansi_lines(&state.output, 0, state.output.len(), &state, &theme);
+        let green = theme.readable_text_color(Color::Green, theme.background);
 
-        assert_eq!(rendered[0].spans[0].style.fg, Some(Color::Green));
-        assert_eq!(rendered[1].spans[0].style.fg, Some(Color::Green));
+        assert_eq!(rendered[0].spans[0].style.fg, Some(green));
+        assert_eq!(rendered[1].spans[0].style.fg, Some(green));
         assert_eq!(rendered[2].spans[0].style.fg, Some(theme.foreground));
     }
 
@@ -937,7 +1427,10 @@ mod tests {
         let state = state_with_lines(lines);
         let rendered = ansi_lines(&state.output, 0, state.output.len(), &state, &theme);
 
-        assert_eq!(rendered[0].spans[0].style.fg, Some(Color::Green));
+        assert_eq!(
+            rendered[0].spans[0].style.fg,
+            Some(theme.readable_text_color(Color::Green, theme.background))
+        );
         assert_eq!(rendered[1].spans[0].style.fg, Some(theme.foreground));
     }
 
@@ -1005,7 +1498,10 @@ mod tests {
         let rendered = output_lines(&state, 1, 20, &theme);
 
         assert_eq!(line_text(&rendered[0]), "X");
-        assert_eq!(rendered[0].spans[0].style.fg, Some(Color::Rgb(1, 2, 3)));
+        assert_eq!(
+            rendered[0].spans[0].style.fg,
+            Some(theme.readable_text_color(Color::Rgb(1, 2, 3), theme.background))
+        );
     }
 
     #[test]
@@ -1037,8 +1533,9 @@ mod tests {
         assert_eq!(rendered.len(), 2);
         assert_eq!(line_text(&rendered[0]), "green words continue");
         assert_eq!(line_text(&rendered[1]), " after");
-        assert_eq!(rendered[0].spans[0].style.fg, Some(Color::Green));
-        assert_eq!(rendered[1].spans[0].style.fg, Some(Color::Green));
+        let green = theme.readable_text_color(Color::Green, theme.background);
+        assert_eq!(rendered[0].spans[0].style.fg, Some(green));
+        assert_eq!(rendered[1].spans[0].style.fg, Some(green));
     }
 
     #[test]
@@ -1257,6 +1754,7 @@ mod tests {
                 remaining: text,
                 style: &mut hidden,
                 default_fg: Color::White,
+                theme: None,
             }
             .scan(false);
             assert!(spans.is_empty());

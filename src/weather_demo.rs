@@ -270,7 +270,7 @@ mod tests {
         for (width, height) in [(1, 1), (5, 3), (30, 8), (100, 30)] {
             let mut terminal =
                 ratatui::Terminal::new(ratatui::backend::TestBackend::new(width, height)).unwrap();
-            for weather in 0..WEATHER.len() {
+            for (weather, (kind, _)) in WEATHER.iter().enumerate() {
                 let state = DemoState {
                     weather,
                     ..DemoState::default()
@@ -284,9 +284,9 @@ mod tests {
                             SkyClock::from_world_time(Some("12:00 PM")),
                             &theme,
                             WeatherVisual {
-                                kind: WEATHER[weather].0,
+                                kind: *kind,
                                 blend: mud_client::animation::weather_transition::WeatherBlend::settled(
-                                    WEATHER[weather].0,
+                                    *kind,
                                 ),
                                 lightning_bolts: 3,
                             },

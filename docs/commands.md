@@ -12,6 +12,7 @@ Type one command at a time into the client and press Enter. These are independen
 | Clear | `/clear` | Removes retained output; does not disconnect. |
 | Quit | `/quit` | Disconnects and closes the client. |
 | Reload | `/reload` | Applies your saved configuration changes. |
+| Theme | `/theme use catppuccin-latte` | Switches the runtime palette and its light/dark appearance. |
 | Save | `/save` | Saves current runtime variables, macros, aliases, triggers, highlights, and substitutions for restart. |
 | Reconnect | `/reconnect` | Close the current connection and reconnect to the same server. |
 | MSDP | `/msdp` | Shows server variables received so far. |
@@ -40,6 +41,7 @@ For configurable editing and navigation actions, see [`/help keybindings`](comma
 - [`/clear`](commands/clear.md) — clear output and reset output styling.
 - [`/quit`](commands/quit.md) — exit the client safely.
 - [`/reload`](commands/reload.md) — reload configuration and scripts.
+- [`/theme`](commands/theme.md) — list and switch light/dark-aware runtime palettes.
 - [`/save`](commands/save.md) — persist runtime automation without rewriting `config.toml`.
 - [`/reconnect`](commands/reconnect.md) — replace a live connection or recover a dropped connection to the same server.
 - [`/msdp`](commands/msdp.md) — inspect stored MSDP values.

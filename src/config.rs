@@ -12,6 +12,34 @@ use crate::{
     scripting::variables::VariableStore,
 };
 
+pub const BUILTIN_THEME_NAMES: &[&str] = &[
+    "tokyo-night",
+    "nord",
+    "gruvbox",
+    "dracula",
+    "catppuccin-latte",
+    "catppuccin-frappe",
+    "catppuccin-macchiato",
+    "catppuccin-mocha",
+    "solarized-light",
+    "gruvbox-light",
+    "rose-pine-dawn",
+    "wood-elf",
+    "hobbit",
+    "human",
+    "dwarf",
+    "beorning",
+    "uruk-hai",
+    "common-orc",
+    "olog-hai",
+    "uruk-lhuth",
+    "haradrim",
+];
+
+pub fn normalize_theme_name(value: &str) -> String {
+    value.trim().to_ascii_lowercase().replace(['_', ' '], "-")
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default)]
 pub struct AppConfig {
@@ -19,6 +47,8 @@ pub struct AppConfig {
     pub terminal: TerminalConfig,
     pub layout: LayoutConfig,
     pub colors: ThemeConfig,
+    pub theme: ThemeSelectionConfig,
+    pub themes: BTreeMap<String, ThemeConfig>,
     pub gauges: GaugeConfig,
     pub animation: AnimationConfig,
     pub weather: WeatherConfig,
@@ -36,6 +66,22 @@ pub struct AppConfig {
     pub highlights: HighlightConfig,
     pub substitutions: SubstitutionConfig,
     pub logging: LoggingConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default)]
+pub struct ThemeSelectionConfig {
+    pub active: String,
+    pub auto_race: bool,
+}
+
+impl Default for ThemeSelectionConfig {
+    fn default() -> Self {
+        Self {
+            active: "configured".to_string(),
+            auto_race: false,
+        }
+    }
 }
 
 impl AppConfig {
@@ -129,15 +175,44 @@ impl AppConfig {
                 .validate_macro(rule)
                 .map_err(MudClientError::ConfigValidation)?;
         }
-        for (name, value) in [
-            ("rain", &self.colors.rain),
-            ("lightning", &self.colors.lightning),
-        ] {
-            if parse_color(value).is_none() {
+        validate_theme_colors("colors", &self.colors)?;
+        let mut normalized_themes = BTreeMap::new();
+        for (name, palette) in &self.themes {
+            let normalized = normalize_theme_name(name);
+            if normalized.is_empty() {
+                return Err(MudClientError::ConfigValidation(
+                    "custom theme name must not be empty".into(),
+                ));
+            }
+            if !normalized
+                .chars()
+                .all(|character| character.is_ascii_alphanumeric() || character == '-')
+            {
                 return Err(MudClientError::ConfigValidation(format!(
-                    "invalid color colors.{name}: {value}"
+                    "custom theme `{name}` must normalize to letters, numbers, and hyphens"
                 )));
             }
+            if normalized == "configured" || BUILTIN_THEME_NAMES.contains(&normalized.as_str()) {
+                return Err(MudClientError::ConfigValidation(format!(
+                    "custom theme `{name}` conflicts with reserved theme `{normalized}`"
+                )));
+            }
+            if let Some(previous) = normalized_themes.insert(normalized.clone(), name) {
+                return Err(MudClientError::ConfigValidation(format!(
+                    "custom themes `{previous}` and `{name}` normalize to the same name `{normalized}`"
+                )));
+            }
+            validate_theme_colors(&format!("themes.{name}"), palette)?;
+        }
+        let active = normalize_theme_name(&self.theme.active);
+        if active != "configured"
+            && !BUILTIN_THEME_NAMES.contains(&active.as_str())
+            && !normalized_themes.contains_key(&active)
+        {
+            return Err(MudClientError::ConfigValidation(format!(
+                "unknown active theme `{}`",
+                self.theme.active
+            )));
         }
         if self.connection.host.trim().is_empty() {
             return Err(MudClientError::ConfigValidation(
@@ -804,6 +879,31 @@ impl AppConfig {
     }
 }
 
+fn validate_theme_colors(path: &str, theme: &ThemeConfig) -> Result<()> {
+    for (name, value) in [
+        ("background", &theme.background),
+        ("foreground", &theme.foreground),
+        ("border", &theme.border),
+        ("title", &theme.title),
+        ("accent", &theme.accent),
+        ("rain", &theme.rain),
+        ("lightning", &theme.lightning),
+        ("success", &theme.success),
+        ("warning", &theme.warning),
+        ("danger", &theme.danger),
+        ("muted", &theme.muted),
+        ("player", &theme.player),
+        ("enemy", &theme.enemy),
+    ] {
+        if parse_color(value).is_none() {
+            return Err(MudClientError::ConfigValidation(format!(
+                "invalid color {path}.{name}: {value}"
+            )));
+        }
+    }
+    Ok(())
+}
+
 fn is_fixed_width_map_symbol(value: &str, expected_width: usize) -> bool {
     !value.trim().is_empty()
         && value.chars().count() == expected_width
@@ -1164,6 +1264,7 @@ pub enum PanelMode {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default)]
 pub struct ThemeConfig {
+    pub appearance: ThemeAppearance,
     pub background: String,
     pub foreground: String,
     pub border: String,
@@ -1182,6 +1283,7 @@ pub struct ThemeConfig {
 impl Default for ThemeConfig {
     fn default() -> Self {
         Self {
+            appearance: ThemeAppearance::Dark,
             background: "#101010".to_string(),
             foreground: "#d0c8b0".to_string(),
             border: "#806f4a".to_string(),
@@ -1195,6 +1297,23 @@ impl Default for ThemeConfig {
             muted: "#777777".to_string(),
             player: "#e5c07b".to_string(),
             enemy: "#e06c75".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ThemeAppearance {
+    Light,
+    #[default]
+    Dark,
+}
+
+impl ThemeAppearance {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Light => "light",
+            Self::Dark => "dark",
         }
     }
 }
@@ -1427,17 +1546,17 @@ fn default_map_terrain() -> BTreeMap<String, MapTerrainConfig> {
     [
         ("City", "⌂", "#ffffff"),
         ("Road", "═", "#ffffff"),
-        ("Floor", "∙", "#404040"),
-        ("Field", "″", "#8a8a1e"),
-        ("Forest", "♣", "lightgreen"),
-        ("Dense_forest", "♠", "green"),
-        ("Hills", "∩", "#8d6e63"),
-        ("Mountain", "▲", "#5d4037"),
-        ("Water", "≈", "#1565c0"),
-        ("Water_noswim", "≋", "#0d47a1"),
-        ("Underwater", "≋", "#0d47a1"),
-        ("Swamp", "∼", "#6d7a2e"),
-        ("Crack", "✕", "#5d4037"),
+        ("Floor", "∙", "#ffffff"),
+        ("Field", "″", "#aaffff"),
+        ("Forest", "♣", "#aaeeaa"),
+        ("Dense_forest", "♠", "#aabbbb"),
+        ("Hills", "∩", "#eebbdd"),
+        ("Mountain", "▲", "#eeffff"),
+        ("Water", "≈", "#aaddff"),
+        ("Water_noswim", "≋", "#aaaaff"),
+        ("Underwater", "≋", "#aabbff"),
+        ("Swamp", "∼", "#ddaaff"),
+        ("Crack", "✕", "#ccaaaa"),
     ]
     .into_iter()
     .map(|(terrain, symbol, color)| {
@@ -2173,8 +2292,8 @@ mod tests {
         assert_eq!(config.map.current_room_symbol, "X");
         assert_eq!(config.map.stub_symbol, "∘");
         assert_eq!(config.map.teleport.glyph, "◇");
-        assert_eq!(config.map.terrain["Forest"].color, "lightgreen");
-        assert_eq!(config.map.terrain["Dense_forest"].color, "green");
+        assert_eq!(config.map.terrain["Forest"].color, "#aaeeaa");
+        assert_eq!(config.map.terrain["Dense_forest"].color, "#aabbbb");
         assert_eq!(
             config
                 .map
@@ -2681,6 +2800,67 @@ visible_modes = ["tiny", "compact", "standard", "wide"]
             toml::from_str(include_str!("../config.toml")).expect("root config should parse");
 
         config.validate().expect("root config should validate");
+    }
+
+    #[test]
+    fn theme_validation_rejects_invalid_palettes_names_and_active_selection() {
+        let mut config = AppConfig::default();
+        config.colors.foreground = "not-a-color".into();
+        assert!(config.validate().is_err());
+
+        let mut config = AppConfig::default();
+        let custom = ThemeConfig {
+            accent: "not-a-color".into(),
+            ..ThemeConfig::default()
+        };
+        config.themes.insert("custom".into(), custom);
+        assert!(config.validate().is_err());
+
+        let mut config = AppConfig::default();
+        config
+            .themes
+            .insert("Tokyo Night".into(), ThemeConfig::default());
+        assert!(config.validate().is_err());
+
+        let mut config = AppConfig::default();
+        config
+            .themes
+            .insert("my_theme".into(), ThemeConfig::default());
+        config
+            .themes
+            .insert("my theme".into(), ThemeConfig::default());
+        assert!(config.validate().is_err());
+
+        let config = AppConfig {
+            theme: ThemeSelectionConfig {
+                active: "missing".into(),
+                ..ThemeSelectionConfig::default()
+            },
+            ..AppConfig::default()
+        };
+        assert!(config.validate().is_err());
+
+        let mut config = AppConfig::default();
+        config
+            .themes
+            .insert("bad\tname".into(), ThemeConfig::default());
+        assert!(config.validate().is_err());
+
+        let mut config = AppConfig {
+            theme: ThemeSelectionConfig {
+                active: "DayLight".into(),
+                ..ThemeSelectionConfig::default()
+            },
+            ..AppConfig::default()
+        };
+        config.themes.insert(
+            "daylight".into(),
+            ThemeConfig {
+                appearance: ThemeAppearance::Light,
+                ..ThemeConfig::default()
+            },
+        );
+        config.validate().unwrap();
     }
 
     #[test]

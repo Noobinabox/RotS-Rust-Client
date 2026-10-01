@@ -66,24 +66,13 @@ pub struct Room {
     pub flags: BTreeSet<RoomFlag>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default)]
 pub struct Landmark {
     pub name: String,
     pub room: String,
     pub description: String,
     pub size: String,
-}
-
-impl Default for Landmark {
-    fn default() -> Self {
-        Self {
-            name: String::new(),
-            room: String::new(),
-            description: String::new(),
-            size: String::new(),
-        }
-    }
 }
 
 impl Default for Room {

@@ -54,33 +54,10 @@ pub(super) fn is_recognized_local_command(text: &str) -> bool {
     let Some(command) = text.strip_prefix('/') else {
         return false;
     };
-    matches!(
-        command.split_whitespace().next(),
-        Some(
-            "help"
-                | "macro"
-                | "msdp"
-                | "echo"
-                | "clear"
-                | "quit"
-                | "reload"
-                | "save"
-                | "reconnect"
-                | "lua"
-                | "timer"
-                | "alias"
-                | "trigger"
-                | "triggers"
-                | "highlight"
-                | "substitute"
-                | "handler"
-                | "variable"
-                | "event"
-                | "toggle"
-                | "map"
-                | "path"
-        )
-    )
+    command
+        .split_whitespace()
+        .next()
+        .is_some_and(|name| crate::completion::COMMANDS.contains(&name))
 }
 
 pub(super) fn preserves_variable_templates(text: &str) -> bool {
@@ -328,7 +305,13 @@ fn echo_usage() -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::split_game_commands;
+    use super::{is_recognized_local_command, split_game_commands};
+
+    #[test]
+    fn theme_is_recognized_as_a_local_command() {
+        assert!(is_recognized_local_command("/theme"));
+        assert!(is_recognized_local_command("/theme use nord"));
+    }
 
     #[test]
     fn definitions_accept_shorthand_braces_and_mixed_fields() {

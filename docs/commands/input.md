@@ -17,9 +17,12 @@ Optional [Vim-style editing](vim.md) adds Insert/Normal modes, operators, visual
 - `Ctrl-Left` / `Alt-B` move back one word; `Ctrl-Right` / `Alt-F` move forward one word.
 - `Ctrl-Backspace`, `Alt-Backspace`, or `Ctrl-W` delete the previous word; `Ctrl-Delete` or `Alt-D` delete the next word.
 - `Up` and `Down` navigate history; typed input filters history by prefix.
-- `Tab` completes the current word from recent MUD output.
+- `Tab` completes slash-command names, subcommands, and known arguments in a dropdown. For example, `/theme use h` offers `haradrim`, `hobbit`, and `human`; `/theme use ` offers all built-in and custom themes. Repeated Tab selects the next choice without executing it; Enter submits the completed command.
+- Runtime rule removal, variables, timers, macros, and map destinations use current session choices. Outside braces, free-form slash-command arguments must still be entered manually. Ordinary MUD commands retain recent-output word completion.
 - `Shift-Tab` cycles completion backward.
 - Typing clears the completion dropdown.
+
+Inside curly braces, completion follows the innermost command: `/alias rr {cast r<Tab>}` completes `r` from recent MUD output, while `/alias rr {/varia<Tab>}` completes `/variable`. Known slash-command arguments still use their command choices; free-form values such as `/alias rr {/variable test r<Tab>}` use MUD words. Completion preserves the surrounding braces and text after the cursor. Braced removal targets (for example `/alias unset {hello w<Tab>}`) still complete the whole saved name.
 
 Words are non-whitespace runs (punctuation stays part of a word). Movement skips adjacent whitespace and then the word in that direction; deletion removes the same range. Unicode whitespace and multiline boundaries count as separators. These shortcuts also work in output search without changing the command draft. Movement restores a highlighted last submission for editing; deletion clears it, like ordinary Backspace. Word deletion ends history navigation; movement preserves it. Completion is dismissed when editing a command.
 

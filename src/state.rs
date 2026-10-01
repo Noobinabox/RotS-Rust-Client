@@ -270,6 +270,7 @@ pub struct AppState {
     pub history_position: Option<usize>,
     pub history_draft: Option<String>,
     pub input_completion: InputCompletion,
+    pub command_completions: crate::completion::CommandCompletions,
     pub character: CharacterState,
     pub opponent: OpponentState,
     pub group: GroupState,
@@ -301,6 +302,7 @@ impl AppState {
             history_position: None,
             history_draft: None,
             input_completion: InputCompletion::default(),
+            command_completions: crate::completion::CommandCompletions::default(),
             character: CharacterState::default(),
             opponent: OpponentState::default(),
             group: GroupState::default(),
@@ -766,17 +768,38 @@ impl AppState {
             self.clear_input_completion();
             return;
         };
-        let matches = completion_matches(&self.output, &prefix);
+        let Some(context) = crate::completion::input_context(&self.input, start) else {
+            self.clear_input_completion();
+            return;
+        };
+        let before = &self.input[context.start..start];
+        let inside_braces = context.start > 0 && self.input.as_bytes()[context.start - 1] == b'{';
+        let matches = if self.input[context.start..].trim_start().starts_with('/') {
+            let choices = self.command_completions.matches(before, &prefix);
+            if inside_braces
+                && !before.trim().is_empty()
+                && !self.command_completions.has_argument_choices(before)
+                && !prefix.is_empty()
+            {
+                completion_matches(&self.output, &prefix)
+            } else {
+                choices
+            }
+        } else if prefix.is_empty() {
+            Vec::new()
+        } else {
+            completion_matches(&self.output, &prefix)
+        };
         if matches.is_empty() {
             self.clear_input_completion();
             return;
         }
-        let mut selected = if self.input_completion.active
+        let continuing = self.input_completion.active
             && self.input_completion.prefix.eq_ignore_ascii_case(&prefix)
             && self.input_completion.start == start
             && self.input_completion.end == end
-            && self.input_completion.matches == matches
-        {
+            && self.input_completion.matches == matches;
+        let mut selected = if continuing {
             self.input_completion.selected
         } else {
             0
@@ -784,7 +807,7 @@ impl AppState {
         if matches.len() > 1 {
             selected = if reverse {
                 selected.checked_sub(1).unwrap_or(matches.len() - 1)
-            } else if self.input_completion.active {
+            } else if continuing {
                 (selected + 1) % matches.len()
             } else {
                 selected
@@ -1012,23 +1035,52 @@ fn input_token(input: &str, cursor: usize) -> Option<(usize, usize, String)> {
     if cursor > input.len() || !input.is_char_boundary(cursor) {
         return None;
     }
-    let start = input[..cursor]
-        .char_indices()
-        .rev()
-        .find(|(_, value)| value.is_whitespace())
-        .map(|(index, value)| index + value.len_utf8())
-        .unwrap_or(0);
-    let end = input[cursor..]
-        .char_indices()
-        .find(|(_, value)| value.is_whitespace())
-        .map(|(index, _)| cursor + index)
-        .unwrap_or(input.len());
-    let prefix = input[start..cursor].to_string();
-    if prefix.trim().is_empty() {
-        None
-    } else {
-        Some((start, end, prefix))
+    let context = crate::completion::input_context(input, cursor)?;
+    if let Some(start) = context.argument_start {
+        let mut end = input.len();
+        let mut depth = 0usize;
+        let mut escaped = false;
+        for (offset, value) in input[start..].char_indices() {
+            if value == '\n' {
+                end = start + offset;
+                break;
+            }
+            if escaped {
+                escaped = false;
+                continue;
+            }
+            match value {
+                '\\' => escaped = true,
+                '{' => depth += 1,
+                '}' => {
+                    depth = depth.saturating_sub(1);
+                    if depth == 0 {
+                        end = start + offset + 1;
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+        return Some((start, end, input[start..cursor].to_string()));
     }
+    let mut start = context.start;
+    let mut end = input.len();
+    let mut escaped = false;
+    for (offset, value) in input[context.start..].char_indices() {
+        let index = context.start + offset;
+        let delimiter = value.is_whitespace() || (!escaped && matches!(value, '{' | '}'));
+        if delimiter {
+            if index >= cursor {
+                end = index;
+                break;
+            }
+            start = index + value.len_utf8();
+        }
+        escaped = !escaped && value == '\\';
+    }
+    let prefix = input[start..cursor].to_string();
+    Some((start, end, prefix))
 }
 
 fn completion_matches(output: &VecDeque<OutputLine>, prefix: &str) -> Vec<String> {

@@ -91,6 +91,7 @@ These are the global Tokyo Night themed defaults used by panels and widgets unle
 
 | Option | Meaning |
 |---|---|
+| `appearance` | Declares the palette as `dark` or `light` for theme listings and diagnostics. Rendering checks the actual final background when adapting server ANSI text, highlights, and configured map colors. |
 | `background` | Default background. |
 | `foreground` | Default foreground text. |
 | `border` | Panel borders. |
@@ -104,6 +105,14 @@ These are the global Tokyo Night themed defaults used by panels and widgets unle
 | `muted` | Inactive, empty, or secondary text. |
 | `player` | Player marker and player-focused accents. |
 | `enemy` | Opponent marker and enemy-focused accents. |
+
+## theme
+
+Catppuccin is available as `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`, and `catppuccin-mocha`. Latte declares a light appearance; the other three are dark. The renderer checks each final background and adapts server ANSI text and configured map colors when contrast is insufficient. For example, set `[theme].active = "catppuccin-mocha"` or enter `/theme use catppuccin-mocha`. Colors come from the [official Catppuccin palette](https://catppuccin.com/palette/).
+
+Additional built-in light palettes are `solarized-light`, `gruvbox-light`, and `rose-pine-dawn`. They use the official [Solarized](https://github.com/altercation/solarized), [Gruvbox](https://github.com/morhetz/gruvbox), and [Rosé Pine](https://rosepinetheme.com/palette/) colors. Light-theme semantic foregrounds are darkened at runtime only when their upstream color lacks readable contrast; ANSI and map colors are likewise adapted against the final background.
+
+Use `/theme use <name>` to switch palettes during a session. Built-ins include `tokyo-night`, `nord`, `gruvbox`, `dracula`, the light palettes above, and themes for `wood-elf`, `hobbit`, `human`, `dwarf`, `beorning`, `uruk-hai`, `common-orc`, `olog-hai`, `uruk-lhuth`, and `haradrim`. Set `[theme].active` for startup and `/reload`, or enable `[theme].auto_race` to follow MSDP `RACE` values. Runtime selections are session-only. Additional palettes can be defined under `[themes.<name>]` with the same fields as `[colors]`; set `appearance = "light"` for a light custom palette (the default is `dark`).
 
 ## gauges
 

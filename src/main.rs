@@ -144,12 +144,8 @@ mod tests {
 
     #[test]
     fn cli_selects_character_and_retains_local_mode() {
-        let options = CliOptions::parse(
-            ["--character", "Aragorn", "--local"]
-                .map(str::to_owned)
-                .into_iter(),
-        )
-        .unwrap();
+        let options =
+            CliOptions::parse(["--character", "Aragorn", "--local"].map(str::to_owned)).unwrap();
         assert_eq!(options.character.as_deref(), Some("Aragorn"));
         assert!(options.local);
     }

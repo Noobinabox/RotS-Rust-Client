@@ -43,7 +43,11 @@ The Social pane mirrors the RoTS C++ communication output for incoming and outgo
 
 The output pane preserves MUD spacing and ANSI styling. It supports styled, plain, and debug display modes. Use `F2` to cycle modes; the mode indicator appears briefly in the title.
 
-Rendering borrows scrollback and builds text spans only for visible lines. Styled mode scans earlier ANSI sequences only back to the most recent output reset boundary to preserve inherited colors; without a boundary it scans retained history. Plain and debug modes read only visible lines. Map panes lazily index incoming road/city links once per render when a visible route marker needs them.
+Styled help tables (including `/help theme`) use aligned box borders, bold headers, and cell wrapping that adapts to the pane width. Markdown column alignment and inline code colors are preserved. Tables require a header and a matching dash separator row; pipe-delimited prose and fenced examples are not treated as tables. Very narrow panes fall back to the original text. Plain/debug modes retain Markdown source, and tables keep their logical scrollback/search anchors.
+
+Styled in-game Markdown headings (`#` through `######`) render with one blank row above them when they follow nonblank output, keeping help sections separate from preceding MUD or client text. Existing blank lines are not doubled, and help navigation still anchors directly on its requested heading. This is display-only; Markdown files and plain/debug output are unchanged.
+
+Rendering borrows scrollback and builds display rows only for visible logical lines. Tables inspect surrounding rows to calculate stable column widths when the header is offscreen. Styled mode scans earlier ANSI sequences only back to the most recent output reset boundary to preserve inherited colors; without a boundary it scans retained history. Plain and debug modes read only visible lines. Map panes lazily index incoming road/city links once per render when a visible route marker needs them.
 
 To measure output rendering locally, run `cargo test --release output_render_timing -- --ignored --nocapture`. This optional timing probe renders 200 frames over 10,000 retained lines in each display mode, with and without periodic style boundaries; it has no timing assertions.
 
