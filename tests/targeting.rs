@@ -360,9 +360,27 @@ fn sightings_are_bounded_and_listing_fits_the_action_budget() {
     ));
     assert!(h.observe("A wolf stands here.").is_empty());
     let listed = h.input("targeting_list", "vt");
-    assert!(
-        matches!(listed.as_slice(), [LuaAction::Echo(text, _)] if text.contains("100: 100.wolf") && !text.contains("101:"))
-    );
+    assert!(matches!(
+        listed.as_slice(),
+        [LuaAction::Echo(text, Some(options))]
+            if options.markdown
+                && text.contains("| 100 | `100.wolf` |")
+                && !text.contains("| 101 |")
+    ));
+}
+
+#[test]
+fn empty_target_list_is_markdown_without_an_empty_table() {
+    let mut h = Harness::new();
+    let listed = h.input("targeting_list", "vt");
+    assert!(matches!(
+        listed.as_slice(),
+        [LuaAction::Echo(text, Some(options))]
+            if options.markdown
+                && text.starts_with("# Targets\nManual target: `none`")
+                && text.contains("use `look` to refresh")
+                && !text.contains("| # |")
+    ));
 }
 
 #[test]

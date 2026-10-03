@@ -53,6 +53,7 @@ pub enum LuaLogLevel {
 pub struct LuaOutputOptions {
     pub foreground: Option<String>,
     pub background: Option<String>,
+    pub markdown: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -578,6 +579,7 @@ fn lua_output_options(table: Table) -> mlua::Result<LuaOutputOptions> {
     Ok(LuaOutputOptions {
         foreground: table.get::<Option<String>>("foreground")?,
         background: table.get::<Option<String>>("background")?,
+        markdown: table.get::<Option<bool>>("markdown")?.unwrap_or(false),
     })
 }
 

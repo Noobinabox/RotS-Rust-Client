@@ -96,12 +96,25 @@ function targeting_observe(ctx)
 end
 
 function targeting_list(ctx)
-  local lines = { "Targets (manual: " .. (manual_target or "none") .. ")" }
-  for index, entry in ipairs(targets) do
-    lines[#lines + 1] = index .. ": " .. (entry.command_target or "unrecognized; use target <keyword>")
+  local lines = {
+    "# Targets",
+    "Manual target: `" .. (manual_target or "none") .. "`",
+  }
+  if #targets > 0 then
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "| # | Command target |"
+    lines[#lines + 1] = "| ---: | --- |"
   end
-  if #targets == 0 then lines[#lines + 1] = "No sightings; use look to refresh." end
-  client.echo(table.concat(lines, "\n"))
+  for index, entry in ipairs(targets) do
+    local target = entry.command_target and ("`" .. entry.command_target .. "`")
+      or "unrecognized; use `target <keyword>`"
+    lines[#lines + 1] = "| " .. index .. " | " .. target .. " |"
+  end
+  if #targets == 0 then
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "No sightings; use `look` to refresh."
+  end
+  client.echo(table.concat(lines, "\n"), { markdown = true })
 end
 
 function targeting_manual(ctx)

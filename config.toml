@@ -439,6 +439,7 @@ max_expansion_depth = 8
 max_expanded_bytes = 65536
 
 [variables.values]
+door = ""
 # target = "orc"
 
 [aliases]
@@ -451,6 +452,48 @@ name = "Regeneration and Vit"
 match_type = "regex"
 pattern = "^rr(.*)"
 lua = "regen_and_vit"
+
+[[aliases.rules]]
+name = "Open door"
+match_type = "exact"
+pattern = "od"
+commands = ["open ${door}"]
+
+[[aliases.rules]]
+name = "Close door"
+match_type = "exact"
+pattern = "cd"
+commands = ["close ${door}"]
+
+[[aliases.rules]]
+name = "Knock door"
+match_type = "exact"
+pattern = "kg"
+commands = ["knock ${door}"]
+
+[[aliases.rules]]
+name = "Lock door"
+match_type = "exact"
+pattern = "ld"
+commands = ["lock ${door}"]
+
+[[aliases.rules]]
+name = "Unlock Door"
+match_type = "exact"
+pattern = "ud"
+commands = ["unlock ${door}"]
+
+[[aliases.rules]]
+name = "Pick door"
+match_type = "exact"
+pattern = "pd"
+commands = ["pick ${door}"]
+
+[[aliases.rules]]
+name = "Lock Door"
+match_type = "exact"
+pattern = "ld"
+commands = ["lock ${door}"]
 
 # Example Lua alias hooks from scripts/init.lua:
 [[aliases.rules]]
@@ -503,6 +546,13 @@ name = "enemy-arrives-lua"
 match_type = "regex"
 pattern = "^(.+) arrives\\.$"
 lua = "enemy_arrives"
+
+[[triggers.rules]]
+name = "assign-door"
+match_type = "regex"
+pattern = "^The (.+) seems to be closed."
+commands = ["/variable door {1}"]
+
 
 [[triggers.rules]]
 name = "room-header-memory"

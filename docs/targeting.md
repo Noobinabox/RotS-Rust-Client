@@ -30,7 +30,10 @@ l1
 k2
 ```
 
-`vt` lists the current numbered targets. `l1` examines the first sighting; `k2` attacks the second. **Only run an attack shortcut when you intend to fight.** These shortcuts enqueue commands through the usual alias/command pipeline.
+`vt` lists the current numbered targets as a Markdown table in styled output. Plain
+and debug output modes show the underlying Markdown text. `l1` examines the first
+sighting; `k2` attacks the second. **Only run an attack shortcut when you intend to
+fight.** These shortcuts enqueue commands through the usual alias/command pipeline.
 
 Two wolf descriptions produce entries `1.wolf` and `2.wolf`. Display numbers select entries, while the server-side number counts sightings with that keyword: an orc between those wolves changes the second wolf's display index, not its `2.wolf` selector. Unknown descriptions still receive a display index but cannot be attacked through it; set a manual keyword instead.
 

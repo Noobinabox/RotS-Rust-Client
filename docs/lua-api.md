@@ -132,10 +132,16 @@ client.send_all({ "stand", "open gate w", "w" })
 ### `client.echo(text, opts)`
 
 Adds local output to the MUD output pane. Use it for script messages that should not fire trigger notifications.
+Set `markdown = true` to render headings, lists, inline code, and tables in styled
+output. Markdown messages are split into logical scrollback lines; plain and debug
+display modes retain the source text.
 
 ```lua
 client.echo("No target set.", { foreground = "yellow" })
 client.echo("Danger", { foreground = "white", background = "red" })
+client.echo("# Targets\n\n| # | Target |\n| ---: | --- |\n| 1 | `1.orc` |", {
+  markdown = true,
+})
 ```
 
 ### `client.notify(text, opts)`

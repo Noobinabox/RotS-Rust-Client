@@ -1516,11 +1516,24 @@ impl App {
                     }
                 }
                 LuaAction::Echo(message, style) => {
-                    self.state.push_local_output_styled(
-                        message,
-                        OutputCategory::Normal,
-                        lua_output_style(style),
-                    );
+                    let category = if style.as_ref().is_some_and(|options| options.markdown) {
+                        OutputCategory::System
+                    } else {
+                        OutputCategory::Normal
+                    };
+                    let style = lua_output_style(style);
+                    if category == OutputCategory::System {
+                        for line in message.lines() {
+                            self.state.push_local_output_styled(
+                                line.to_string(),
+                                category.clone(),
+                                style.clone(),
+                            );
+                        }
+                    } else {
+                        self.state
+                            .push_local_output_styled(message, category, style);
+                    }
                 }
                 LuaAction::Notify(message, style) => {
                     self.state.push_local_output_styled(
@@ -3417,6 +3430,42 @@ mod tests {
         assert_eq!(
             app.state.output.back().map(|line| &line.category),
             Some(&OutputCategory::System)
+        );
+    }
+
+    #[tokio::test]
+    async fn lua_markdown_echo_uses_system_lines_for_styled_rendering() {
+        let mut app = App::new(AppConfig::default());
+        let (tx, _rx) = mpsc::channel(1);
+        let message = "# Targets\n\n| # | Target |\n| ---: | --- |\n| 1 | `1.orc` |";
+
+        app.apply_lua_actions(
+            vec![LuaAction::Echo(
+                message.to_string(),
+                Some(LuaOutputOptions {
+                    markdown: true,
+                    ..LuaOutputOptions::default()
+                }),
+            )],
+            &tx,
+            &mut Vec::new(),
+        )
+        .await;
+
+        assert_eq!(app.state.output.len(), 5);
+        assert!(
+            app.state
+                .output
+                .iter()
+                .all(|line| line.category == OutputCategory::System)
+        );
+        assert_eq!(
+            app.state
+                .output
+                .iter()
+                .map(|line| line.normalized.as_str())
+                .collect::<Vec<_>>(),
+            message.lines().collect::<Vec<_>>()
         );
     }
 
