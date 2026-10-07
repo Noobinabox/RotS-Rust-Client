@@ -1,12 +1,12 @@
-current_room = "1514"
-previous_room = "1515"
+current_room = "6014"
+previous_room = "6012"
 follow = true
 static_mode = false
 nofollow = false
 direction_arrow = true
 unicode = true
 show_vnums = false
-last_direction = "n"
+last_direction = "e"
 next_generated_id = 8
 
 [rooms.1]
@@ -24127,6 +24127,116 @@ direction = "w"
 to = "1509"
 flags = []
 
+[rooms.15101]
+id = "15101"
+name = "Tall Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -31
+y = -11
+z = 3
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.15101.exits.s]
+direction = "s"
+to = "15111"
+flags = []
+
+[rooms.15101.exits.w]
+direction = "w"
+to = "20910"
+flags = []
+
+[rooms.15111]
+id = "15111"
+name = "Grand Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -31
+y = -10
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.15111.exits.e]
+direction = "e"
+to = "15112"
+flags = []
+
+[rooms.15111.exits.n]
+direction = "n"
+to = "15101"
+flags = []
+
+[rooms.15111.exits.w]
+direction = "w"
+to = "20920"
+flags = []
+
+[rooms.15112]
+id = "15112"
+name = "Grand Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -30
+y = -10
+z = 3
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.15112.exits.s]
+direction = "s"
+to = "15122"
+flags = []
+
+[rooms.15112.exits.w]
+direction = "w"
+to = "15111"
+flags = []
+
+[rooms.15115]
+id = "15115"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -27
+y = -10
+z = 3
+exit_order = []
+flags = []
+
+[rooms.15115.exits.s]
+direction = "s"
+to = "15125"
+flags = []
+
 [rooms.1512]
 id = "1512"
 name = "A Wide, Cobbled Street"
@@ -24153,6 +24263,158 @@ flags = []
 [rooms.1512.exits.w]
 direction = "w"
 to = "1513"
+flags = []
+
+[rooms.15121]
+id = "15121"
+name = "Cold Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -31
+y = -9
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.15121.exits.e]
+direction = "e"
+to = "15122"
+flags = []
+
+[rooms.15121.exits.w]
+direction = "w"
+to = "20930"
+flags = []
+
+[rooms.15122]
+id = "15122"
+name = "Cold Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -30
+y = -9
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.15122.exits.e]
+direction = "e"
+to = "15123"
+flags = []
+
+[rooms.15122.exits.n]
+direction = "n"
+to = "15112"
+flags = []
+
+[rooms.15122.exits.w]
+direction = "w"
+to = "15121"
+flags = []
+
+[rooms.15123]
+id = "15123"
+name = "Cool Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -29
+y = -9
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.15123.exits.e]
+direction = "e"
+to = "15124"
+flags = []
+
+[rooms.15123.exits.w]
+direction = "w"
+to = "15122"
+flags = []
+
+[rooms.15124]
+id = "15124"
+name = "Cool Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -28
+y = -9
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.15124.exits.e]
+direction = "e"
+to = "15125"
+flags = []
+
+[rooms.15124.exits.w]
+direction = "w"
+to = "15123"
+flags = []
+
+[rooms.15125]
+id = "15125"
+name = "Lush Hills into a Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -27
+y = -9
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.15125.exits.n]
+direction = "n"
+to = "15115"
+flags = []
+
+[rooms.15125.exits.s]
+direction = "s"
+to = "15135"
+flags = []
+
+[rooms.15125.exits.w]
+direction = "w"
+to = "15124"
 flags = []
 
 [rooms.1513]
@@ -24197,6 +24459,34 @@ direction = "w"
 to = "1510"
 flags = []
 
+[rooms.15135]
+id = "15135"
+name = "Valley Between the Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -27
+y = -8
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.15135.exits.n]
+direction = "n"
+to = "15125"
+flags = []
+
+[rooms.15135.exits.s]
+direction = "s"
+to = "15145"
+flags = []
+
 [rooms.1514]
 id = "1514"
 name = "A Wide, Cobbled Intersection"
@@ -24237,6 +24527,34 @@ direction = "w"
 to = "1512"
 flags = []
 
+[rooms.15145]
+id = "15145"
+name = "A Lush Valley Between the Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -27
+y = -7
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.15145.exits.n]
+direction = "n"
+to = "15135"
+flags = []
+
+[rooms.15145.exits.s]
+direction = "s"
+to = "15155"
+flags = []
+
 [rooms.1515]
 id = "1515"
 name = "A Wide, Cobbled Street"
@@ -24263,6 +24581,34 @@ flags = []
 [rooms.1515.exits.w]
 direction = "w"
 to = "1514"
+flags = []
+
+[rooms.15155]
+id = "15155"
+name = "Lush Valley Betwixt the Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -27
+y = -6
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.15155.exits.n]
+direction = "n"
+to = "15145"
+flags = []
+
+[rooms.15155.exits.s]
+direction = "s"
+to = "15165"
 flags = []
 
 [rooms.1516]
@@ -24301,6 +24647,170 @@ door_name = "metaldoor"
 [rooms.1516.exits.w]
 direction = "w"
 to = "1515"
+flags = []
+
+[rooms.15161]
+id = "15161"
+name = "Lush Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -31
+y = -7
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.15161.exits.e]
+direction = "e"
+to = "15162"
+flags = []
+
+[rooms.15161.exits.s]
+direction = "s"
+to = "15171"
+flags = []
+
+[rooms.15161.exits.w]
+direction = "w"
+to = "20970"
+flags = []
+
+[rooms.15162]
+id = "15162"
+name = "Lush Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -30
+y = -7
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.15162.exits.e]
+direction = "e"
+to = "15163"
+flags = []
+
+[rooms.15162.exits.s]
+direction = "s"
+to = "15172"
+flags = []
+
+[rooms.15162.exits.w]
+direction = "w"
+to = "15161"
+flags = []
+
+[rooms.15163]
+id = "15163"
+name = "Lush Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -29
+y = -5
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.15163.exits.e]
+direction = "e"
+to = "15164"
+flags = []
+
+[rooms.15163.exits.s]
+direction = "s"
+to = "15173"
+flags = []
+
+[rooms.15163.exits.w]
+direction = "w"
+to = "15162"
+flags = []
+
+[rooms.15164]
+id = "15164"
+name = "Lush Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -28
+y = -5
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.15164.exits.e]
+direction = "e"
+to = "15165"
+flags = []
+
+[rooms.15164.exits.w]
+direction = "w"
+to = "15163"
+flags = []
+
+[rooms.15165]
+id = "15165"
+name = "Lush Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -27
+y = -5
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.15165.exits.n]
+direction = "n"
+to = "15155"
+flags = []
+
+[rooms.15165.exits.s]
+direction = "s"
+to = "15175"
+flags = []
+
+[rooms.15165.exits.w]
+direction = "w"
+to = "15164"
 flags = []
 
 [rooms.15166]
@@ -24487,6 +24997,170 @@ flags = []
 [rooms.15170.exits.w]
 direction = "w"
 to = "15169"
+flags = []
+
+[rooms.15171]
+id = "15171"
+name = "Lush Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -31
+y = -6
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.15171.exits.e]
+direction = "e"
+to = "15172"
+flags = []
+
+[rooms.15171.exits.n]
+direction = "n"
+to = "15161"
+flags = []
+
+[rooms.15171.exits.w]
+direction = "w"
+to = "20980"
+flags = []
+
+[rooms.15172]
+id = "15172"
+name = "Lush Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -30
+y = -6
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.15172.exits.e]
+direction = "e"
+to = "15173"
+flags = []
+
+[rooms.15172.exits.n]
+direction = "n"
+to = "15162"
+flags = []
+
+[rooms.15172.exits.w]
+direction = "w"
+to = "15171"
+flags = []
+
+[rooms.15173]
+id = "15173"
+name = "Lush Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -29
+y = -4
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.15173.exits.e]
+direction = "e"
+to = "15174"
+flags = []
+
+[rooms.15173.exits.n]
+direction = "n"
+to = "15163"
+flags = []
+
+[rooms.15173.exits.s]
+direction = "s"
+to = "6042"
+flags = []
+
+[rooms.15173.exits.w]
+direction = "w"
+to = "15172"
+flags = []
+
+[rooms.15174]
+id = "15174"
+name = "Lush Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -28
+y = -4
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.15174.exits.e]
+direction = "e"
+to = "15175"
+flags = []
+
+[rooms.15174.exits.w]
+direction = "w"
+to = "15173"
+flags = []
+
+[rooms.15175]
+id = "15175"
+name = "Lush Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -27
+y = -4
+z = 3
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.15175.exits.n]
+direction = "n"
+to = "15165"
+flags = []
+
+[rooms.15175.exits.w]
+direction = "w"
+to = "15174"
 flags = []
 
 [rooms.15176]
@@ -35227,6 +35901,206 @@ direction = "w"
 to = "1629"
 flags = []
 
+[rooms.16301]
+id = "16301"
+name = "High Mountain Slope"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -40
+y = 4
+z = 4
+exit_order = [
+    "e",
+    "u",
+    "d",
+]
+flags = ["avoid"]
+
+[rooms.16301.exits.d]
+direction = "d"
+to = "6863"
+flags = []
+
+[rooms.16301.exits.e]
+direction = "e"
+to = "16302"
+flags = []
+
+[rooms.16301.exits.u]
+direction = "u"
+to = "16309"
+flags = []
+
+[rooms.16302]
+id = "16302"
+name = "Slope of a High Mountain"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -39
+y = 4
+z = 4
+exit_order = [
+    "e",
+    "w",
+    "d",
+]
+flags = ["avoid"]
+
+[rooms.16302.exits.d]
+direction = "d"
+to = "6864"
+flags = []
+
+[rooms.16302.exits.e]
+direction = "e"
+to = "16303"
+flags = []
+
+[rooms.16302.exits.w]
+direction = "w"
+to = "16301"
+flags = []
+
+[rooms.16303]
+id = "16303"
+name = "Ledge on a Mountain Side"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = 4
+z = 4
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.16303.exits.s]
+direction = "s"
+to = "16310"
+flags = []
+
+[rooms.16303.exits.w]
+direction = "w"
+to = "16302"
+flags = []
+
+[rooms.16304]
+id = "16304"
+name = "Rising Slope"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -35
+y = 4
+z = 4
+exit_order = [
+    "u",
+    "d",
+]
+flags = []
+
+[rooms.16304.exits.d]
+direction = "d"
+to = "6867"
+flags = []
+
+[rooms.16304.exits.u]
+direction = "u"
+to = "16312"
+flags = []
+
+[rooms.16305]
+id = "16305"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -34
+y = 4
+z = 4
+exit_order = []
+flags = []
+
+[rooms.16305.exits.d]
+direction = "d"
+to = "6868"
+flags = []
+
+[rooms.16308]
+id = "16308"
+name = "Ledge Around a Mountain"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -39
+y = 5
+z = 4
+exit_order = [
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.16308.exits.e]
+direction = "e"
+to = "16309"
+flags = []
+
+[rooms.16308.exits.s]
+direction = "s"
+to = "16314"
+flags = []
+
+[rooms.16309]
+id = "16309"
+name = "High Mountain Slope"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -40
+y = 4
+z = 5
+exit_order = [
+    "w",
+    "d",
+]
+flags = []
+
+[rooms.16309.exits.d]
+direction = "d"
+to = "16301"
+flags = []
+
+[rooms.16309.exits.w]
+direction = "w"
+to = "16308"
+flags = []
+
 [rooms.1631]
 id = "1631"
 name = "The Old Road Turns"
@@ -35253,6 +36127,706 @@ flags = []
 [rooms.1631.exits.w]
 direction = "w"
 to = "1630"
+flags = []
+
+[rooms.16310]
+id = "16310"
+name = "Winding Ledge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = 5
+z = 4
+exit_order = [
+    "n",
+    "e",
+    "u",
+]
+flags = []
+
+[rooms.16310.exits.e]
+direction = "e"
+to = "16311"
+flags = []
+
+[rooms.16310.exits.n]
+direction = "n"
+to = "16303"
+flags = []
+
+[rooms.16310.exits.u]
+direction = "u"
+to = "16316"
+flags = []
+
+[rooms.16311]
+id = "16311"
+name = "Narrow Ledge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -37
+y = 5
+z = 4
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.16311.exits.e]
+direction = "e"
+to = "16312"
+flags = []
+
+[rooms.16311.exits.w]
+direction = "w"
+to = "16310"
+flags = []
+
+[rooms.16312]
+id = "16312"
+name = "Turning Ledge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = 5
+z = 4
+exit_order = [
+    "s",
+    "w",
+    "d",
+]
+flags = ["avoid"]
+
+[rooms.16312.exits.d]
+direction = "d"
+to = "16304"
+flags = []
+
+[rooms.16312.exits.s]
+direction = "s"
+to = "16318"
+flags = []
+
+[rooms.16312.exits.w]
+direction = "w"
+to = "16311"
+flags = []
+
+[rooms.16314]
+id = "16314"
+name = "Mountain Ledge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -39
+y = 6
+z = 4
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.16314.exits.n]
+direction = "n"
+to = "16308"
+flags = []
+
+[rooms.16314.exits.s]
+direction = "s"
+to = "16322"
+flags = []
+
+[rooms.16315]
+id = "16315"
+name = "High Climb"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = 5
+z = 6
+exit_order = [
+    "u",
+    "d",
+]
+flags = []
+
+[rooms.16315.exits.d]
+direction = "d"
+to = "16316"
+flags = []
+
+[rooms.16315.exits.u]
+direction = "u"
+to = "16323"
+flags = []
+
+[rooms.16316]
+id = "16316"
+name = "Climb to a Peak"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = 5
+z = 5
+exit_order = [
+    "u",
+    "d",
+]
+flags = []
+
+[rooms.16316.exits.d]
+direction = "d"
+to = "16310"
+flags = []
+
+[rooms.16316.exits.u]
+direction = "u"
+to = "16315"
+flags = []
+
+[rooms.16317]
+id = "16317"
+name = "High Ledge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = 6
+z = 5
+exit_order = [
+    "s",
+    "d",
+]
+flags = []
+
+[rooms.16317.exits.d]
+direction = "d"
+to = "16318"
+flags = []
+
+[rooms.16317.exits.s]
+direction = "s"
+to = "16324"
+flags = []
+
+[rooms.16318]
+id = "16318"
+name = "Slope Down to a Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = 6
+z = 4
+exit_order = [
+    "n",
+    "u",
+    "d",
+]
+flags = ["avoid"]
+
+[rooms.16318.exits.d]
+direction = "d"
+to = "16319"
+flags = []
+
+[rooms.16318.exits.n]
+direction = "n"
+to = "16312"
+flags = []
+
+[rooms.16318.exits.u]
+direction = "u"
+to = "16317"
+flags = []
+
+[rooms.16319]
+id = "16319"
+name = "Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = 6
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "u",
+]
+flags = []
+
+[rooms.16319.exits.e]
+direction = "e"
+to = "16320"
+flags = []
+
+[rooms.16319.exits.s]
+direction = "s"
+to = "16325"
+flags = []
+
+[rooms.16319.exits.u]
+direction = "u"
+to = "16318"
+flags = []
+
+[rooms.16320]
+id = "16320"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -35
+y = 6
+z = 3
+exit_order = []
+flags = []
+
+[rooms.16320.exits.w]
+direction = "w"
+to = "16319"
+flags = []
+
+[rooms.16322]
+id = "16322"
+name = "Rising Ledge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -39
+y = 7
+z = 4
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.16322.exits.n]
+direction = "n"
+to = "16314"
+flags = []
+
+[rooms.16322.exits.s]
+direction = "s"
+to = "16327"
+flags = []
+
+[rooms.16323]
+id = "16323"
+name = "Mountain Peak"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = 5
+z = 7
+exit_order = ["d"]
+flags = []
+
+[rooms.16323.exits.d]
+direction = "d"
+to = "16315"
+flags = []
+
+[rooms.16324]
+id = "16324"
+name = "Broadening Ledge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = 7
+z = 5
+exit_order = [
+    "n",
+    "s",
+]
+flags = ["avoid"]
+
+[rooms.16324.exits.n]
+direction = "n"
+to = "16317"
+flags = []
+
+[rooms.16324.exits.s]
+direction = "s"
+to = "16329"
+flags = []
+
+[rooms.16325]
+id = "16325"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -36
+y = 7
+z = 3
+exit_order = []
+flags = []
+
+[rooms.16325.exits.n]
+direction = "n"
+to = "16319"
+flags = []
+
+[rooms.16327]
+id = "16327"
+name = "Natural Arch"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -39
+y = 8
+z = 4
+exit_order = [
+    "n",
+    "u",
+]
+flags = []
+
+[rooms.16327.exits.n]
+direction = "n"
+to = "16322"
+flags = []
+
+[rooms.16327.exits.u]
+direction = "u"
+to = "16330"
+flags = []
+
+[rooms.16329]
+id = "16329"
+name = "Edge of a Cliff"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = 8
+z = 5
+exit_order = [
+    "n",
+    "s",
+]
+flags = ["avoid"]
+
+[rooms.16329.exits.n]
+direction = "n"
+to = "16324"
+flags = []
+
+[rooms.16329.exits.s]
+direction = "s"
+to = "16332"
+flags = []
+
+[rooms.16330]
+id = "16330"
+name = "High Ledge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -39
+y = 8
+z = 5
+exit_order = [
+    "e",
+    "d",
+]
+flags = []
+
+[rooms.16330.exits.d]
+direction = "d"
+to = "16327"
+flags = []
+
+[rooms.16330.exits.e]
+direction = "e"
+to = "16331"
+flags = []
+
+[rooms.16331]
+id = "16331"
+name = "Precarious Ledge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = 8
+z = 5
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.16331.exits.s]
+direction = "s"
+to = "16333"
+flags = []
+
+[rooms.16331.exits.w]
+direction = "w"
+to = "16330"
+flags = []
+
+[rooms.16332]
+id = "16332"
+name = "Cliff Edge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = 9
+z = 5
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.16332.exits.n]
+direction = "n"
+to = "16329"
+flags = []
+
+[rooms.16332.exits.s]
+direction = "s"
+to = "16336"
+flags = []
+
+[rooms.16333]
+id = "16333"
+name = "Precipice"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = 9
+z = 5
+exit_order = [
+    "n",
+    "d",
+]
+flags = ["avoid"]
+
+[rooms.16333.exits.d]
+direction = "d"
+to = "16334"
+flags = []
+
+[rooms.16333.exits.n]
+direction = "n"
+to = "16331"
+flags = []
+
+[rooms.16334]
+id = "16334"
+name = "Broad Ledge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = 9
+z = 4
+exit_order = [
+    "s",
+    "u",
+]
+flags = []
+
+[rooms.16334.exits.s]
+direction = "s"
+to = "16337"
+flags = []
+
+[rooms.16334.exits.u]
+direction = "u"
+to = "16333"
+flags = []
+
+[rooms.16335]
+id = "16335"
+name = "A Climb"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -37
+y = 10
+z = 5
+exit_order = [
+    "e",
+    "d",
+]
+flags = []
+
+[rooms.16335.exits.d]
+direction = "d"
+to = "16338"
+flags = []
+
+[rooms.16335.exits.e]
+direction = "e"
+to = "16336"
+flags = []
+
+[rooms.16336]
+id = "16336"
+name = "Bend In a Great Cliff"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = 10
+z = 5
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.16336.exits.n]
+direction = "n"
+to = "16332"
+flags = []
+
+[rooms.16336.exits.w]
+direction = "w"
+to = "16335"
+flags = []
+
+[rooms.16337]
+id = "16337"
+name = "Broad Ledge Bends"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = 10
+z = 4
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.16337.exits.e]
+direction = "e"
+to = "16338"
+flags = []
+
+[rooms.16337.exits.n]
+direction = "n"
+to = "16334"
+flags = []
+
+[rooms.16338]
+id = "16338"
+name = "Mountain Slope"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -37
+y = 10
+z = 4
+exit_order = [
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.16338.exits.u]
+direction = "u"
+to = "16335"
+flags = []
+
+[rooms.16338.exits.w]
+direction = "w"
+to = "16337"
 flags = []
 
 [rooms.1634]
@@ -56980,6 +58554,1654 @@ flags = []
 [rooms.20872.exits.w]
 direction = "w"
 to = "20871"
+flags = []
+
+[rooms.20904]
+id = "20904"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -38
+y = -11
+z = 3
+exit_order = []
+flags = []
+
+[rooms.20904.exits.s]
+direction = "s"
+to = "20914"
+flags = []
+
+[rooms.20905]
+id = "20905"
+name = "A Vast Outlook"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = -11
+z = 4
+exit_order = [
+    "s",
+    "d",
+]
+flags = []
+
+[rooms.20905.exits.d]
+direction = "d"
+to = "20906"
+flags = []
+
+[rooms.20905.exits.s]
+direction = "s"
+to = "20908"
+flags = []
+
+[rooms.20906]
+id = "20906"
+name = "A Frightening Ledge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = -11
+z = 3
+exit_order = [
+    "e",
+    "u",
+]
+flags = []
+
+[rooms.20906.exits.e]
+direction = "e"
+to = "20907"
+flags = []
+
+[rooms.20906.exits.u]
+direction = "u"
+to = "20905"
+flags = []
+
+[rooms.20907]
+id = "20907"
+name = "Climbing Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -35
+y = -11
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20907.exits.n]
+direction = "n"
+to = "26748"
+flags = []
+
+[rooms.20907.exits.s]
+direction = "s"
+to = "20917"
+flags = []
+
+[rooms.20907.exits.w]
+direction = "w"
+to = "20906"
+flags = []
+
+[rooms.20908]
+id = "20908"
+name = "Overlooking A Long Death"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = -10
+z = 4
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.20908.exits.n]
+direction = "n"
+to = "20905"
+flags = []
+
+[rooms.20908.exits.w]
+direction = "w"
+to = "20916"
+flags = []
+
+[rooms.20909]
+id = "20909"
+name = "The Misty Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Floor"
+symbol = ""
+weight = 1.0
+x = -33
+y = -11
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.20909.exits.e]
+direction = "e"
+to = "20910"
+flags = []
+
+[rooms.20909.exits.n]
+direction = "n"
+to = "26749"
+flags = []
+
+[rooms.20909.exits.s]
+direction = "s"
+to = "20919"
+flags = []
+
+[rooms.20910]
+id = "20910"
+name = "Rocky Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Floor"
+symbol = ""
+weight = 1.0
+x = -32
+y = -11
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20910.exits.e]
+direction = "e"
+to = "15101"
+flags = []
+
+[rooms.20910.exits.s]
+direction = "s"
+to = "20920"
+flags = []
+
+[rooms.20910.exits.w]
+direction = "w"
+to = "20909"
+flags = []
+
+[rooms.20913]
+id = "20913"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -39
+y = -10
+z = 3
+exit_order = []
+flags = []
+
+[rooms.20913.exits.e]
+direction = "e"
+to = "20914"
+flags = []
+
+[rooms.20914]
+id = "20914"
+name = "Tracks in the Snow"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = -10
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20914.exits.e]
+direction = "e"
+to = "20915"
+flags = []
+
+[rooms.20914.exits.n]
+direction = "n"
+to = "20904"
+flags = []
+
+[rooms.20914.exits.s]
+direction = "s"
+to = "20924"
+flags = []
+
+[rooms.20914.exits.w]
+direction = "w"
+to = "20913"
+flags = []
+
+[rooms.20915]
+id = "20915"
+name = "Misty Snow"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -37
+y = -10
+z = 3
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20915.exits.s]
+direction = "s"
+to = "20925"
+flags = []
+
+[rooms.20915.exits.w]
+direction = "w"
+to = "20914"
+flags = []
+
+[rooms.20916]
+id = "20916"
+name = "End of the Ledge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -37
+y = -10
+z = 4
+exit_order = ["e"]
+flags = []
+
+[rooms.20916.exits.e]
+direction = "e"
+to = "20908"
+flags = []
+
+[rooms.20917]
+id = "20917"
+name = "Jagged Rocks"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -35
+y = -10
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.20917.exits.e]
+direction = "e"
+to = "20918"
+flags = []
+
+[rooms.20917.exits.n]
+direction = "n"
+to = "20907"
+flags = []
+
+[rooms.20917.exits.s]
+direction = "s"
+to = "20927"
+flags = []
+
+[rooms.20918]
+id = "20918"
+name = "Next to a Rock Wall"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -34
+y = -10
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20918.exits.e]
+direction = "e"
+to = "20919"
+flags = []
+
+[rooms.20918.exits.w]
+direction = "w"
+to = "20917"
+flags = []
+
+[rooms.20919]
+id = "20919"
+name = "Uneven Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -33
+y = -10
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20919.exits.e]
+direction = "e"
+to = "20920"
+flags = []
+
+[rooms.20919.exits.n]
+direction = "n"
+to = "20909"
+flags = []
+
+[rooms.20919.exits.s]
+direction = "s"
+to = "20929"
+flags = []
+
+[rooms.20919.exits.w]
+direction = "w"
+to = "20918"
+flags = []
+
+[rooms.20920]
+id = "20920"
+name = "Misty Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -32
+y = -10
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20920.exits.e]
+direction = "e"
+to = "15111"
+flags = []
+
+[rooms.20920.exits.n]
+direction = "n"
+to = "20910"
+flags = []
+
+[rooms.20920.exits.s]
+direction = "s"
+to = "20930"
+flags = []
+
+[rooms.20920.exits.w]
+direction = "w"
+to = "20919"
+flags = []
+
+[rooms.20924]
+id = "20924"
+name = "Ledge Above a Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = -9
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.20924.exits.e]
+direction = "e"
+to = "20925"
+flags = []
+
+[rooms.20924.exits.n]
+direction = "n"
+to = "20914"
+flags = []
+
+[rooms.20924.exits.s]
+direction = "s"
+to = "20934"
+flags = []
+
+[rooms.20925]
+id = "20925"
+name = "The Misty Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -37
+y = -9
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20925.exits.n]
+direction = "n"
+to = "20915"
+flags = []
+
+[rooms.20925.exits.s]
+direction = "s"
+to = "20935"
+flags = []
+
+[rooms.20925.exits.w]
+direction = "w"
+to = "20924"
+flags = []
+
+[rooms.20927]
+id = "20927"
+name = "Fading Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -35
+y = -9
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.20927.exits.e]
+direction = "e"
+to = "20928"
+flags = []
+
+[rooms.20927.exits.n]
+direction = "n"
+to = "20917"
+flags = []
+
+[rooms.20927.exits.s]
+direction = "s"
+to = "20937"
+flags = []
+
+[rooms.20928]
+id = "20928"
+name = "The Path Continues"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -34
+y = -9
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20928.exits.e]
+direction = "e"
+to = "20929"
+flags = []
+
+[rooms.20928.exits.w]
+direction = "w"
+to = "20927"
+flags = []
+
+[rooms.20929]
+id = "20929"
+name = "Bend in the Snowy Dirt Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -33
+y = -9
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20929.exits.e]
+direction = "e"
+to = "20930"
+flags = []
+
+[rooms.20929.exits.n]
+direction = "n"
+to = "20919"
+flags = []
+
+[rooms.20929.exits.s]
+direction = "s"
+to = "20939"
+flags = []
+
+[rooms.20929.exits.w]
+direction = "w"
+to = "20928"
+flags = []
+
+[rooms.20930]
+id = "20930"
+name = "Snow Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -32
+y = -9
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20930.exits.e]
+direction = "e"
+to = "15121"
+flags = []
+
+[rooms.20930.exits.n]
+direction = "n"
+to = "20920"
+flags = []
+
+[rooms.20930.exits.w]
+direction = "w"
+to = "20929"
+flags = []
+
+[rooms.20934]
+id = "20934"
+name = "Alongside a Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = -8
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.20934.exits.e]
+direction = "e"
+to = "20935"
+flags = []
+
+[rooms.20934.exits.n]
+direction = "n"
+to = "20924"
+flags = []
+
+[rooms.20934.exits.s]
+direction = "s"
+to = "20944"
+flags = []
+
+[rooms.20935]
+id = "20935"
+name = "Smooth Travel"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -37
+y = -8
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20935.exits.e]
+direction = "e"
+to = "20936"
+flags = []
+
+[rooms.20935.exits.n]
+direction = "n"
+to = "20925"
+flags = []
+
+[rooms.20935.exits.w]
+direction = "w"
+to = "20934"
+flags = []
+
+[rooms.20936]
+id = "20936"
+name = "Reaching for the Sky"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = -8
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20936.exits.e]
+direction = "e"
+to = "20937"
+flags = []
+
+[rooms.20936.exits.s]
+direction = "s"
+to = "20946"
+flags = []
+
+[rooms.20936.exits.w]
+direction = "w"
+to = "20935"
+flags = []
+
+[rooms.20937]
+id = "20937"
+name = "Depression in the Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -35
+y = -8
+z = 3
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.20937.exits.n]
+direction = "n"
+to = "20927"
+flags = []
+
+[rooms.20937.exits.w]
+direction = "w"
+to = "20936"
+flags = []
+
+[rooms.20938]
+id = "20938"
+name = "Mountain Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -34
+y = -8
+z = 3
+exit_order = [
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.20938.exits.e]
+direction = "e"
+to = "20939"
+flags = []
+
+[rooms.20938.exits.s]
+direction = "s"
+to = "20948"
+flags = []
+
+[rooms.20939]
+id = "20939"
+name = "Bend in the Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -33
+y = -8
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20939.exits.n]
+direction = "n"
+to = "20929"
+flags = []
+
+[rooms.20939.exits.s]
+direction = "s"
+to = "20949"
+flags = []
+
+[rooms.20939.exits.w]
+direction = "w"
+to = "20938"
+flags = []
+
+[rooms.20944]
+id = "20944"
+name = "Ledge Over a Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = -7
+z = 3
+exit_order = ["n"]
+flags = []
+
+[rooms.20944.exits.n]
+direction = "n"
+to = "20934"
+flags = []
+
+[rooms.20946]
+id = "20946"
+name = "Bend in the Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -36
+y = -7
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.20946.exits.e]
+direction = "e"
+to = "20947"
+flags = []
+
+[rooms.20946.exits.n]
+direction = "n"
+to = "20936"
+flags = []
+
+[rooms.20946.exits.s]
+direction = "s"
+to = "20956"
+flags = []
+
+[rooms.20947]
+id = "20947"
+name = "Snowy Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -35
+y = -7
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20947.exits.e]
+direction = "e"
+to = "20948"
+flags = []
+
+[rooms.20947.exits.w]
+direction = "w"
+to = "20946"
+flags = []
+
+[rooms.20948]
+id = "20948"
+name = "Bend in the Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -34
+y = -7
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20948.exits.e]
+direction = "e"
+to = "20949"
+flags = []
+
+[rooms.20948.exits.n]
+direction = "n"
+to = "20938"
+flags = []
+
+[rooms.20948.exits.s]
+direction = "s"
+to = "20958"
+flags = []
+
+[rooms.20948.exits.w]
+direction = "w"
+to = "20947"
+flags = []
+
+[rooms.20949]
+id = "20949"
+name = "Beginnings of the Misty Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -33
+y = -7
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20949.exits.e]
+direction = "e"
+to = "20950"
+flags = []
+
+[rooms.20949.exits.n]
+direction = "n"
+to = "20939"
+flags = []
+
+[rooms.20949.exits.w]
+direction = "w"
+to = "20948"
+flags = []
+
+[rooms.20950]
+id = "20950"
+name = "Rocky Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -32
+y = -7
+z = 3
+exit_order = ["w"]
+flags = []
+
+[rooms.20950.exits.w]
+direction = "w"
+to = "20949"
+flags = []
+
+[rooms.20956]
+id = "20956"
+name = "Mountain Path Continues"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -36
+y = -6
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.20956.exits.n]
+direction = "n"
+to = "20946"
+flags = []
+
+[rooms.20956.exits.s]
+direction = "s"
+to = "20966"
+flags = []
+
+[rooms.20958]
+id = "20958"
+name = "Gargantuan Peaks"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -34
+y = -6
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.20958.exits.e]
+direction = "e"
+to = "20959"
+flags = []
+
+[rooms.20958.exits.n]
+direction = "n"
+to = "20948"
+flags = []
+
+[rooms.20958.exits.s]
+direction = "s"
+to = "20968"
+flags = []
+
+[rooms.20959]
+id = "20959"
+name = "Declining Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -33
+y = -6
+z = 3
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20959.exits.s]
+direction = "s"
+to = "20969"
+flags = []
+
+[rooms.20959.exits.w]
+direction = "w"
+to = "20958"
+flags = []
+
+[rooms.20962]
+id = "20962"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -40
+y = -7
+z = 3
+exit_order = []
+flags = []
+
+[rooms.20962.exits.s]
+direction = "s"
+to = "20972"
+flags = []
+
+[rooms.20965]
+id = "20965"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -34
+y = -7
+z = 4
+exit_order = []
+flags = []
+
+[rooms.20965.exits.d]
+direction = "d"
+to = "20968"
+flags = []
+
+[rooms.20966]
+id = "20966"
+name = "Bend in the Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -36
+y = -7
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.20966.exits.e]
+direction = "e"
+to = "20967"
+flags = []
+
+[rooms.20966.exits.n]
+direction = "n"
+to = "20956"
+flags = []
+
+[rooms.20966.exits.s]
+direction = "s"
+to = "20976"
+flags = []
+
+[rooms.20967]
+id = "20967"
+name = "Dim Mountain Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -35
+y = -7
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20967.exits.e]
+direction = "e"
+to = "20968"
+flags = []
+
+[rooms.20967.exits.s]
+direction = "s"
+to = "20977"
+flags = []
+
+[rooms.20967.exits.w]
+direction = "w"
+to = "20966"
+flags = []
+
+[rooms.20968]
+id = "20968"
+name = "Base of a Huge Mountain"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -34
+y = -7
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.20968.exits.n]
+direction = "n"
+to = "20958"
+flags = []
+
+[rooms.20968.exits.s]
+direction = "s"
+to = "20978"
+flags = []
+
+[rooms.20968.exits.u]
+direction = "u"
+to = "20965"
+flags = []
+
+[rooms.20968.exits.w]
+direction = "w"
+to = "20967"
+flags = []
+
+[rooms.20969]
+id = "20969"
+name = "The Misty Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -33
+y = -7
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.20969.exits.e]
+direction = "e"
+to = "20970"
+flags = []
+
+[rooms.20969.exits.n]
+direction = "n"
+to = "20959"
+flags = []
+
+[rooms.20969.exits.s]
+direction = "s"
+to = "20979"
+flags = []
+
+[rooms.20970]
+id = "20970"
+name = "Rocky Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -32
+y = -7
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20970.exits.e]
+direction = "e"
+to = "15161"
+flags = []
+
+[rooms.20970.exits.s]
+direction = "s"
+to = "20980"
+flags = []
+
+[rooms.20970.exits.w]
+direction = "w"
+to = "20969"
+flags = []
+
+[rooms.20971]
+id = "20971"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -41
+y = -6
+z = 3
+exit_order = []
+flags = []
+
+[rooms.20971.exits.e]
+direction = "e"
+to = "20972"
+flags = []
+
+[rooms.20972]
+id = "20972"
+name = "Base of a Mountain"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -40
+y = -6
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20972.exits.e]
+direction = "e"
+to = "20973"
+flags = []
+
+[rooms.20972.exits.n]
+direction = "n"
+to = "20962"
+flags = []
+
+[rooms.20972.exits.w]
+direction = "w"
+to = "20971"
+flags = []
+
+[rooms.20973]
+id = "20973"
+name = "Near an Abandoned Fire"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -39
+y = -6
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20973.exits.e]
+direction = "e"
+to = "20974"
+flags = []
+
+[rooms.20973.exits.w]
+direction = "w"
+to = "20972"
+flags = []
+
+[rooms.20974]
+id = "20974"
+name = "An Abandoned Camp"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = -6
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20974.exits.e]
+direction = "e"
+to = "20975"
+flags = []
+
+[rooms.20974.exits.w]
+direction = "w"
+to = "20973"
+flags = []
+
+[rooms.20975]
+id = "20975"
+name = "The Misties Expand"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -37
+y = -6
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20975.exits.e]
+direction = "e"
+to = "20976"
+flags = []
+
+[rooms.20975.exits.w]
+direction = "w"
+to = "20974"
+flags = []
+
+[rooms.20976]
+id = "20976"
+name = "A Snowy Blizzard"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = -6
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20976.exits.e]
+direction = "e"
+to = "20977"
+flags = []
+
+[rooms.20976.exits.n]
+direction = "n"
+to = "20966"
+flags = []
+
+[rooms.20976.exits.w]
+direction = "w"
+to = "20975"
+flags = []
+
+[rooms.20977]
+id = "20977"
+name = "Rugged Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -35
+y = -6
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.20977.exits.e]
+direction = "e"
+to = "20978"
+flags = []
+
+[rooms.20977.exits.n]
+direction = "n"
+to = "20967"
+flags = []
+
+[rooms.20977.exits.s]
+direction = "s"
+to = "6812"
+flags = []
+
+[rooms.20977.exits.w]
+direction = "w"
+to = "20976"
+flags = []
+
+[rooms.20978]
+id = "20978"
+name = "Sheets of White"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -34
+y = -6
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20978.exits.e]
+direction = "e"
+to = "20979"
+flags = []
+
+[rooms.20978.exits.n]
+direction = "n"
+to = "20968"
+flags = []
+
+[rooms.20978.exits.w]
+direction = "w"
+to = "20977"
+flags = []
+
+[rooms.20979]
+id = "20979"
+name = "Snowy Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -33
+y = -6
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20979.exits.e]
+direction = "e"
+to = "20980"
+flags = []
+
+[rooms.20979.exits.n]
+direction = "n"
+to = "20969"
+flags = []
+
+[rooms.20979.exits.w]
+direction = "w"
+to = "20978"
+flags = []
+
+[rooms.20980]
+id = "20980"
+name = "Rising Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -32
+y = -6
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.20980.exits.e]
+direction = "e"
+to = "15171"
+flags = []
+
+[rooms.20980.exits.n]
+direction = "n"
+to = "20970"
+flags = []
+
+[rooms.20980.exits.w]
+direction = "w"
+to = "20979"
 flags = []
 
 [rooms.21005]
@@ -84582,6 +87804,164 @@ direction = "w"
 to = "2671"
 flags = []
 
+[rooms.26722]
+id = "26722"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -33
+y = -16
+z = 3
+exit_order = []
+flags = []
+
+[rooms.26722.exits.s]
+direction = "s"
+to = "26723"
+flags = []
+
+[rooms.26723]
+id = "26723"
+name = "Within Sight of a Titanic Mountain"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -33
+y = -15
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = ["avoid"]
+
+[rooms.26723.exits.e]
+direction = "e"
+to = "26724"
+flags = []
+
+[rooms.26723.exits.n]
+direction = "n"
+to = "26722"
+flags = []
+
+[rooms.26723.exits.s]
+direction = "s"
+to = "26725"
+flags = []
+
+[rooms.26724]
+id = "26724"
+name = "Approaching a Colossal Mountain"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -32
+y = -15
+z = 3
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.26724.exits.s]
+direction = "s"
+to = "26726"
+flags = []
+
+[rooms.26724.exits.w]
+direction = "w"
+to = "26723"
+flags = []
+
+[rooms.26725]
+id = "26725"
+name = "Below a Large Cliff"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -33
+y = -14
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.26725.exits.n]
+direction = "n"
+to = "26723"
+flags = []
+
+[rooms.26725.exits.s]
+direction = "s"
+to = "26746"
+flags = []
+
+[rooms.26726]
+id = "26726"
+name = "High Cliff"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -32
+y = -14
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.26726.exits.n]
+direction = "n"
+to = "26724"
+flags = []
+
+[rooms.26726.exits.s]
+direction = "s"
+to = "26747"
+flags = []
+
+[rooms.26728]
+id = "26728"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -35
+y = -14
+z = 3
+exit_order = []
+flags = []
+
+[rooms.26728.exits.s]
+direction = "s"
+to = "26744"
+flags = []
+
 [rooms.2673]
 id = "2673"
 name = "Under Rock, In Wall, Over Hole"
@@ -84639,6 +88019,236 @@ direction = "w"
 to = "2672"
 flags = []
 
+[rooms.26743]
+id = "26743"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -36
+y = -13
+z = 3
+exit_order = []
+flags = []
+
+[rooms.26743.exits.e]
+direction = "e"
+to = "26744"
+flags = []
+
+[rooms.26744]
+id = "26744"
+name = "Turning Pathway"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -35
+y = -13
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.26744.exits.e]
+direction = "e"
+to = "26745"
+flags = []
+
+[rooms.26744.exits.n]
+direction = "n"
+to = "26728"
+flags = []
+
+[rooms.26744.exits.s]
+direction = "s"
+to = "26748"
+flags = []
+
+[rooms.26744.exits.w]
+direction = "w"
+to = "26743"
+flags = []
+
+[rooms.26745]
+id = "26745"
+name = "Pathetic Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -34
+y = -13
+z = 3
+exit_order = [
+    "e",
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.26745.exits.e]
+direction = "e"
+to = "26746"
+flags = []
+
+[rooms.26745.exits.u]
+direction = "u"
+to = "26754"
+flags = []
+
+[rooms.26745.exits.w]
+direction = "w"
+to = "26744"
+flags = []
+
+[rooms.26746]
+id = "26746"
+name = "Slight Traces of a Footpath"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -33
+y = -13
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.26746.exits.e]
+direction = "e"
+to = "26747"
+flags = []
+
+[rooms.26746.exits.n]
+direction = "n"
+to = "26725"
+flags = []
+
+[rooms.26746.exits.s]
+direction = "s"
+to = "26749"
+flags = []
+
+[rooms.26746.exits.w]
+direction = "w"
+to = "26745"
+flags = []
+
+[rooms.26747]
+id = "26747"
+name = "Alongside a Gargantuan Cliff"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -32
+y = -13
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.26747.exits.n]
+direction = "n"
+to = "26726"
+flags = []
+
+[rooms.26747.exits.s]
+direction = "s"
+to = "26750"
+flags = []
+
+[rooms.26747.exits.w]
+direction = "w"
+to = "26746"
+flags = []
+
+[rooms.26748]
+id = "26748"
+name = "Ascending Ridge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -35
+y = -12
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.26748.exits.n]
+direction = "n"
+to = "26744"
+flags = []
+
+[rooms.26748.exits.s]
+direction = "s"
+to = "20907"
+flags = []
+
+[rooms.26749]
+id = "26749"
+name = "Endless Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -33
+y = -12
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.26749.exits.e]
+direction = "e"
+to = "26750"
+flags = []
+
+[rooms.26749.exits.n]
+direction = "n"
+to = "26746"
+flags = []
+
+[rooms.26749.exits.s]
+direction = "s"
+to = "20909"
+flags = []
+
 [rooms.2675]
 id = "2675"
 name = "On the Roof in the Valley-Wall"
@@ -84665,6 +88275,82 @@ flags = []
 [rooms.2675.exits.w]
 direction = "w"
 to = "2673"
+flags = []
+
+[rooms.26750]
+id = "26750"
+name = "Misty Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -32
+y = -12
+z = 3
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.26750.exits.n]
+direction = "n"
+to = "26747"
+flags = []
+
+[rooms.26750.exits.w]
+direction = "w"
+to = "26749"
+flags = []
+
+[rooms.26754]
+id = "26754"
+name = "Mountain Peak"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -34
+y = -13
+z = 4
+exit_order = [
+    "s",
+    "d",
+]
+flags = ["avoid"]
+
+[rooms.26754.exits.d]
+direction = "d"
+to = "26745"
+flags = []
+
+[rooms.26754.exits.s]
+direction = "s"
+to = "26755"
+flags = []
+
+[rooms.26755]
+id = "26755"
+name = "At an Eagle's Eyrie"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -34
+y = -12
+z = 4
+exit_order = ["n"]
+flags = []
+
+[rooms.26755.exits.n]
+direction = "n"
+to = "26754"
 flags = []
 
 [rooms.2676]
@@ -93272,6 +96958,26 @@ flags = []
 [rooms.3126.exits.w]
 direction = "w"
 to = "3125"
+flags = []
+
+[rooms.31300]
+id = "31300"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = -41
+y = 0
+z = 2
+exit_order = []
+flags = []
+
+[rooms.31300.exits.u]
+direction = "u"
+to = "6826"
 flags = []
 
 [rooms.3131]
@@ -116636,7 +120342,7 @@ exit_order = [
     "s",
     "w",
 ]
-flags = []
+flags = ["avoid"]
 
 [rooms.6002.exits.e]
 direction = "e"
@@ -116647,6 +120353,8 @@ flags = []
 direction = "n"
 to = "6015"
 flags = []
+door = "unknown"
+door_name = "sturdydoor"
 
 [rooms.6002.exits.s]
 direction = "s"
@@ -116657,6 +120365,8 @@ flags = []
 direction = "w"
 to = "6016"
 flags = []
+door = "closed"
+door_name = "barricade"
 
 [rooms.6003]
 id = "6003"
@@ -116731,15 +120441,15 @@ id = "6005"
 name = "Inside a Small Hut"
 description = ""
 area = ""
-note = ""
+note = "Willow Arrow & Ancamarth Quest"
 terrain = "Floor"
-symbol = ""
+symbol = "QST"
 weight = 1.0
 x = -24
 y = 0
 z = 3
 exit_order = ["w"]
-flags = []
+flags = ["avoid"]
 
 [rooms.6005.exits.w]
 direction = "w"
@@ -116985,9 +120695,9 @@ id = "6014"
 name = "Sleeping Quarters"
 description = ""
 area = ""
-note = ""
+note = "Sleeping Quarters Inn"
 terrain = "Floor"
-symbol = ""
+symbol = "Zzz"
 weight = 1.0
 x = -28
 y = 1
@@ -117022,6 +120732,8 @@ flags = []
 direction = "s"
 to = "6002"
 flags = []
+door = "unknown"
+door_name = "sturdydoor"
 
 [rooms.6015.exits.u]
 direction = "u"
@@ -117030,22 +120742,60 @@ flags = []
 
 [rooms.6016]
 id = "6016"
-name = ""
+name = "Eastern Road by a Barricade"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Road"
 symbol = ""
-weight = 1.0
+weight = 2.0
 x = -26
 y = -1
 z = 3
-exit_order = []
+exit_order = [
+    "e",
+    "w",
+]
 flags = []
 
 [rooms.6016.exits.e]
 direction = "e"
 to = "6002"
+flags = []
+door = "closed"
+door_name = "barricade"
+
+[rooms.6016.exits.w]
+direction = "w"
+to = "6017"
+flags = []
+
+[rooms.6017]
+id = "6017"
+name = "Road Nearing Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -27
+y = -1
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6017.exits.e]
+direction = "e"
+to = "6016"
+flags = []
+
+[rooms.6017.exits.w]
+direction = "w"
+to = "6053"
 flags = []
 
 [rooms.6018]
@@ -117053,9 +120803,9 @@ id = "6018"
 name = "Out on the Watchtower"
 description = ""
 area = ""
-note = ""
+note = "Ranger Guildmaster"
 terrain = "City"
-symbol = ""
+symbol = "GLD"
 weight = 1.0
 x = -25
 y = -2
@@ -117073,9 +120823,9 @@ id = "6022"
 name = "Crude Stables"
 description = ""
 area = ""
-note = ""
+note = "Stables"
 terrain = "Floor"
-symbol = ""
+symbol = "STB"
 weight = 1.0
 x = -26
 y = 0
@@ -117106,6 +120856,96 @@ flags = []
 [rooms.6040.exits.s]
 direction = "s"
 to = "6012"
+flags = []
+
+[rooms.6041]
+id = "6041"
+name = "Rounding the Ridge"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -30
+y = -3
+z = 3
+exit_order = [
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6041.exits.e]
+direction = "e"
+to = "6042"
+flags = []
+
+[rooms.6041.exits.s]
+direction = "s"
+to = "6046"
+flags = []
+
+[rooms.6042]
+id = "6042"
+name = "A Gentle Climb"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -29
+y = -3
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = ["avoid"]
+
+[rooms.6042.exits.e]
+direction = "e"
+to = "6043"
+flags = []
+
+[rooms.6042.exits.n]
+direction = "n"
+to = "15173"
+flags = []
+
+[rooms.6042.exits.w]
+direction = "w"
+to = "6041"
+flags = []
+
+[rooms.6043]
+id = "6043"
+name = "A Tight Turn"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -28
+y = -3
+z = 3
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6043.exits.s]
+direction = "s"
+to = "6048"
+flags = []
+
+[rooms.6043.exits.w]
+direction = "w"
+to = "6042"
 flags = []
 
 [rooms.6044]
@@ -117164,6 +121004,82 @@ direction = "s"
 to = "6044"
 flags = []
 
+[rooms.6046]
+id = "6046"
+name = "Road in a High Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -30
+y = -2
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.6046.exits.n]
+direction = "n"
+to = "6041"
+flags = []
+
+[rooms.6046.exits.s]
+direction = "s"
+to = "6051"
+flags = []
+
+[rooms.6047]
+id = "6047"
+name = "A Lofty Out-look"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -30
+y = -2
+z = 4
+exit_order = ["s"]
+flags = []
+
+[rooms.6047.exits.s]
+direction = "s"
+to = "6052"
+flags = []
+
+[rooms.6048]
+id = "6048"
+name = "A Hanging Road"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -28
+y = -2
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.6048.exits.n]
+direction = "n"
+to = "6043"
+flags = []
+
+[rooms.6048.exits.s]
+direction = "s"
+to = "6053"
+flags = []
+
 [rooms.6049]
 id = "6049"
 name = "The Eastern Road"
@@ -117190,6 +121106,130 @@ flags = []
 [rooms.6049.exits.s]
 direction = "s"
 to = "6054"
+flags = []
+
+[rooms.6050]
+id = "6050"
+name = "Into a Narrow Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -31
+y = -1
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6050.exits.e]
+direction = "e"
+to = "6051"
+flags = []
+
+[rooms.6050.exits.w]
+direction = "w"
+to = "6825"
+flags = []
+
+[rooms.6051]
+id = "6051"
+name = "Road into a Ravine"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -30
+y = -1
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6051.exits.n]
+direction = "n"
+to = "6046"
+flags = []
+
+[rooms.6051.exits.s]
+direction = "s"
+to = "6056"
+flags = []
+
+[rooms.6051.exits.w]
+direction = "w"
+to = "6050"
+flags = []
+
+[rooms.6052]
+id = "6052"
+name = "A Narrow Ridge"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -30
+y = -1
+z = 4
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.6052.exits.n]
+direction = "n"
+to = "6047"
+flags = []
+
+[rooms.6052.exits.s]
+direction = "s"
+to = "6057"
+flags = []
+
+[rooms.6053]
+id = "6053"
+name = "A Curve in the Road "
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -28
+y = -1
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "u",
+]
+flags = []
+
+[rooms.6053.exits.e]
+direction = "e"
+to = "6017"
+flags = []
+
+[rooms.6053.exits.n]
+direction = "n"
+to = "6048"
+flags = []
+
+[rooms.6053.exits.u]
+direction = "u"
+to = "6058"
 flags = []
 
 [rooms.6054]
@@ -117248,6 +121288,464 @@ direction = "n"
 to = "6054"
 flags = []
 
+[rooms.6056]
+id = "6056"
+name = "A Deep Vale"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = -30
+y = 0
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "u",
+]
+flags = []
+
+[rooms.6056.exits.n]
+direction = "n"
+to = "6051"
+flags = []
+
+[rooms.6056.exits.s]
+direction = "s"
+to = "6061"
+flags = []
+
+[rooms.6056.exits.u]
+direction = "u"
+to = "6057"
+flags = []
+
+[rooms.6057]
+id = "6057"
+name = "A Steep Slope"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -30
+y = 0
+z = 4
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "d",
+]
+flags = ["avoid"]
+
+[rooms.6057.exits.d]
+direction = "d"
+to = "6056"
+flags = []
+
+[rooms.6057.exits.e]
+direction = "e"
+to = "6058"
+flags = []
+
+[rooms.6057.exits.n]
+direction = "n"
+to = "6052"
+flags = []
+
+[rooms.6057.exits.s]
+direction = "s"
+to = "6062"
+flags = []
+
+[rooms.6058]
+id = "6058"
+name = "A Steep Slope"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -28
+y = -1
+z = 4
+exit_order = [
+    "e",
+    "s",
+    "w",
+    "d",
+]
+flags = ["avoid"]
+
+[rooms.6058.exits.d]
+direction = "d"
+to = "6053"
+flags = []
+
+[rooms.6058.exits.e]
+direction = "e"
+to = "6059"
+flags = []
+
+[rooms.6058.exits.s]
+direction = "s"
+to = "6063"
+flags = []
+
+[rooms.6058.exits.w]
+direction = "w"
+to = "6057"
+flags = []
+
+[rooms.6059]
+id = "6059"
+name = "High On A Cliff"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -27
+y = 1
+z = 4
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6059.exits.s]
+direction = "s"
+to = "6064"
+flags = []
+
+[rooms.6059.exits.w]
+direction = "w"
+to = "6058"
+flags = []
+
+[rooms.6061]
+id = "6061"
+name = "In A Deep Vale"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = -30
+y = 1
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "u",
+]
+flags = []
+
+[rooms.6061.exits.n]
+direction = "n"
+to = "6056"
+flags = []
+
+[rooms.6061.exits.s]
+direction = "s"
+to = "6066"
+flags = []
+
+[rooms.6061.exits.u]
+direction = "u"
+to = "6062"
+flags = []
+
+[rooms.6062]
+id = "6062"
+name = "A Steep Slope"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -30
+y = 1
+z = 4
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "d",
+]
+flags = []
+
+[rooms.6062.exits.d]
+direction = "d"
+to = "6061"
+flags = []
+
+[rooms.6062.exits.e]
+direction = "e"
+to = "6063"
+flags = []
+
+[rooms.6062.exits.n]
+direction = "n"
+to = "6057"
+flags = []
+
+[rooms.6062.exits.s]
+direction = "s"
+to = "6067"
+flags = []
+
+[rooms.6063]
+id = "6063"
+name = "On the Summit"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -28
+y = 2
+z = 4
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6063.exits.e]
+direction = "e"
+to = "6064"
+flags = []
+
+[rooms.6063.exits.n]
+direction = "n"
+to = "6058"
+flags = []
+
+[rooms.6063.exits.s]
+direction = "s"
+to = "6068"
+flags = []
+
+[rooms.6063.exits.w]
+direction = "w"
+to = "6062"
+flags = []
+
+[rooms.6064]
+id = "6064"
+name = "On A High Cliff"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -27
+y = 2
+z = 4
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6064.exits.n]
+direction = "n"
+to = "6059"
+flags = []
+
+[rooms.6064.exits.s]
+direction = "s"
+to = "6069"
+flags = []
+
+[rooms.6064.exits.w]
+direction = "w"
+to = "6063"
+flags = []
+
+[rooms.6065]
+id = "6065"
+name = "A Jumble of Boulders"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -31
+y = 2
+z = 3
+exit_order = ["e"]
+flags = ["avoid"]
+
+[rooms.6065.exits.e]
+direction = "e"
+to = "6066"
+flags = []
+
+[rooms.6066]
+id = "6066"
+name = "Vale Meets a Canyon"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = -30
+y = 2
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.6066.exits.n]
+direction = "n"
+to = "6061"
+flags = []
+
+[rooms.6066.exits.s]
+direction = "s"
+to = "6071"
+flags = []
+
+[rooms.6066.exits.u]
+direction = "u"
+to = "6067"
+flags = []
+
+[rooms.6066.exits.w]
+direction = "w"
+to = "6065"
+flags = []
+
+[rooms.6067]
+id = "6067"
+name = "A Steep Slope"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -30
+y = 2
+z = 4
+exit_order = [
+    "n",
+    "e",
+    "d",
+]
+flags = ["avoid"]
+
+[rooms.6067.exits.d]
+direction = "d"
+to = "6066"
+flags = []
+
+[rooms.6067.exits.e]
+direction = "e"
+to = "6068"
+flags = []
+
+[rooms.6067.exits.n]
+direction = "n"
+to = "6062"
+flags = []
+
+[rooms.6068]
+id = "6068"
+name = "A Steep Slope"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -28
+y = 3
+z = 4
+exit_order = [
+    "n",
+    "e",
+    "w",
+    "d",
+]
+flags = []
+
+[rooms.6068.exits.d]
+direction = "d"
+to = "6073"
+flags = []
+
+[rooms.6068.exits.e]
+direction = "e"
+to = "6069"
+flags = []
+
+[rooms.6068.exits.n]
+direction = "n"
+to = "6063"
+flags = []
+
+[rooms.6068.exits.w]
+direction = "w"
+to = "6067"
+flags = []
+
+[rooms.6069]
+id = "6069"
+name = "On a High Cliff"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -27
+y = 3
+z = 4
+exit_order = [
+    "n",
+    "w",
+    "d",
+]
+flags = []
+
+[rooms.6069.exits.d]
+direction = "d"
+to = "6074"
+flags = []
+
+[rooms.6069.exits.n]
+direction = "n"
+to = "6064"
+flags = []
+
+[rooms.6069.exits.w]
+direction = "w"
+to = "6068"
+flags = []
+
 [rooms.6070]
 id = "6070"
 name = "Wide Path Leading to Watch Camp"
@@ -117276,6 +121774,148 @@ direction = "s"
 to = "6001"
 flags = []
 
+[rooms.6071]
+id = "6071"
+name = "The Vale Ends"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = -30
+y = 3
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6071.exits.e]
+direction = "e"
+to = "6072"
+flags = []
+
+[rooms.6071.exits.n]
+direction = "n"
+to = "6066"
+flags = []
+
+[rooms.6071.exits.s]
+direction = "s"
+to = "6076"
+flags = []
+
+[rooms.6072]
+id = "6072"
+name = "An Eroded Hillside"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -29
+y = 3
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6072.exits.e]
+direction = "e"
+to = "6073"
+flags = []
+
+[rooms.6072.exits.s]
+direction = "s"
+to = "6077"
+flags = []
+
+[rooms.6072.exits.w]
+direction = "w"
+to = "6071"
+flags = []
+
+[rooms.6073]
+id = "6073"
+name = "A Gentle Hillside"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -28
+y = 3
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.6073.exits.e]
+direction = "e"
+to = "6074"
+flags = []
+
+[rooms.6073.exits.s]
+direction = "s"
+to = "6078"
+flags = []
+
+[rooms.6073.exits.u]
+direction = "u"
+to = "6068"
+flags = []
+
+[rooms.6073.exits.w]
+direction = "w"
+to = "6072"
+flags = []
+
+[rooms.6074]
+id = "6074"
+name = "A Gentle Hillside"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -27
+y = 3
+z = 3
+exit_order = [
+    "s",
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.6074.exits.s]
+direction = "s"
+to = "6079"
+flags = []
+
+[rooms.6074.exits.u]
+direction = "u"
+to = "6069"
+flags = []
+
+[rooms.6074.exits.w]
+direction = "w"
+to = "6073"
+flags = []
+
 [rooms.6075]
 id = "6075"
 name = "Watch Outpost"
@@ -117294,6 +121934,130 @@ flags = []
 [rooms.6075.exits.w]
 direction = "w"
 to = "6070"
+flags = []
+
+[rooms.6076]
+id = "6076"
+name = "Skree Slope Before a Cliff"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -30
+y = 4
+z = 3
+exit_order = [
+    "n",
+    "e",
+]
+flags = ["avoid"]
+
+[rooms.6076.exits.e]
+direction = "e"
+to = "6077"
+flags = []
+
+[rooms.6076.exits.n]
+direction = "n"
+to = "6071"
+flags = []
+
+[rooms.6077]
+id = "6077"
+name = "A Damp Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = -29
+y = 4
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6077.exits.e]
+direction = "e"
+to = "6078"
+flags = []
+
+[rooms.6077.exits.n]
+direction = "n"
+to = "6072"
+flags = []
+
+[rooms.6077.exits.w]
+direction = "w"
+to = "6076"
+flags = []
+
+[rooms.6078]
+id = "6078"
+name = "A Damp Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = -28
+y = 4
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6078.exits.e]
+direction = "e"
+to = "6079"
+flags = []
+
+[rooms.6078.exits.n]
+direction = "n"
+to = "6073"
+flags = []
+
+[rooms.6078.exits.w]
+direction = "w"
+to = "6077"
+flags = []
+
+[rooms.6079]
+id = "6079"
+name = "A Low Gnoll"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -27
+y = 4
+z = 3
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.6079.exits.n]
+direction = "n"
+to = "6074"
+flags = []
+
+[rooms.6079.exits.w]
+direction = "w"
+to = "6078"
 flags = []
 
 [rooms.6100]
@@ -126680,6 +131444,2056 @@ flags = []
 [rooms.6739.exits.w]
 direction = "w"
 to = "6738"
+flags = []
+
+[rooms.6800]
+id = "6800"
+name = "Low Misties"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -41
+y = -3
+z = 3
+exit_order = [
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6800.exits.e]
+direction = "e"
+to = "6801"
+flags = []
+
+[rooms.6800.exits.s]
+direction = "s"
+to = "6807"
+flags = []
+
+[rooms.6801]
+id = "6801"
+name = "Into the Misty Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -40
+y = -3
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6801.exits.e]
+direction = "e"
+to = "6802"
+flags = []
+
+[rooms.6801.exits.s]
+direction = "s"
+to = "6808"
+flags = []
+
+[rooms.6801.exits.w]
+direction = "w"
+to = "6800"
+flags = []
+
+[rooms.6802]
+id = "6802"
+name = "Misty Mountain Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -39
+y = -3
+z = 3
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6802.exits.s]
+direction = "s"
+to = "6809"
+flags = []
+
+[rooms.6802.exits.w]
+direction = "w"
+to = "6801"
+flags = []
+
+[rooms.6803]
+id = "6803"
+name = "Dark Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -37
+y = -3
+z = 3
+exit_order = [
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6803.exits.e]
+direction = "e"
+to = "6804"
+flags = []
+
+[rooms.6803.exits.s]
+direction = "s"
+to = "6811"
+flags = []
+
+[rooms.6804]
+id = "6804"
+name = "On a Precipice"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = -3
+z = 3
+exit_order = ["w"]
+flags = []
+
+[rooms.6804.exits.w]
+direction = "w"
+to = "6803"
+flags = []
+
+[rooms.6807]
+id = "6807"
+name = "The Misty Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -41
+y = -2
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6807.exits.e]
+direction = "e"
+to = "6808"
+flags = []
+
+[rooms.6807.exits.n]
+direction = "n"
+to = "6800"
+flags = []
+
+[rooms.6807.exits.s]
+direction = "s"
+to = "6817"
+flags = []
+
+[rooms.6808]
+id = "6808"
+name = "Misty Mountain Slopes"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -40
+y = -2
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6808.exits.n]
+direction = "n"
+to = "6801"
+flags = []
+
+[rooms.6808.exits.s]
+direction = "s"
+to = "6818"
+flags = []
+
+[rooms.6808.exits.w]
+direction = "w"
+to = "6807"
+flags = []
+
+[rooms.6809]
+id = "6809"
+name = "High, Shadowed Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -39
+y = -2
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6809.exits.e]
+direction = "e"
+to = "6810"
+flags = []
+
+[rooms.6809.exits.n]
+direction = "n"
+to = "6802"
+flags = []
+
+[rooms.6809.exits.s]
+direction = "s"
+to = "6819"
+flags = []
+
+[rooms.6810]
+id = "6810"
+name = "Dark Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -38
+y = -2
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6810.exits.e]
+direction = "e"
+to = "6811"
+flags = []
+
+[rooms.6810.exits.s]
+direction = "s"
+to = "6820"
+flags = []
+
+[rooms.6810.exits.w]
+direction = "w"
+to = "6809"
+flags = []
+
+[rooms.6811]
+id = "6811"
+name = "In the Dark Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -37
+y = -2
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6811.exits.n]
+direction = "n"
+to = "6803"
+flags = []
+
+[rooms.6811.exits.s]
+direction = "s"
+to = "6821"
+flags = []
+
+[rooms.6811.exits.w]
+direction = "w"
+to = "6810"
+flags = []
+
+[rooms.6812]
+id = "6812"
+name = "Cliff Edge"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -35
+y = -3
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = ["avoid"]
+
+[rooms.6812.exits.n]
+direction = "n"
+to = "6828"
+flags = []
+
+[rooms.6812.exits.s]
+direction = "s"
+to = "6813"
+flags = []
+
+[rooms.6813]
+id = "6813"
+name = "Narrow Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = -35
+y = -2
+z = 3
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.6813.exits.e]
+direction = "e"
+to = "6814"
+flags = []
+
+[rooms.6813.exits.n]
+direction = "n"
+to = "6812"
+flags = []
+
+[rooms.6814]
+id = "6814"
+name = "Small Valley in the Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = -34
+y = -2
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6814.exits.e]
+direction = "e"
+to = "6815"
+flags = []
+
+[rooms.6814.exits.s]
+direction = "s"
+to = "6823"
+flags = []
+
+[rooms.6814.exits.w]
+direction = "w"
+to = "6813"
+flags = []
+
+[rooms.6815]
+id = "6815"
+name = "End of a Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = -33
+y = -2
+z = 3
+exit_order = ["w"]
+flags = []
+
+[rooms.6815.exits.w]
+direction = "w"
+to = "6814"
+flags = []
+
+[rooms.6817]
+id = "6817"
+name = "Misties Rising"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -41
+y = -1
+z = 3
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.6817.exits.e]
+direction = "e"
+to = "6818"
+flags = []
+
+[rooms.6817.exits.n]
+direction = "n"
+to = "6807"
+flags = []
+
+[rooms.6818]
+id = "6818"
+name = "Before a Mountain Cave"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -40
+y = -1
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6818.exits.e]
+direction = "e"
+to = "6819"
+flags = []
+
+[rooms.6818.exits.n]
+direction = "n"
+to = "6808"
+flags = []
+
+[rooms.6818.exits.s]
+direction = "s"
+to = "6827"
+flags = []
+
+[rooms.6818.exits.w]
+direction = "w"
+to = "6817"
+flags = []
+
+[rooms.6819]
+id = "6819"
+name = "Forested Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -39
+y = -1
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6819.exits.e]
+direction = "e"
+to = "6820"
+flags = []
+
+[rooms.6819.exits.n]
+direction = "n"
+to = "6809"
+flags = []
+
+[rooms.6819.exits.w]
+direction = "w"
+to = "6818"
+flags = []
+
+[rooms.6820]
+id = "6820"
+name = "Top of a Forested Hill"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -38
+y = -1
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6820.exits.e]
+direction = "e"
+to = "6821"
+flags = []
+
+[rooms.6820.exits.n]
+direction = "n"
+to = "6810"
+flags = []
+
+[rooms.6820.exits.s]
+direction = "s"
+to = "6829"
+flags = []
+
+[rooms.6820.exits.w]
+direction = "w"
+to = "6819"
+flags = []
+
+[rooms.6821]
+id = "6821"
+name = "Edge of a Cliff"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -37
+y = -1
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6821.exits.e]
+direction = "e"
+to = "6822"
+flags = []
+
+[rooms.6821.exits.n]
+direction = "n"
+to = "6811"
+flags = []
+
+[rooms.6821.exits.w]
+direction = "w"
+to = "6820"
+flags = []
+
+[rooms.6822]
+id = "6822"
+name = "Cliff Edge"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -36
+y = -1
+z = 3
+exit_order = ["w"]
+flags = []
+
+[rooms.6822.exits.w]
+direction = "w"
+to = "6821"
+flags = []
+
+[rooms.6823]
+id = "6823"
+name = "The Pass Opens"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -34
+y = -1
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6823.exits.e]
+direction = "e"
+to = "6824"
+flags = []
+
+[rooms.6823.exits.n]
+direction = "n"
+to = "6814"
+flags = []
+
+[rooms.6823.exits.s]
+direction = "s"
+to = "6833"
+flags = []
+
+[rooms.6824]
+id = "6824"
+name = "Narrow Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -33
+y = -1
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6824.exits.e]
+direction = "e"
+to = "6825"
+flags = []
+
+[rooms.6824.exits.s]
+direction = "s"
+to = "6834"
+flags = []
+
+[rooms.6824.exits.w]
+direction = "w"
+to = "6823"
+flags = []
+
+[rooms.6825]
+id = "6825"
+name = "Beginning of the Misties Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -32
+y = -1
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6825.exits.e]
+direction = "e"
+to = "6050"
+flags = []
+
+[rooms.6825.exits.w]
+direction = "w"
+to = "6824"
+flags = []
+
+[rooms.6826]
+id = "6826"
+name = "Dim Cave"
+description = ""
+area = ""
+note = ""
+terrain = "Floor"
+symbol = ""
+weight = 1.0
+x = -41
+y = 0
+z = 3
+exit_order = [
+    "e",
+    "d",
+]
+flags = ["avoid"]
+
+[rooms.6826.exits.d]
+direction = "d"
+to = "31300"
+flags = []
+
+[rooms.6826.exits.e]
+direction = "e"
+to = "6827"
+flags = []
+
+[rooms.6827]
+id = "6827"
+name = "Cave Mouth"
+description = ""
+area = ""
+note = ""
+terrain = "Floor"
+symbol = ""
+weight = 1.0
+x = -40
+y = 0
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = ["avoid"]
+
+[rooms.6827.exits.n]
+direction = "n"
+to = "6818"
+flags = []
+
+[rooms.6827.exits.s]
+direction = "s"
+to = "6836"
+flags = []
+
+[rooms.6827.exits.w]
+direction = "w"
+to = "6826"
+flags = []
+
+[rooms.6828]
+id = "6828"
+name = "Hill Shrouded in Shadow"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -35
+y = -4
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.6828.exits.n]
+direction = "n"
+to = "6852"
+flags = []
+
+[rooms.6828.exits.s]
+direction = "s"
+to = "6812"
+flags = []
+
+[rooms.6829]
+id = "6829"
+name = "Forested Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -38
+y = 0
+z = 3
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.6829.exits.e]
+direction = "e"
+to = "6830"
+flags = []
+
+[rooms.6829.exits.n]
+direction = "n"
+to = "6820"
+flags = []
+
+[rooms.6830]
+id = "6830"
+name = "Bend in the Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -37
+y = 0
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6830.exits.e]
+direction = "e"
+to = "6831"
+flags = []
+
+[rooms.6830.exits.s]
+direction = "s"
+to = "6839"
+flags = []
+
+[rooms.6830.exits.w]
+direction = "w"
+to = "6829"
+flags = []
+
+[rooms.6831]
+id = "6831"
+name = "Mountain Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -36
+y = 0
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6831.exits.e]
+direction = "e"
+to = "6832"
+flags = []
+
+[rooms.6831.exits.w]
+direction = "w"
+to = "6830"
+flags = []
+
+[rooms.6832]
+id = "6832"
+name = "Mountain Pass Between Cliffs"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -35
+y = 0
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6832.exits.e]
+direction = "e"
+to = "6833"
+flags = []
+
+[rooms.6832.exits.w]
+direction = "w"
+to = "6831"
+flags = []
+
+[rooms.6833]
+id = "6833"
+name = "Bend in the Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -34
+y = 0
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6833.exits.n]
+direction = "n"
+to = "6823"
+flags = []
+
+[rooms.6833.exits.s]
+direction = "s"
+to = "6840"
+flags = []
+
+[rooms.6833.exits.w]
+direction = "w"
+to = "6832"
+flags = []
+
+[rooms.6834]
+id = "6834"
+name = "Hilly Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = -33
+y = 0
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.6834.exits.n]
+direction = "n"
+to = "6824"
+flags = []
+
+[rooms.6834.exits.s]
+direction = "s"
+to = "6841"
+flags = []
+
+[rooms.6835]
+id = "6835"
+name = "Winding Pass"
+description = ""
+area = ""
+note = "Noldo Quest"
+terrain = "Road"
+symbol = "QST"
+weight = 2.0
+x = -41
+y = 1
+z = 3
+exit_order = ["s"]
+flags = []
+
+[rooms.6835.exits.s]
+direction = "s"
+to = "6842"
+flags = []
+
+[rooms.6836]
+id = "6836"
+name = "Troll Cavern"
+description = ""
+area = ""
+note = ""
+terrain = "Floor"
+symbol = ""
+weight = 1.0
+x = -40
+y = 1
+z = 3
+exit_order = ["n"]
+flags = ["avoid"]
+
+[rooms.6836.exits.n]
+direction = "n"
+to = "6827"
+flags = []
+
+[rooms.6837]
+id = "6837"
+name = "Turn in the Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -39
+y = 1
+z = 3
+exit_order = [
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6837.exits.e]
+direction = "e"
+to = "6838"
+flags = []
+
+[rooms.6837.exits.s]
+direction = "s"
+to = "6844"
+flags = []
+
+[rooms.6838]
+id = "6838"
+name = "Narrow Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -38
+y = 1
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6838.exits.e]
+direction = "e"
+to = "6839"
+flags = []
+
+[rooms.6838.exits.w]
+direction = "w"
+to = "6837"
+flags = []
+
+[rooms.6839]
+id = "6839"
+name = "The Pass Narrows"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -37
+y = 1
+z = 3
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.6839.exits.n]
+direction = "n"
+to = "6830"
+flags = []
+
+[rooms.6839.exits.w]
+direction = "w"
+to = "6838"
+flags = []
+
+[rooms.6840]
+id = "6840"
+name = "Hills in a Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -34
+y = 1
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6840.exits.e]
+direction = "e"
+to = "6841"
+flags = []
+
+[rooms.6840.exits.n]
+direction = "n"
+to = "6833"
+flags = []
+
+[rooms.6840.exits.s]
+direction = "s"
+to = "6849"
+flags = []
+
+[rooms.6841]
+id = "6841"
+name = "Hills in a Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -33
+y = 1
+z = 3
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6841.exits.n]
+direction = "n"
+to = "6834"
+flags = []
+
+[rooms.6841.exits.s]
+direction = "s"
+to = "6850"
+flags = []
+
+[rooms.6841.exits.w]
+direction = "w"
+to = "6840"
+flags = []
+
+[rooms.6842]
+id = "6842"
+name = "Winding Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -41
+y = 2
+z = 3
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.6842.exits.e]
+direction = "e"
+to = "6843"
+flags = []
+
+[rooms.6842.exits.n]
+direction = "n"
+to = "6835"
+flags = []
+
+[rooms.6843]
+id = "6843"
+name = "Winding Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -40
+y = 2
+z = 3
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6843.exits.s]
+direction = "s"
+to = "6853"
+flags = []
+
+[rooms.6843.exits.w]
+direction = "w"
+to = "6842"
+flags = []
+
+[rooms.6844]
+id = "6844"
+name = "The Pass Continues"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -39
+y = 2
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.6844.exits.n]
+direction = "n"
+to = "6837"
+flags = []
+
+[rooms.6844.exits.s]
+direction = "s"
+to = "6854"
+flags = []
+
+[rooms.6845]
+id = "6845"
+name = "Lower Slopes of the Misties"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = 2
+z = 3
+exit_order = [
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6845.exits.e]
+direction = "e"
+to = "6846"
+flags = []
+
+[rooms.6845.exits.s]
+direction = "s"
+to = "6855"
+flags = []
+
+[rooms.6846]
+id = "6846"
+name = "Leading Into the Misties"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -37
+y = 2
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6846.exits.e]
+direction = "e"
+to = "6847"
+flags = []
+
+[rooms.6846.exits.s]
+direction = "s"
+to = "6856"
+flags = []
+
+[rooms.6846.exits.w]
+direction = "w"
+to = "6845"
+flags = []
+
+[rooms.6847]
+id = "6847"
+name = "Hills Climb Into the Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = 2
+z = 3
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6847.exits.e]
+direction = "e"
+to = "6848"
+flags = []
+
+[rooms.6847.exits.w]
+direction = "w"
+to = "6846"
+flags = []
+
+[rooms.6848]
+id = "6848"
+name = "Dark Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -35
+y = 2
+z = 3
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6848.exits.s]
+direction = "s"
+to = "6858"
+flags = []
+
+[rooms.6848.exits.w]
+direction = "w"
+to = "6847"
+flags = []
+
+[rooms.6849]
+id = "6849"
+name = "The Hilly Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -34
+y = 2
+z = 3
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.6849.exits.e]
+direction = "e"
+to = "6850"
+flags = []
+
+[rooms.6849.exits.n]
+direction = "n"
+to = "6840"
+flags = []
+
+[rooms.6850]
+id = "6850"
+name = "Forested Ridge"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -33
+y = 2
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6850.exits.e]
+direction = "e"
+to = "6851"
+flags = []
+
+[rooms.6850.exits.n]
+direction = "n"
+to = "6841"
+flags = []
+
+[rooms.6850.exits.s]
+direction = "s"
+to = "6860"
+flags = []
+
+[rooms.6850.exits.w]
+direction = "w"
+to = "6849"
+flags = []
+
+[rooms.6851]
+id = "6851"
+name = "End of a Forest Ridge"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -32
+y = 2
+z = 3
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6851.exits.s]
+direction = "s"
+to = "6861"
+flags = []
+
+[rooms.6851.exits.w]
+direction = "w"
+to = "6850"
+flags = []
+
+[rooms.6852]
+id = "6852"
+name = "Shaded Trail through the Hills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -35
+y = -5
+z = 3
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.6852.exits.n]
+direction = "n"
+to = "20977"
+flags = []
+
+[rooms.6852.exits.s]
+direction = "s"
+to = "6828"
+flags = []
+
+[rooms.6853]
+id = "6853"
+name = "Twisting Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -40
+y = 3
+z = 3
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.6853.exits.e]
+direction = "e"
+to = "6854"
+flags = []
+
+[rooms.6853.exits.n]
+direction = "n"
+to = "6843"
+flags = []
+
+[rooms.6854]
+id = "6854"
+name = "Bending Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = -39
+y = 3
+z = 3
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.6854.exits.n]
+direction = "n"
+to = "6844"
+flags = []
+
+[rooms.6854.exits.w]
+direction = "w"
+to = "6853"
+flags = []
+
+[rooms.6855]
+id = "6855"
+name = "The Misty Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = 3
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6855.exits.e]
+direction = "e"
+to = "6856"
+flags = []
+
+[rooms.6855.exits.n]
+direction = "n"
+to = "6845"
+flags = []
+
+[rooms.6855.exits.s]
+direction = "s"
+to = "6865"
+flags = []
+
+[rooms.6856]
+id = "6856"
+name = "Slopes of the Misties"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -37
+y = 3
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6856.exits.e]
+direction = "e"
+to = "6857"
+flags = []
+
+[rooms.6856.exits.n]
+direction = "n"
+to = "6846"
+flags = []
+
+[rooms.6856.exits.w]
+direction = "w"
+to = "6855"
+flags = []
+
+[rooms.6857]
+id = "6857"
+name = "The Lower Misties"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = 3
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6857.exits.e]
+direction = "e"
+to = "6858"
+flags = []
+
+[rooms.6857.exits.s]
+direction = "s"
+to = "6866"
+flags = []
+
+[rooms.6857.exits.w]
+direction = "w"
+to = "6856"
+flags = []
+
+[rooms.6858]
+id = "6858"
+name = "Misty Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = -35
+y = 3
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6858.exits.e]
+direction = "e"
+to = "6859"
+flags = []
+
+[rooms.6858.exits.n]
+direction = "n"
+to = "6848"
+flags = []
+
+[rooms.6858.exits.s]
+direction = "s"
+to = "6867"
+flags = []
+
+[rooms.6858.exits.w]
+direction = "w"
+to = "6857"
+flags = []
+
+[rooms.6859]
+id = "6859"
+name = "The Misty Foothills"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -34
+y = 3
+z = 3
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6859.exits.e]
+direction = "e"
+to = "6860"
+flags = []
+
+[rooms.6859.exits.s]
+direction = "s"
+to = "6868"
+flags = []
+
+[rooms.6859.exits.w]
+direction = "w"
+to = "6858"
+flags = []
+
+[rooms.6860]
+id = "6860"
+name = "Lower Slopes of the Misties"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -33
+y = 3
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6860.exits.e]
+direction = "e"
+to = "6861"
+flags = []
+
+[rooms.6860.exits.n]
+direction = "n"
+to = "6850"
+flags = []
+
+[rooms.6860.exits.s]
+direction = "s"
+to = "6869"
+flags = []
+
+[rooms.6860.exits.w]
+direction = "w"
+to = "6859"
+flags = []
+
+[rooms.6861]
+id = "6861"
+name = "Outcrop in the Misties"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -32
+y = 3
+z = 3
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.6861.exits.n]
+direction = "n"
+to = "6851"
+flags = []
+
+[rooms.6861.exits.w]
+direction = "w"
+to = "6860"
+flags = []
+
+[rooms.6862]
+id = "6862"
+name = "Dead End in the Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -41
+y = 4
+z = 3
+exit_order = ["e"]
+flags = []
+
+[rooms.6862.exits.e]
+direction = "e"
+to = "6863"
+flags = []
+
+[rooms.6863]
+id = "6863"
+name = "Misty Slopes"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -40
+y = 4
+z = 3
+exit_order = [
+    "e",
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.6863.exits.e]
+direction = "e"
+to = "6864"
+flags = []
+
+[rooms.6863.exits.u]
+direction = "u"
+to = "16301"
+flags = []
+
+[rooms.6863.exits.w]
+direction = "w"
+to = "6862"
+flags = []
+
+[rooms.6864]
+id = "6864"
+name = "The Misties Overlooking the Pass"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -39
+y = 4
+z = 3
+exit_order = [
+    "e",
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.6864.exits.e]
+direction = "e"
+to = "6865"
+flags = []
+
+[rooms.6864.exits.u]
+direction = "u"
+to = "16302"
+flags = []
+
+[rooms.6864.exits.w]
+direction = "w"
+to = "6863"
+flags = []
+
+[rooms.6865]
+id = "6865"
+name = "Eastern Edge of the Misties"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -38
+y = 4
+z = 3
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.6865.exits.n]
+direction = "n"
+to = "6855"
+flags = []
+
+[rooms.6865.exits.w]
+direction = "w"
+to = "6864"
+flags = []
+
+[rooms.6866]
+id = "6866"
+name = "Rise in the Misties"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -36
+y = 4
+z = 3
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.6866.exits.e]
+direction = "e"
+to = "6867"
+flags = []
+
+[rooms.6866.exits.n]
+direction = "n"
+to = "6857"
+flags = []
+
+[rooms.6867]
+id = "6867"
+name = "Low Misty Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -35
+y = 4
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.6867.exits.e]
+direction = "e"
+to = "6868"
+flags = []
+
+[rooms.6867.exits.n]
+direction = "n"
+to = "6858"
+flags = []
+
+[rooms.6867.exits.u]
+direction = "u"
+to = "16304"
+flags = []
+
+[rooms.6867.exits.w]
+direction = "w"
+to = "6866"
+flags = []
+
+[rooms.6868]
+id = "6868"
+name = "The Lower Misty Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -34
+y = 4
+z = 3
+exit_order = [
+    "n",
+    "e",
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.6868.exits.e]
+direction = "e"
+to = "6869"
+flags = []
+
+[rooms.6868.exits.n]
+direction = "n"
+to = "6859"
+flags = []
+
+[rooms.6868.exits.u]
+direction = "u"
+to = "16305"
+flags = []
+
+[rooms.6868.exits.w]
+direction = "w"
+to = "6867"
+flags = []
+
+[rooms.6869]
+id = "6869"
+name = "Eastern Fringe of the Misty Mountains"
+description = ""
+area = ""
+note = ""
+terrain = "Mountain"
+symbol = ""
+weight = 7.0
+x = -33
+y = 4
+z = 3
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.6869.exits.n]
+direction = "n"
+to = "6860"
+flags = []
+
+[rooms.6869.exits.w]
+direction = "w"
+to = "6868"
 flags = []
 
 [rooms.6900]
@@ -149201,7 +156015,7 @@ description = ""
 size = ""
 
 [last_move]
-from = "1500"
-to = "1513"
-direction = "n"
+from = "6012"
+to = "6011"
+direction = "e"
 created_room = false
