@@ -44,17 +44,19 @@ Daytime runs from 7 AM through 5 PM; the remaining hours are night. These are
 display-lighting rules, not a claim about the server's season-specific sunrise.
 
 Colors come from the World pane's theme, including panel-specific overrides,
-except snow/blizzard flakes, which stay neutral white:
+except snow/blizzard flakes, which stay neutral white or gray:
 
 | Lighting | Scene colors |
 |---|---|
 | Dawn or dusk | Cloud gradients use `muted`, `danger`, and `warning`; other non-clear weather uses warm `warning` except rain/storm and snow/blizzard. |
-| Day | Rain/storm use `rain`; snow/blizzard use soft and bright whites; clouds/fog/wind/ash use `muted`; dust uses `warning`. Day scenes are not dimmed. |
-| Night | Rain/storm keep dimmed `rain`; snow/blizzard keep dimmed whites; other non-clear weather uses dimmed `muted` scenery with `accent` highlights. |
-| Missing or unrecognized time | Dimmed `muted`/`accent`, except rain/storm keep `rain` and snow/blizzard keep whites. |
+| Day | Rain/storm use `rain`; snow/blizzard use contrasting white/gray shades; clouds/fog/wind/ash use `muted`; dust uses `warning`. Day scenes are not dimmed. |
+| Night | Rain/storm keep dimmed `rain`; snow/blizzard keep neutral shades, dimmed only when no contrast correction is needed; other non-clear weather uses dimmed `muted` scenery with `accent` highlights. |
+| Missing or unrecognized time | Dimmed `muted`/`accent`, except rain/storm keep `rain` and snow/blizzard keep contrasting neutral shades. |
 
-Snow dots use soft white and star-shaped flakes use bright white, dimmed outside
-daytime. Theme accents and sunrise/sunset do not tint flakes. Snow transitions
+Snow dots use soft white and star-shaped flakes use bright white on dark
+backgrounds, dimmed outside daytime. Pale panel backgrounds use contrasting
+neutral gray without dimming, including Rose Pine Dawn and panel overrides.
+Theme accents and sunrise/sunset do not tint flakes. Snow transitions
 use spatial reveal instead of blending with colored backgrounds or clouds.
 These whites use terminal gray/white palette entries, so terminal palette
 customization can affect their appearance. Clouds retain their own lighting.

@@ -3088,7 +3088,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn catppuccin_flavors_list_and_switch_through_local_command_pipeline() {
+    async fn dark_and_catppuccin_themes_list_and_switch_through_local_command_pipeline() {
         let mut app = App::new(AppConfig::default());
         let (tx, mut rx) = mpsc::channel(8);
         app.handle_command(ClientCommand::SendText("/theme list".into()), &tx)
@@ -3104,6 +3104,13 @@ mod tests {
             ("catppuccin-frappe", "#303446", "#c6d0f5"),
             ("catppuccin-macchiato", "#24273a", "#cad3f5"),
             ("catppuccin-mocha", "#1e1e2e", "#cdd6f4"),
+            ("everforest-dark", "#2d353b", "#d3c6aa"),
+            ("kanagawa-wave", "#1f1f28", "#dcd7ba"),
+            ("rose-pine-moon", "#232136", "#e0def4"),
+            ("kanagawa-dragon", "#181616", "#c5c9c5"),
+            ("rose-pine", "#191724", "#e0def4"),
+            ("tokyo-night-storm", "#24283b", "#c0caf5"),
+            ("tokyo-night-moon", "#222436", "#c8d3f5"),
         ] {
             let appearance = if name == "catppuccin-latte" {
                 "light"
@@ -3137,6 +3144,9 @@ mod tests {
             ("solarized-light", "#fdf6e3"),
             ("gruvbox-light", "#fbf1c7"),
             ("rose-pine-dawn", "#faf4ed"),
+            ("everforest-light", "#fdf6e3"),
+            ("kanagawa-lotus", "#f2ecbc"),
+            ("tokyo-night-day", "#e1e2e7"),
         ] {
             assert!(
                 app.state

@@ -274,10 +274,15 @@ pub fn render_weather(
 
 fn palette(kind: WeatherKind, daylight: Daylight, theme: &Theme) -> (Style, Style) {
     if matches!(kind, WeatherKind::Snow | WeatherKind::Blizzard) {
-        let mut soft = Style::default().fg(SNOW_SOFT_WHITE);
-        let mut bright = Style::default().fg(SNOW_WHITE);
-        if daylight != Daylight::Day {
+        let soft_color = theme.readable_map_color(SNOW_SOFT_WHITE);
+        let bright_color = theme.readable_map_color(SNOW_WHITE);
+        let mut soft = Style::default().fg(soft_color);
+        let mut bright = Style::default().fg(bright_color);
+        // Terminal dimming can undo the contrast correction on pale backgrounds.
+        if daylight != Daylight::Day && soft_color == SNOW_SOFT_WHITE {
             soft = soft.add_modifier(Modifier::DIM);
+        }
+        if daylight != Daylight::Day && bright_color == SNOW_WHITE {
             bright = bright.add_modifier(Modifier::DIM);
         }
         return (soft, bright);
@@ -1058,9 +1063,9 @@ mod tests {
                         assert_eq!(
                             cell.fg,
                             if cell.symbol() == "*" {
-                                SNOW_WHITE
+                                theme.readable_map_color(SNOW_WHITE)
                             } else {
-                                SNOW_SOFT_WHITE
+                                theme.readable_map_color(SNOW_SOFT_WHITE)
                             }
                         );
                     }
@@ -1068,8 +1073,141 @@ mod tests {
             }
             assert_eq!(
                 palette(kind, Daylight::Unknown, &theme).0.fg,
-                Some(SNOW_SOFT_WHITE)
+                Some(theme.readable_map_color(SNOW_SOFT_WHITE))
             );
+        }
+    }
+
+    #[test]
+    fn snow_is_visible_on_light_themes_throughout_daylight_and_transitions() {
+        use crate::animation::weather_transition::{WeatherBlend, WeatherLayer};
+        use ratatui::style::Color;
+
+        let area = Rect::new(0, 0, 40, 12);
+        for name in [
+            "rose-pine-dawn",
+            "catppuccin-latte",
+            "solarized-light",
+            "gruvbox-light",
+            "everforest-light",
+            "kanagawa-lotus",
+            "tokyo-night-day",
+        ] {
+            let theme = Theme::from_named(name).unwrap();
+            for (kind, layer) in [
+                (WeatherKind::Snow, WeatherLayer::Snow),
+                (WeatherKind::Blizzard, WeatherLayer::Blizzard),
+            ] {
+                for daylight in [
+                    Daylight::Day,
+                    Daylight::Night,
+                    Daylight::Dawn,
+                    Daylight::Dusk,
+                    Daylight::Unknown,
+                ] {
+                    for style in [
+                        palette(kind, daylight, &theme).0,
+                        palette(kind, daylight, &theme).1,
+                    ] {
+                        let Some(Color::Rgb(red, green, blue)) = style.fg else {
+                            panic!("{name}: snow should use a contrasting neutral gray");
+                        };
+                        assert_eq!(red, green);
+                        assert_eq!(green, blue);
+                        assert!(red < 160, "{name}: gray must be dark enough to see");
+                        assert!(!style.add_modifier.contains(Modifier::DIM));
+                    }
+                    for opacity in [64, 127, 255] {
+                        let mut blend = WeatherBlend::settled(WeatherKind::Cloudy);
+                        blend.opacity[layer as usize] = opacity;
+                        let mut buf = Buffer::filled(
+                            area,
+                            ratatui::buffer::Cell::default()
+                                .set_bg(theme.background)
+                                .clone(),
+                        );
+                        render_weather_blend(
+                            area,
+                            &mut buf,
+                            97,
+                            &theme,
+                            SkyClock {
+                                daylight,
+                                celestial: None,
+                                opacity: 255,
+                            },
+                            WeatherVisual {
+                                kind,
+                                blend,
+                                lightning_bolts: 0,
+                            },
+                        );
+                        let mut flakes = 0;
+                        for y in 0..area.height {
+                            for x in 0..area.width {
+                                let threshold = (u32::from(x).wrapping_mul(73)
+                                    ^ u32::from(y).wrapping_mul(151))
+                                    % 255;
+                                if opacity != 255 && threshold >= u32::from(opacity) {
+                                    continue;
+                                }
+                                if let Some((symbol, highlighted)) =
+                                    weather_glyph(kind, i32::from(x), i32::from(y), 40, 12, 97)
+                                {
+                                    let cell = &buf[(x, y)];
+                                    assert_eq!(cell.symbol(), symbol);
+                                    assert_eq!(
+                                        cell.fg,
+                                        if highlighted {
+                                            theme.readable_map_color(SNOW_WHITE)
+                                        } else {
+                                            theme.readable_map_color(SNOW_SOFT_WHITE)
+                                        }
+                                    );
+                                    assert_eq!(cell.bg, theme.background);
+                                    assert!(!cell.modifier.contains(Modifier::DIM));
+                                    flakes += 1;
+                                }
+                            }
+                        }
+                        assert!(flakes > 0);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn snow_contrast_follows_panel_background_overrides() {
+        use crate::config::PanelOptions;
+        use ratatui::style::Color;
+
+        for name in ["rose-pine-dawn", "catppuccin-mocha"] {
+            let theme = Theme::from_named(name).unwrap();
+            for background in ["#faf4ed", "#101010"] {
+                let mut options = PanelOptions::default();
+                options.theme.insert("background".into(), background.into());
+                let panel_theme = theme.for_panel(&options);
+                for kind in [WeatherKind::Snow, WeatherKind::Blizzard] {
+                    let (soft, bright) = palette(kind, Daylight::Night, &panel_theme);
+                    if background == "#101010" {
+                        assert_eq!(soft.fg, Some(SNOW_SOFT_WHITE));
+                        assert_eq!(bright.fg, Some(SNOW_WHITE));
+                        assert!(soft.add_modifier.contains(Modifier::DIM));
+                        assert!(bright.add_modifier.contains(Modifier::DIM));
+                    } else {
+                        for style in [soft, bright] {
+                            let Some(Color::Rgb(red, green, blue)) = style.fg else {
+                                panic!("pale panel needs neutral gray snow");
+                            };
+                            assert_eq!(red, green);
+                            assert_eq!(green, blue);
+                            assert!(red < 160);
+                            assert!(!style.add_modifier.contains(Modifier::DIM));
+                        }
+                    }
+                }
+            }
         }
     }
 

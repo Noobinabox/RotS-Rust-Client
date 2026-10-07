@@ -110,7 +110,7 @@ These are the global Tokyo Night themed defaults used by panels and widgets unle
 
 Catppuccin is available as `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`, and `catppuccin-mocha`. Latte declares a light appearance; the other three are dark. The renderer checks each final background and adapts server ANSI text and configured map colors when contrast is insufficient. For example, set `[theme].active = "catppuccin-mocha"` or enter `/theme use catppuccin-mocha`. Colors come from the [official Catppuccin palette](https://catppuccin.com/palette/).
 
-Additional built-in light palettes are `solarized-light`, `gruvbox-light`, and `rose-pine-dawn`. They use the official [Solarized](https://github.com/altercation/solarized), [Gruvbox](https://github.com/morhetz/gruvbox), and [Rosé Pine](https://rosepinetheme.com/palette/) colors. Light-theme semantic foregrounds are darkened at runtime only when their upstream color lacks readable contrast; ANSI and map colors are likewise adapted against the final background.
+Additional built-in light palettes are `solarized-light`, `gruvbox-light`, `rose-pine-dawn`, and `github-light`. They use the official [Solarized](https://github.com/altercation/solarized), [Gruvbox](https://github.com/morhetz/gruvbox), [Rosé Pine](https://rosepinetheme.com/palette/), and [GitHub Primer](https://primer.style/product/primitives/colors/) colors. Light-theme semantic foregrounds are darkened at runtime only when their upstream color lacks readable contrast; ANSI and map colors are likewise adapted against the final background.
 
 Use `/theme use <name>` to switch palettes during a session. Built-ins include `tokyo-night`, `nord`, `gruvbox`, `dracula`, the light palettes above, and themes for `wood-elf`, `hobbit`, `human`, `dwarf`, `beorning`, `uruk-hai`, `common-orc`, `olog-hai`, `uruk-lhuth`, and `haradrim`. Set `[theme].active` for startup and `/reload`, or enable `[theme].auto_race` to follow MSDP `RACE` values. Runtime selections are session-only. Additional palettes can be defined under `[themes.<name>]` with the same fields as `[colors]`; set `appearance = "light"` for a light custom palette (the default is `dark`).
 
@@ -152,8 +152,11 @@ retains the dimmed `muted`/`accent` palette. The normal RoTS hour-only time uses
 6 AM dawn and 6 PM dusk as display fallbacks, rather than seasonal sunrise data.
 See the animation guide for the complete theme mapping.
 
-Snow and blizzard flakes always use neutral white shades: soft white dots and
-bright white stars, dimmed outside daytime. They do not inherit colored theme
+Snow and blizzard flakes use neutral white shades on dark backgrounds: soft white
+dots and bright white stars, dimmed outside daytime. On pale backgrounds such as
+Rose Pine Dawn, flakes use contrasting neutral gray without dimming. The actual
+panel background determines contrast, including panel color overrides.
+They do not inherit colored theme
 roles or sunrise/sunset hues. Transitions reveal/fade flakes spatially without
 tinting them toward colored clouds or backgrounds. Terminal palette customization
 can still affect how ANSI white and gray appear.

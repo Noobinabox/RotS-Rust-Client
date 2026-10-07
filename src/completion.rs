@@ -476,12 +476,27 @@ mod tests {
             choices.matches("/theme use ", "").len(),
             crate::ui::theme::builtin_theme_names().len() + 1
         );
-        for light_theme in ["solarized-light", "gruvbox-light", "rose-pine-dawn"] {
+        for theme in [
+            "solarized-light",
+            "gruvbox-light",
+            "rose-pine-dawn",
+            "github-light",
+            "everforest-dark",
+            "kanagawa-wave",
+            "rose-pine-moon",
+            "everforest-light",
+            "kanagawa-dragon",
+            "kanagawa-lotus",
+            "rose-pine",
+            "tokyo-night-storm",
+            "tokyo-night-moon",
+            "tokyo-night-day",
+        ] {
             assert!(
                 choices
                     .matches("/theme use ", "")
-                    .contains(&light_theme.to_string()),
-                "missing completion for {light_theme}"
+                    .contains(&theme.to_string()),
+                "missing completion for {theme}"
             );
         }
         assert!(choices.matches("/map ", "").contains(&"landmark".into()));

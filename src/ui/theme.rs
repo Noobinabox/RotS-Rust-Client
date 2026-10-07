@@ -296,6 +296,99 @@ fn named_theme_config(name: &str) -> Option<ThemeConfig> {
                 "#50fa7b", "#ffb86c", "#ff5555", "#6272a4", "#8be9fd", "#ff5555",
             ],
         ),
+        // Official Everforest dark, medium background (the upstream default).
+        // https://github.com/sainnhe/everforest/blob/master/autoload/everforest.vim
+        "everforest-dark" => set(
+            &mut config,
+            [
+                "#2d353b", "#d3c6aa", "#859289", "#a7c080", "#d699b6", "#7fbbb3", "#dbbc7f",
+                "#a7c080", "#dbbc7f", "#e67e80", "#9da9a0", "#83c092", "#e67e80",
+            ],
+        ),
+        // Official Kanagawa Wave: Sumi Ink background and Fuji White text.
+        // https://github.com/rebelot/kanagawa.nvim/blob/master/lua/kanagawa/colors.lua
+        "kanagawa-wave" => set(
+            &mut config,
+            [
+                "#1f1f28", "#dcd7ba", "#727169", "#7e9cd8", "#957fb8", "#7fb4ca", "#e6c384",
+                "#98bb6c", "#e6c384", "#ff5d62", "#c8c093", "#7aa89f", "#e46876",
+            ],
+        ),
+        // Official Rosé Pine Moon: Base, Text, Subtle, Foam, Iris, Pine,
+        // Gold, Leaf, Gold, Love, Subtle, Foam, Love.
+        // https://github.com/rose-pine/neovim/blob/main/lua/rose-pine/palette.lua
+        "rose-pine-moon" => set(
+            &mut config,
+            [
+                "#232136", "#e0def4", "#908caa", "#9ccfd8", "#c4a7e7", "#3e8fb0", "#f6c177",
+                "#95b1ac", "#f6c177", "#eb6f92", "#908caa", "#9ccfd8", "#eb6f92",
+            ],
+        ),
+        // Official everforest-light palette: https://github.com/sainnhe/everforest/blob/master/autoload/everforest.vim
+        "everforest-light" => {
+            config.appearance = ThemeAppearance::Light;
+            set(
+                &mut config,
+                [
+                    "#fdf6e3", "#5c6a72", "#829181", "#3a94c5", "#df69ba", "#3a94c5", "#dfa000",
+                    "#8da101", "#dfa000", "#f85552", "#829181", "#35a77c", "#f85552",
+                ],
+            );
+        }
+        // Official kanagawa-dragon palette: https://github.com/rebelot/kanagawa.nvim/blob/master/lua/kanagawa/colors.lua
+        "kanagawa-dragon" => set(
+            &mut config,
+            [
+                "#181616", "#c5c9c5", "#7a8382", "#8ba4b0", "#8992a7", "#8ba4b0", "#c4b28a",
+                "#87a987", "#c4b28a", "#c4746e", "#a6a69c", "#8ea4a2", "#c4746e",
+            ],
+        ),
+        // Official kanagawa-lotus palette: https://github.com/rebelot/kanagawa.nvim/blob/master/lua/kanagawa/colors.lua
+        "kanagawa-lotus" => {
+            config.appearance = ThemeAppearance::Light;
+            set(
+                &mut config,
+                [
+                    "#f2ecbc", "#545464", "#716e61", "#4d699b", "#624c83", "#6693bf", "#de9800",
+                    "#6f894e", "#de9800", "#c84053", "#716e61", "#597b75", "#c84053",
+                ],
+            );
+        }
+        // Official rose-pine palette: https://github.com/rose-pine/neovim/blob/main/lua/rose-pine/palette.lua
+        "rose-pine" => set(
+            &mut config,
+            [
+                "#191724", "#e0def4", "#908caa", "#9ccfd8", "#c4a7e7", "#31748f", "#f6c177",
+                "#95b1ac", "#f6c177", "#eb6f92", "#908caa", "#9ccfd8", "#eb6f92",
+            ],
+        ),
+        // Official tokyo-night-storm palette: https://github.com/folke/tokyonight.nvim/blob/main/extras/alacritty/tokyonight_storm.toml
+        "tokyo-night-storm" => set(
+            &mut config,
+            [
+                "#24283b", "#c0caf5", "#a9b1d6", "#7aa2f7", "#bb9af7", "#7aa2f7", "#e0af68",
+                "#9ece6a", "#e0af68", "#f7768e", "#a9b1d6", "#7dcfff", "#f7768e",
+            ],
+        ),
+        // Official tokyo-night-moon palette: https://github.com/folke/tokyonight.nvim/blob/main/extras/alacritty/tokyonight_moon.toml
+        "tokyo-night-moon" => set(
+            &mut config,
+            [
+                "#222436", "#c8d3f5", "#828bb8", "#82aaff", "#c099ff", "#82aaff", "#ffc777",
+                "#c3e88d", "#ffc777", "#ff757f", "#828bb8", "#86e1fc", "#ff757f",
+            ],
+        ),
+        // Official tokyo-night-day palette: https://github.com/folke/tokyonight.nvim/blob/main/extras/alacritty/tokyonight_day.toml
+        "tokyo-night-day" => {
+            config.appearance = ThemeAppearance::Light;
+            set(
+                &mut config,
+                [
+                    "#e1e2e7", "#3760bf", "#6172b0", "#2e7de9", "#9854f1", "#2e7de9", "#8c6c3e",
+                    "#587539", "#8c6c3e", "#f52a65", "#6172b0", "#007197", "#f52a65",
+                ],
+            );
+        }
         // Official https://catppuccin.com/palette/ colors, in the role order above:
         // Base, Text, Overlay1, Blue, Mauve, Blue, Yellow, Green, Yellow, Red,
         // Subtext0, Teal, Red. Latte is intentionally a light theme.
@@ -362,6 +455,17 @@ fn named_theme_config(name: &str) -> Option<ThemeConfig> {
                 [
                     "#faf4ed", "#464261", "#797593", "#286983", "#907aa9", "#56949f", "#ea9d34",
                     "#286983", "#ea9d34", "#b4637a", "#797593", "#56949f", "#b4637a",
+                ],
+            );
+        }
+        // Official https://primer.style/product/primitives/colors/ light palette.
+        "github-light" => {
+            config.appearance = ThemeAppearance::Light;
+            set(
+                &mut config,
+                [
+                    "#ffffff", "#1f2328", "#d0d7de", "#0969da", "#8250df", "#0969da", "#9a6700",
+                    "#1f883d", "#9a6700", "#cf222e", "#656d76", "#1a7f37", "#cf222e",
                 ],
             );
         }
@@ -747,6 +851,10 @@ mod tests {
                 "solarized-light",
                 "gruvbox-light",
                 "rose-pine-dawn",
+                "github-light",
+                "everforest-light",
+                "kanagawa-lotus",
+                "tokyo-night-day",
             ]
             .contains(name)
             {
@@ -763,6 +871,67 @@ mod tests {
     }
 
     #[test]
+    fn new_dark_themes_preserve_upstream_colors_and_readable_roles() {
+        for (name, expected) in [
+            (
+                "everforest-dark",
+                [
+                    "#2d353b", "#d3c6aa", "#859289", "#a7c080", "#d699b6", "#7fbbb3", "#dbbc7f",
+                    "#a7c080", "#dbbc7f", "#e67e80", "#9da9a0", "#83c092", "#e67e80",
+                ],
+            ),
+            (
+                "kanagawa-wave",
+                [
+                    "#1f1f28", "#dcd7ba", "#727169", "#7e9cd8", "#957fb8", "#7fb4ca", "#e6c384",
+                    "#98bb6c", "#e6c384", "#ff5d62", "#c8c093", "#7aa89f", "#e46876",
+                ],
+            ),
+            (
+                "rose-pine-moon",
+                [
+                    "#232136", "#e0def4", "#908caa", "#9ccfd8", "#c4a7e7", "#3e8fb0", "#f6c177",
+                    "#95b1ac", "#f6c177", "#eb6f92", "#908caa", "#9ccfd8", "#eb6f92",
+                ],
+            ),
+        ] {
+            let theme = Theme::from_named(name).unwrap();
+            let actual = [
+                theme.background,
+                theme.foreground,
+                theme.border,
+                theme.title,
+                theme.accent,
+                theme.rain,
+                theme.lightning,
+                theme.success,
+                theme.warning,
+                theme.danger,
+                theme.muted,
+                theme.player,
+                theme.enemy,
+            ];
+            assert_eq!(
+                actual,
+                expected.map(|color| parse_color(color).unwrap()),
+                "{name}"
+            );
+            assert_eq!(theme.appearance, ThemeAppearance::Dark);
+            for (index, color) in actual.iter().enumerate().skip(1) {
+                let minimum = if index == 2 || index == 5 { 3.0 } else { 4.5 };
+                assert!(
+                    contrast_ratio(*color, theme.background) >= minimum,
+                    "{name} role {index}"
+                );
+            }
+            assert_ne!(theme.success, theme.warning);
+            assert_ne!(theme.warning, theme.danger);
+            assert_ne!(theme.player, theme.enemy);
+            assert_ne!(theme.accent, theme.danger);
+        }
+    }
+
+    #[test]
     fn popular_light_themes_use_their_upstream_core_palettes() {
         for (name, background, foreground, title, accent) in [
             (
@@ -774,6 +943,7 @@ mod tests {
             ),
             ("gruvbox-light", "#fbf1c7", "#3c3836", "#076678", "#8f3f71"),
             ("rose-pine-dawn", "#faf4ed", "#464261", "#286983", "#907aa9"),
+            ("github-light", "#ffffff", "#1f2328", "#0969da", "#8250df"),
         ] {
             let config = named_theme_config(name).unwrap();
             assert_eq!(config.appearance, ThemeAppearance::Light, "{name}");
@@ -801,12 +971,129 @@ mod tests {
     }
 
     #[test]
+    fn remaining_theme_variants_preserve_palettes_and_contrast() {
+        for (name, appearance, expected) in [
+            (
+                "everforest-light",
+                ThemeAppearance::Light,
+                [
+                    "#fdf6e3", "#5c6a72", "#829181", "#3a94c5", "#df69ba", "#3a94c5", "#dfa000",
+                    "#8da101", "#dfa000", "#f85552", "#829181", "#35a77c", "#f85552",
+                ],
+            ),
+            (
+                "kanagawa-dragon",
+                ThemeAppearance::Dark,
+                [
+                    "#181616", "#c5c9c5", "#7a8382", "#8ba4b0", "#8992a7", "#8ba4b0", "#c4b28a",
+                    "#87a987", "#c4b28a", "#c4746e", "#a6a69c", "#8ea4a2", "#c4746e",
+                ],
+            ),
+            (
+                "kanagawa-lotus",
+                ThemeAppearance::Light,
+                [
+                    "#f2ecbc", "#545464", "#716e61", "#4d699b", "#624c83", "#6693bf", "#de9800",
+                    "#6f894e", "#de9800", "#c84053", "#716e61", "#597b75", "#c84053",
+                ],
+            ),
+            (
+                "rose-pine",
+                ThemeAppearance::Dark,
+                [
+                    "#191724", "#e0def4", "#908caa", "#9ccfd8", "#c4a7e7", "#31748f", "#f6c177",
+                    "#95b1ac", "#f6c177", "#eb6f92", "#908caa", "#9ccfd8", "#eb6f92",
+                ],
+            ),
+            (
+                "tokyo-night-storm",
+                ThemeAppearance::Dark,
+                [
+                    "#24283b", "#c0caf5", "#a9b1d6", "#7aa2f7", "#bb9af7", "#7aa2f7", "#e0af68",
+                    "#9ece6a", "#e0af68", "#f7768e", "#a9b1d6", "#7dcfff", "#f7768e",
+                ],
+            ),
+            (
+                "tokyo-night-moon",
+                ThemeAppearance::Dark,
+                [
+                    "#222436", "#c8d3f5", "#828bb8", "#82aaff", "#c099ff", "#82aaff", "#ffc777",
+                    "#c3e88d", "#ffc777", "#ff757f", "#828bb8", "#86e1fc", "#ff757f",
+                ],
+            ),
+            (
+                "tokyo-night-day",
+                ThemeAppearance::Light,
+                [
+                    "#e1e2e7", "#3760bf", "#6172b0", "#2e7de9", "#9854f1", "#2e7de9", "#8c6c3e",
+                    "#587539", "#8c6c3e", "#f52a65", "#6172b0", "#007197", "#f52a65",
+                ],
+            ),
+        ] {
+            let config = named_theme_config(name).unwrap();
+            let raw = [
+                &config.background,
+                &config.foreground,
+                &config.border,
+                &config.title,
+                &config.accent,
+                &config.rain,
+                &config.lightning,
+                &config.success,
+                &config.warning,
+                &config.danger,
+                &config.muted,
+                &config.player,
+                &config.enemy,
+            ];
+            assert_eq!(raw.map(String::as_str), expected, "{name}");
+            let theme = Theme::from_named(name).unwrap();
+            assert_eq!(theme.appearance, appearance, "{name}");
+            assert_eq!(Some(theme.background), parse_color(expected[0]), "{name}");
+            let colors = [
+                theme.foreground,
+                theme.border,
+                theme.title,
+                theme.accent,
+                theme.rain,
+                theme.lightning,
+                theme.success,
+                theme.warning,
+                theme.danger,
+                theme.muted,
+                theme.player,
+                theme.enemy,
+            ];
+            for (index, color) in colors.iter().enumerate() {
+                let minimum = if index == 1 || index == 4 { 3.0 } else { 4.5 };
+                assert!(
+                    contrast_ratio(*color, theme.background) >= minimum,
+                    "{name} role {index}"
+                );
+                if appearance == ThemeAppearance::Dark {
+                    assert_eq!(
+                        Some(*color),
+                        parse_color(expected[index + 1]),
+                        "{name} role {index}"
+                    );
+                }
+            }
+            assert_ne!(theme.success, theme.warning);
+            assert_ne!(theme.warning, theme.danger);
+            assert_ne!(theme.player, theme.enemy);
+        }
+    }
+
+    #[test]
     fn all_builtin_light_theme_roles_are_contrast_safe() {
         for name in [
             "catppuccin-latte",
             "solarized-light",
             "gruvbox-light",
             "rose-pine-dawn",
+            "everforest-light",
+            "kanagawa-lotus",
+            "tokyo-night-day",
         ] {
             let theme = Theme::from_named(name).unwrap();
             for (role, color, minimum) in [
