@@ -162,14 +162,13 @@ A Shadowy Forest    Exits are: S W
 
 Config:
 
-```toml
+```toml :rust
 [[triggers.rules]]
 name = "room-header-memory"
 match_type = "regex"
 pattern = "^(.+)\\s+Exits are:"
 lua = "remember_room"
 ```
-
 Lua:
 
 ```lua

@@ -4,7 +4,7 @@ These instructions build the client from source. You do not need to know Rust, b
 
 Use the [guided installers](#guided-installers), or follow the manual instructions for [Linux](#linux), [macOS](#macos), or [Windows](#windows). Run commands one block at a time; stop if a command reports an error. Do not run Cargo or the client as administrator/root.
 
-## Guided installers
+## Guided Installers
 
 Download the repository using GitHub's **Code → Download ZIP**, then **extract the entire ZIP**. Keep the installer beside `Cargo.toml`, `Cargo.lock`, `install/`, `scripts/`, and `src/`; it is not a standalone executable. Alternatively, use an existing Git checkout.
 
@@ -22,7 +22,7 @@ Fresh configuration is copied from `install/default-config.toml`, **not** the de
 
 Check prerequisites without installing anything:
 
-```sh
+```bash
 bash install.sh --check
 ```
 
@@ -32,7 +32,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -CheckOnly
 
 For computers with prerequisites already installed, use `bash install.sh --skip-prerequisites` or `install.ps1 -SkipPrerequisites`. These skip prerequisite installation, not Cargo dependency downloads. The PowerShell execution-policy option applies only to that process; managed policies can still block execution.
 
-### Installer status and legal terms
+### Installer Status and Legal Terms
 
 These are guided **source installers**, not signed `.msi`/`.pkg` packages or prebuilt application downloads. Automated tests cover non-destructive setup paths; native platform and fresh-machine validation are listed with the development results rather than assumed. A future polished wizard would require release builds for each supported CPU/OS, package signing (and macOS notarization), update/uninstall behavior, and platform testing.
 
@@ -44,26 +44,26 @@ The project uses the [MIT License](../LICENSE), which permits commercial use and
 
 Open your terminal. On Ubuntu, Debian, or Linux Mint:
 
-```sh
+```bash
 sudo apt update
 sudo apt install build-essential git curl ca-certificates
 ```
 
 On Fedora:
 
-```sh
+```bash
 sudo dnf install gcc gcc-c++ make git curl ca-certificates
 ```
 
 On Arch Linux:
 
-```sh
+```bash
 sudo pacman -Syu --needed base-devel git curl ca-certificates
 ```
 
 Install Rust using the [official Rust installer](https://rust-lang.org/tools/install/). This downloads and executes the official rustup script; review the installer page first if you prefer to inspect it before running:
 
-```sh
+```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
@@ -73,7 +73,7 @@ Accept the standard installation, close and reopen your terminal, then continue 
 
 Open **Terminal** from Applications → Utilities. Install Apple's command-line developer tools (includes Git, a compiler, and a linker):
 
-```sh
+```bash
 xcode-select --install
 ```
 
@@ -81,7 +81,7 @@ Complete the installer dialog before continuing. If the tools are already instal
 
 Install Rust using the official installer:
 
-```sh
+```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
@@ -106,17 +106,17 @@ WSL has its own Rust installation and config files; a Windows Rust installation 
 ### Option B: Native Windows
 
 1. Install [Git for Windows](https://git-scm.com/download/win), allowing Git on your command-line PATH.
-2. Follow the [official Windows Rust setup](https://rust-lang.github.io/rustup/installation/windows-msvc.html). Install Visual Studio Build Tools with **Desktop development with C++**, the MSVC compiler tools, and a Windows SDK. Rust's Windows installer can guide you through prerequisites. Use the default MSVC Rust toolchain.
+2. Follow the [official Windows Rust setup](https://rust-lang.github.io/rustup/installation/windows-msvc.html). Install Visual Studio 2022 Build Tools or newer with **Desktop development with C++**, the MSVC compiler tools, and a Windows SDK. Rust's Windows installer can guide you through prerequisites. Use the default MSVC Rust toolchain.
 3. Install Rust through [rustup-init.exe](https://rust-lang.org/tools/install/).
 4. Close and reopen **PowerShell in Windows Terminal** as a normal user. Continue below; the Git/Cargo commands work in PowerShell too. If the compiler cannot find `cl.exe` or `link.exe`, try a Developer PowerShell supplied by Visual Studio Build Tools.
 
 Native Windows and macOS instructions have not been end-to-end tested in this Linux development environment. Native Windows also has keyboard-reporting limitations: dedicated numpad identity and paste behavior may differ. See [macro limitations](commands/macro.md) and [input help](commands/input.md).
 
-## Download and build
+## Download and Build
 
 Check that the tools are available:
 
-```sh
+```bash
 git --version
 rustc --version
 cargo --version
@@ -125,7 +125,7 @@ rustup update stable
 
 From a folder where you want to keep the source (your home folder is fine):
 
-```sh
+```bash
 git clone https://github.com/Noobinabox/RotS-Rust-Client.git
 cd RotS-Rust-Client
 cargo +stable install --path . --locked
@@ -139,7 +139,7 @@ If GitHub reports that the repository is unavailable, ask the maintainer for acc
 
 After installation, run `mud-client` from any terminal folder. Keep the source checkout for updates. To try the source without installing, run `cargo +stable run --locked --release` from the checkout.
 
-## First launch and configuration
+## First Launch and Configuration
 
 The client connects to `rotsmud.org:3791` by default. A missing config file is fine for a first connection. Enter your MUD login in the command input; type `/help` for commands and `/quit` to exit. Use your normal terminal, not an editor's output/debug console.
 
@@ -155,7 +155,7 @@ For the bundled panels, aliases, and targeting, copy the example config **and** 
 
 Fresh Linux/WSL setup, from the repository directory:
 
-```sh
+```bash
 case "${XDG_CONFIG_HOME:-}" in
   /*) client_config_dir="$XDG_CONFIG_HOME/mud-client" ;;
   *) client_config_dir="$HOME/.config/mud-client" ;;
@@ -167,7 +167,7 @@ cp -i scripts/*.lua "$client_config_dir/scripts/"
 
 Fresh macOS setup:
 
-```sh
+```bash
 client_config_dir="$HOME/Library/Application Support/org.mud-client.mud-client"
 mkdir -p "$client_config_dir/scripts"
 cp -i config.toml "$client_config_dir/config.toml"
@@ -189,7 +189,7 @@ Restart after first creating the config. For subsequent edits, use `/reload` in 
 
 Exit the client, return to the source checkout, and run:
 
-```sh
+```bash
 git pull --ff-only
 rustup update stable
 cargo +stable install --path . --locked
@@ -197,7 +197,7 @@ cargo +stable install --path . --locked
 
 If Git reports local changes or diverged history, stop and preserve your edits; do not reset them to force an update. Relaunch `mud-client` after a successful install. Installed config and scripts are separate copies: review and merge relevant upstream changes, including updated Lua scripts, then `/reload`. Keep backups of your config directory, including runtime sidecars, character profiles and map data.
 
-## Common setup problems
+## Common Setup Problems
 
 - **`cargo` or `mud-client` not found:** reopen your terminal. Linux/macOS executables normally live in `~/.cargo/bin`; native Windows uses `%USERPROFILE%\.cargo\bin`. Ensure the appropriate folder is on PATH. On Linux/macOS, `. "$HOME/.cargo/env"` loads rustup's environment in the current shell.
 - **Compiler/linker missing:** finish the C/C++ prerequisites for your platform, then retry installation. Vendored Lua still needs a C compiler.

@@ -15,8 +15,7 @@ function smart_kill(ctx)
   end
 
   client.var.set("last_target", target)
-  client.send("target " .. target)
-  client.send("kill " .. target)
+  client.echo("kill " .. target)
 end
 
 ---@param ctx MudAliasContext

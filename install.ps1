@@ -28,11 +28,18 @@ function Has-CppTools {
     $sdkLibraries = @(Get-ChildItem -Path (Join-Path $sdkRoot 'Lib\*\um\*\kernel32.lib') -ErrorAction SilentlyContinue)
     $sdkHeaders = @(Get-ChildItem -Path (Join-Path $sdkRoot 'Include\*\um\Windows.h') -ErrorAction SilentlyContinue)
     if ($sdkLibraries.Count -eq 0 -or $sdkHeaders.Count -eq 0) { return $false }
-    if (Find-Program 'cl.exe') { return $true }
     $vswhere = Join-Path $programFiles 'Microsoft Visual Studio\Installer\vswhere.exe'
     if (-not (Test-Path -LiteralPath $vswhere -PathType Leaf)) { return $false }
-    $tools = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-    return ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace(($tools -join '')))
+    $version = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationVersion
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace(($version -join ''))) { return $false }
+    try {
+        # Visual Studio 2022 is major version 17; accepting later majors keeps
+        # the prerequisite valid for future Visual Studio releases.
+        return ([version]($version | Select-Object -First 1)).Major -ge 17
+    }
+    catch {
+        return $false
+    }
 }
 
 function Has-StableRust([string]$Rustup) {
