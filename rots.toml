@@ -1,12 +1,12 @@
-current_room = "6014"
-previous_room = "6012"
+current_room = "1504"
+previous_room = "1500"
 follow = true
 static_mode = false
 nofollow = false
 direction_arrow = true
 unicode = true
 show_vnums = false
-last_direction = "e"
+last_direction = "n"
 next_generated_id = 8
 
 [rooms.1]
@@ -38622,22 +38622,188 @@ flags = []
 
 [rooms.17104]
 id = "17104"
-name = ""
+name = "Dense Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Forest"
 symbol = ""
-weight = 1.0
+weight = 4.0
 x = 46
 y = 61
 z = 0
-exit_order = []
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17104.exits.e]
+direction = "e"
+to = "17105"
+flags = []
+
+[rooms.17104.exits.s]
+direction = "s"
+to = "17114"
 flags = []
 
 [rooms.17104.exits.w]
 direction = "w"
 to = "17103"
+flags = []
+
+[rooms.17105]
+id = "17105"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 46
+y = 62
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17105.exits.e]
+direction = "e"
+to = "17106"
+flags = []
+
+[rooms.17105.exits.s]
+direction = "s"
+to = "17115"
+flags = []
+
+[rooms.17105.exits.w]
+direction = "w"
+to = "17104"
+flags = []
+
+[rooms.17106]
+id = "17106"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 62
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17106.exits.e]
+direction = "e"
+to = "17107"
+flags = []
+
+[rooms.17106.exits.s]
+direction = "s"
+to = "17116"
+flags = []
+
+[rooms.17106.exits.w]
+direction = "w"
+to = "17105"
+flags = []
+
+[rooms.17107]
+id = "17107"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 62
+z = 0
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.17107.exits.e]
+direction = "e"
+to = "17108"
+flags = []
+
+[rooms.17107.exits.w]
+direction = "w"
+to = "17106"
+flags = []
+
+[rooms.17108]
+id = "17108"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 62
+z = 0
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.17108.exits.e]
+direction = "e"
+to = "17109"
+flags = []
+
+[rooms.17108.exits.w]
+direction = "w"
+to = "17107"
+flags = []
+
+[rooms.17109]
+id = "17109"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 62
+z = 0
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17109.exits.s]
+direction = "s"
+to = "17117"
+flags = []
+
+[rooms.17109.exits.w]
+direction = "w"
+to = "17108"
 flags = []
 
 [rooms.17110]
@@ -38802,22 +38968,144 @@ flags = []
 
 [rooms.17114]
 id = "17114"
-name = ""
+name = "Dense Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Forest"
 symbol = ""
-weight = 1.0
+weight = 4.0
 x = 46
 y = 62
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17114.exits.e]
+direction = "e"
+to = "17115"
+flags = []
+
+[rooms.17114.exits.n]
+direction = "n"
+to = "17104"
+flags = []
+
+[rooms.17114.exits.s]
+direction = "s"
+to = "17122"
 flags = []
 
 [rooms.17114.exits.w]
 direction = "w"
 to = "17113"
+flags = []
+
+[rooms.17115]
+id = "17115"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 46
+y = 63
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17115.exits.e]
+direction = "e"
+to = "17116"
+flags = []
+
+[rooms.17115.exits.n]
+direction = "n"
+to = "17105"
+flags = []
+
+[rooms.17115.exits.s]
+direction = "s"
+to = "17123"
+flags = []
+
+[rooms.17115.exits.w]
+direction = "w"
+to = "17114"
+flags = []
+
+[rooms.17116]
+id = "17116"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 63
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17116.exits.n]
+direction = "n"
+to = "17106"
+flags = []
+
+[rooms.17116.exits.s]
+direction = "s"
+to = "17124"
+flags = []
+
+[rooms.17116.exits.w]
+direction = "w"
+to = "17115"
+flags = []
+
+[rooms.17117]
+id = "17117"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 63
+z = 0
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.17117.exits.n]
+direction = "n"
+to = "17109"
+flags = []
+
+[rooms.17117.exits.s]
+direction = "s"
+to = "17127"
 flags = []
 
 [rooms.17118]
@@ -38976,17 +39264,32 @@ flags = []
 
 [rooms.17122]
 id = "17122"
-name = ""
+name = "Dense Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Forest"
 symbol = ""
-weight = 1.0
+weight = 4.0
 x = 46
 y = 63
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17122.exits.e]
+direction = "e"
+to = "17123"
+flags = []
+
+[rooms.17122.exits.n]
+direction = "n"
+to = "17114"
 flags = []
 
 [rooms.17122.exits.s]
@@ -38997,6 +39300,182 @@ flags = []
 [rooms.17122.exits.w]
 direction = "w"
 to = "17121"
+flags = []
+
+[rooms.17123]
+id = "17123"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 46
+y = 64
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.17123.exits.e]
+direction = "e"
+to = "17124"
+flags = []
+
+[rooms.17123.exits.n]
+direction = "n"
+to = "17115"
+flags = []
+
+[rooms.17123.exits.w]
+direction = "w"
+to = "17122"
+flags = []
+
+[rooms.17124]
+id = "17124"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 64
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17124.exits.e]
+direction = "e"
+to = "17125"
+flags = []
+
+[rooms.17124.exits.n]
+direction = "n"
+to = "17116"
+flags = []
+
+[rooms.17124.exits.s]
+direction = "s"
+to = "17134"
+flags = []
+
+[rooms.17124.exits.w]
+direction = "w"
+to = "17123"
+flags = []
+
+[rooms.17125]
+id = "17125"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 64
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17125.exits.e]
+direction = "e"
+to = "17126"
+flags = []
+
+[rooms.17125.exits.s]
+direction = "s"
+to = "17135"
+flags = []
+
+[rooms.17125.exits.w]
+direction = "w"
+to = "17124"
+flags = []
+
+[rooms.17126]
+id = "17126"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 64
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17126.exits.e]
+direction = "e"
+to = "17127"
+flags = []
+
+[rooms.17126.exits.s]
+direction = "s"
+to = "17136"
+flags = []
+
+[rooms.17126.exits.w]
+direction = "w"
+to = "17125"
+flags = []
+
+[rooms.17127]
+id = "17127"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 64
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17127.exits.n]
+direction = "n"
+to = "17117"
+flags = []
+
+[rooms.17127.exits.s]
+direction = "s"
+to = "17137"
+flags = []
+
+[rooms.17127.exits.w]
+direction = "w"
+to = "17126"
 flags = []
 
 [rooms.17128]
@@ -39183,22 +39662,172 @@ flags = []
 
 [rooms.17133]
 id = "17133"
-name = ""
+name = "A Trail"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Road"
 symbol = ""
-weight = 1.0
+weight = 2.0
 x = 47
 y = 64
 z = 0
-exit_order = []
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17133.exits.s]
+direction = "s"
+to = "17143"
 flags = []
 
 [rooms.17133.exits.w]
 direction = "w"
 to = "17132"
+flags = []
+
+[rooms.17134]
+id = "17134"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 65
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.17134.exits.e]
+direction = "e"
+to = "17135"
+flags = []
+
+[rooms.17134.exits.n]
+direction = "n"
+to = "17124"
+flags = []
+
+[rooms.17134.exits.s]
+direction = "s"
+to = "17144"
+flags = []
+
+[rooms.17135]
+id = "17135"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 65
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17135.exits.e]
+direction = "e"
+to = "17136"
+flags = []
+
+[rooms.17135.exits.n]
+direction = "n"
+to = "17125"
+flags = []
+
+[rooms.17135.exits.s]
+direction = "s"
+to = "17145"
+flags = []
+
+[rooms.17135.exits.w]
+direction = "w"
+to = "17134"
+flags = []
+
+[rooms.17136]
+id = "17136"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 65
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.17136.exits.e]
+direction = "e"
+to = "17137"
+flags = []
+
+[rooms.17136.exits.n]
+direction = "n"
+to = "17126"
+flags = []
+
+[rooms.17136.exits.w]
+direction = "w"
+to = "17135"
+flags = []
+
+[rooms.17137]
+id = "17137"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 65
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17137.exits.n]
+direction = "n"
+to = "17127"
+flags = []
+
+[rooms.17137.exits.s]
+direction = "s"
+to = "17147"
+flags = []
+
+[rooms.17137.exits.w]
+direction = "w"
+to = "17136"
 flags = []
 
 [rooms.17138]
@@ -39357,6 +39986,147 @@ flags = []
 [rooms.17142.exits.s]
 direction = "s"
 to = "17152"
+flags = []
+
+[rooms.17143]
+id = "17143"
+name = "A Trail"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 46
+y = 66
+z = 0
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.17143.exits.n]
+direction = "n"
+to = "17133"
+flags = []
+
+[rooms.17143.exits.s]
+direction = "s"
+to = "17153"
+flags = []
+
+[rooms.17144]
+id = "17144"
+name = "Thin Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 66
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.17144.exits.e]
+direction = "e"
+to = "17145"
+flags = []
+
+[rooms.17144.exits.n]
+direction = "n"
+to = "17134"
+flags = []
+
+[rooms.17144.exits.s]
+direction = "s"
+to = "17154"
+flags = []
+
+[rooms.17145]
+id = "17145"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = 48
+y = 66
+z = 0
+exit_order = []
+flags = []
+
+[rooms.17145.exits.n]
+direction = "n"
+to = "17135"
+flags = []
+
+[rooms.17145.exits.w]
+direction = "w"
+to = "17144"
+flags = []
+
+[rooms.17146]
+id = "17146"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = 49
+y = 66
+z = 0
+exit_order = []
+flags = []
+
+[rooms.17146.exits.e]
+direction = "e"
+to = "17147"
+flags = []
+
+[rooms.17147]
+id = "17147"
+name = "A Trail"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 50
+y = 66
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17147.exits.n]
+direction = "n"
+to = "17137"
+flags = []
+
+[rooms.17147.exits.s]
+direction = "s"
+to = "17157"
+flags = []
+
+[rooms.17147.exits.w]
+direction = "w"
+to = "17146"
 flags = []
 
 [rooms.17148]
@@ -39533,6 +40303,122 @@ flags = []
 [rooms.17152.exits.w]
 direction = "w"
 to = "17151"
+flags = []
+
+[rooms.17153]
+id = "17153"
+name = "A Trail"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 46
+y = 67
+z = 0
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.17153.exits.e]
+direction = "e"
+to = "17154"
+flags = []
+
+[rooms.17153.exits.n]
+direction = "n"
+to = "17143"
+flags = []
+
+[rooms.17154]
+id = "17154"
+name = "A Trail"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 47
+y = 67
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17154.exits.e]
+direction = "e"
+to = "17155"
+flags = []
+
+[rooms.17154.exits.n]
+direction = "n"
+to = "17144"
+flags = []
+
+[rooms.17154.exits.s]
+direction = "s"
+to = "17164"
+flags = []
+
+[rooms.17154.exits.w]
+direction = "w"
+to = "17153"
+flags = []
+
+[rooms.17155]
+id = "17155"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = 48
+y = 67
+z = 0
+exit_order = []
+flags = []
+
+[rooms.17155.exits.w]
+direction = "w"
+to = "17154"
+flags = []
+
+[rooms.17157]
+id = "17157"
+name = "Thick Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 67
+z = 0
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.17157.exits.n]
+direction = "n"
+to = "17147"
+flags = []
+
+[rooms.17157.exits.s]
+direction = "s"
+to = "17167"
 flags = []
 
 [rooms.17158]
@@ -39737,22 +40623,178 @@ flags = []
 
 [rooms.17163]
 id = "17163"
-name = ""
+name = "Dense Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Forest"
 symbol = ""
-weight = 1.0
+weight = 4.0
 x = 47
 y = 67
 z = 0
-exit_order = []
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17163.exits.e]
+direction = "e"
+to = "17164"
+flags = []
+
+[rooms.17163.exits.s]
+direction = "s"
+to = "17173"
 flags = []
 
 [rooms.17163.exits.w]
 direction = "w"
 to = "17162"
+flags = []
+
+[rooms.17164]
+id = "17164"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 68
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17164.exits.e]
+direction = "e"
+to = "17165"
+flags = []
+
+[rooms.17164.exits.n]
+direction = "n"
+to = "17154"
+flags = []
+
+[rooms.17164.exits.s]
+direction = "s"
+to = "17174"
+flags = []
+
+[rooms.17164.exits.w]
+direction = "w"
+to = "17163"
+flags = []
+
+[rooms.17165]
+id = "17165"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 68
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17165.exits.e]
+direction = "e"
+to = "17166"
+flags = []
+
+[rooms.17165.exits.s]
+direction = "s"
+to = "17175"
+flags = []
+
+[rooms.17165.exits.w]
+direction = "w"
+to = "17164"
+flags = []
+
+[rooms.17166]
+id = "17166"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 68
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17166.exits.e]
+direction = "e"
+to = "17167"
+flags = []
+
+[rooms.17166.exits.s]
+direction = "s"
+to = "17176"
+flags = []
+
+[rooms.17166.exits.w]
+direction = "w"
+to = "17165"
+flags = []
+
+[rooms.17167]
+id = "17167"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 68
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17167.exits.n]
+direction = "n"
+to = "17157"
+flags = []
+
+[rooms.17167.exits.s]
+direction = "s"
+to = "17177"
+flags = []
+
+[rooms.17167.exits.w]
+direction = "w"
+to = "17166"
 flags = []
 
 [rooms.17168]
@@ -39957,22 +40999,196 @@ flags = []
 
 [rooms.17173]
 id = "17173"
-name = ""
+name = "Dense Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Forest"
 symbol = ""
-weight = 1.0
+weight = 4.0
 x = 47
 y = 68
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17173.exits.e]
+direction = "e"
+to = "17174"
+flags = []
+
+[rooms.17173.exits.n]
+direction = "n"
+to = "17163"
+flags = []
+
+[rooms.17173.exits.s]
+direction = "s"
+to = "6200"
 flags = []
 
 [rooms.17173.exits.w]
 direction = "w"
 to = "17172"
+flags = []
+
+[rooms.17174]
+id = "17174"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 69
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17174.exits.e]
+direction = "e"
+to = "17175"
+flags = []
+
+[rooms.17174.exits.n]
+direction = "n"
+to = "17164"
+flags = []
+
+[rooms.17174.exits.s]
+direction = "s"
+to = "6202"
+flags = []
+
+[rooms.17174.exits.w]
+direction = "w"
+to = "17173"
+flags = []
+
+[rooms.17175]
+id = "17175"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 69
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17175.exits.e]
+direction = "e"
+to = "17176"
+flags = []
+
+[rooms.17175.exits.n]
+direction = "n"
+to = "17165"
+flags = []
+
+[rooms.17175.exits.s]
+direction = "s"
+to = "6203"
+flags = []
+
+[rooms.17175.exits.w]
+direction = "w"
+to = "17174"
+flags = []
+
+[rooms.17176]
+id = "17176"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 69
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17176.exits.e]
+direction = "e"
+to = "17177"
+flags = []
+
+[rooms.17176.exits.n]
+direction = "n"
+to = "17166"
+flags = []
+
+[rooms.17176.exits.s]
+direction = "s"
+to = "6204"
+flags = []
+
+[rooms.17176.exits.w]
+direction = "w"
+to = "17175"
+flags = []
+
+[rooms.17177]
+id = "17177"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 69
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.17177.exits.n]
+direction = "n"
+to = "17167"
+flags = []
+
+[rooms.17177.exits.s]
+direction = "s"
+to = "6205"
+flags = []
+
+[rooms.17177.exits.w]
+direction = "w"
+to = "17176"
 flags = []
 
 [rooms.17204]
@@ -81508,17 +82724,26 @@ flags = []
 
 [rooms.2402]
 id = "2402"
-name = ""
+name = "Atop a Forest Peak"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Dense_forest"
 symbol = ""
-weight = 1.0
+weight = 6.0
 x = 54
 y = 85
 z = 0
-exit_order = []
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2402.exits.e]
+direction = "e"
+to = "2403"
 flags = []
 
 [rooms.2402.exits.s]
@@ -81533,22 +82758,70 @@ flags = []
 
 [rooms.2403]
 id = "2403"
-name = ""
+name = "Forested Plateau"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Dense_forest"
 symbol = ""
-weight = 1.0
+weight = 6.0
 x = 55
 y = 85
 z = 0
-exit_order = []
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2403.exits.e]
+direction = "e"
+to = "2404"
 flags = []
 
 [rooms.2403.exits.s]
 direction = "s"
 to = "2408"
+flags = []
+
+[rooms.2403.exits.w]
+direction = "w"
+to = "2402"
+flags = []
+
+[rooms.2404]
+id = "2404"
+name = "Brush-Covered Slope"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 56
+y = 86
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2404.exits.e]
+direction = "e"
+to = "2441"
+flags = []
+
+[rooms.2404.exits.s]
+direction = "s"
+to = "2409"
+flags = []
+
+[rooms.2404.exits.w]
+direction = "w"
+to = "2403"
 flags = []
 
 [rooms.2405]
@@ -81707,17 +82980,26 @@ flags = []
 
 [rooms.2409]
 id = "2409"
-name = ""
+name = "Heavy Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Dense_forest"
 symbol = ""
-weight = 1.0
+weight = 6.0
 x = 56
 y = 86
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2409.exits.n]
+direction = "n"
+to = "2404"
 flags = []
 
 [rooms.2409.exits.s]
@@ -82784,19 +84066,389 @@ direction = "s"
 to = "6104"
 flags = []
 
-[rooms.2451]
-id = "2451"
-name = ""
+[rooms.2441]
+id = "2441"
+name = "Mirkwood Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 57
+y = 86
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.2441.exits.e]
+direction = "e"
+to = "2442"
+flags = []
+
+[rooms.2441.exits.n]
+direction = "n"
+to = "5735"
+flags = []
+
+[rooms.2441.exits.w]
+direction = "w"
+to = "2404"
+flags = []
+
+[rooms.2442]
+id = "2442"
+name = "Heavy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 58
+y = 86
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2442.exits.e]
+direction = "e"
+to = "2443"
+flags = []
+
+[rooms.2442.exits.n]
+direction = "n"
+to = "5736"
+flags = []
+
+[rooms.2442.exits.s]
+direction = "s"
+to = "2447"
+flags = []
+
+[rooms.2442.exits.w]
+direction = "w"
+to = "2441"
+flags = []
+
+[rooms.2443]
+id = "2443"
+name = "Heavy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 59
+y = 86
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2443.exits.e]
+direction = "e"
+to = "2444"
+flags = []
+
+[rooms.2443.exits.n]
+direction = "n"
+to = "5737"
+flags = []
+
+[rooms.2443.exits.s]
+direction = "s"
+to = "2448"
+flags = []
+
+[rooms.2443.exits.w]
+direction = "w"
+to = "2442"
+flags = []
+
+[rooms.2444]
+id = "2444"
+name = "Atop the Muddy Embankment"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 86
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2444.exits.e]
+direction = "e"
+to = "2445"
+flags = []
+
+[rooms.2444.exits.n]
+direction = "n"
+to = "5738"
+flags = []
+
+[rooms.2444.exits.s]
+direction = "s"
+to = "2449"
+flags = []
+
+[rooms.2444.exits.w]
+direction = "w"
+to = "2443"
+flags = []
+
+[rooms.2445]
+id = "2445"
+name = "Swampy Ground"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 61
+y = 86
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.2445.exits.e]
+direction = "e"
+to = "4800"
+flags = []
+
+[rooms.2445.exits.n]
+direction = "n"
+to = "5739"
+flags = []
+
+[rooms.2445.exits.w]
+direction = "w"
+to = "2444"
+flags = []
+
+[rooms.2446]
+id = "2446"
+name = "Dark Cave in the Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Floor"
 symbol = ""
 weight = 1.0
 x = 57
 y = 87
 z = 0
-exit_order = []
+exit_order = ["e"]
+flags = ["avoid"]
+
+[rooms.2446.exits.e]
+direction = "e"
+to = "2447"
+flags = []
+
+[rooms.2447]
+id = "2447"
+name = "Before a Damp Cave"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 58
+y = 87
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2447.exits.e]
+direction = "e"
+to = "2448"
+flags = []
+
+[rooms.2447.exits.n]
+direction = "n"
+to = "2442"
+flags = []
+
+[rooms.2447.exits.s]
+direction = "s"
+to = "2452"
+flags = []
+
+[rooms.2447.exits.w]
+direction = "w"
+to = "2446"
+flags = []
+
+[rooms.2448]
+id = "2448"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 59
+y = 87
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2448.exits.e]
+direction = "e"
+to = "2449"
+flags = []
+
+[rooms.2448.exits.n]
+direction = "n"
+to = "2443"
+flags = []
+
+[rooms.2448.exits.s]
+direction = "s"
+to = "2453"
+flags = []
+
+[rooms.2448.exits.w]
+direction = "w"
+to = "2447"
+flags = []
+
+[rooms.2449]
+id = "2449"
+name = "A Black Pond"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 87
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2449.exits.e]
+direction = "e"
+to = "2450"
+flags = []
+
+[rooms.2449.exits.n]
+direction = "n"
+to = "2444"
+flags = []
+
+[rooms.2449.exits.s]
+direction = "s"
+to = "2454"
+flags = []
+
+[rooms.2449.exits.w]
+direction = "w"
+to = "2448"
+flags = []
+
+[rooms.2450]
+id = "2450"
+name = "A Dark Clearing"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 61
+y = 87
+z = 0
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2450.exits.s]
+direction = "s"
+to = "2455"
+flags = []
+
+[rooms.2450.exits.w]
+direction = "w"
+to = "2449"
+flags = []
+
+[rooms.2451]
+id = "2451"
+name = "Heavy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 57
+y = 87
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2451.exits.e]
+direction = "e"
+to = "2452"
+flags = []
+
+[rooms.2451.exits.s]
+direction = "s"
+to = "2456"
 flags = []
 
 [rooms.2451.exits.w]
@@ -82804,19 +84456,188 @@ direction = "w"
 to = "2414"
 flags = []
 
-[rooms.2456]
-id = "2456"
-name = ""
+[rooms.2452]
+id = "2452"
+name = "Forest of Mirkwood"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Dense_forest"
 symbol = ""
-weight = 1.0
+weight = 6.0
+x = 58
+y = 88
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2452.exits.e]
+direction = "e"
+to = "2453"
+flags = []
+
+[rooms.2452.exits.n]
+direction = "n"
+to = "2447"
+flags = []
+
+[rooms.2452.exits.s]
+direction = "s"
+to = "2457"
+flags = []
+
+[rooms.2452.exits.w]
+direction = "w"
+to = "2451"
+flags = []
+
+[rooms.2453]
+id = "2453"
+name = "Dark Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 59
+y = 88
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2453.exits.e]
+direction = "e"
+to = "2454"
+flags = []
+
+[rooms.2453.exits.n]
+direction = "n"
+to = "2448"
+flags = []
+
+[rooms.2453.exits.s]
+direction = "s"
+to = "2458"
+flags = []
+
+[rooms.2453.exits.w]
+direction = "w"
+to = "2452"
+flags = []
+
+[rooms.2454]
+id = "2454"
+name = "Heavy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 88
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2454.exits.e]
+direction = "e"
+to = "2455"
+flags = []
+
+[rooms.2454.exits.n]
+direction = "n"
+to = "2449"
+flags = []
+
+[rooms.2454.exits.s]
+direction = "s"
+to = "2459"
+flags = []
+
+[rooms.2454.exits.w]
+direction = "w"
+to = "2453"
+flags = []
+
+[rooms.2455]
+id = "2455"
+name = "Heavy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 61
+y = 88
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2455.exits.n]
+direction = "n"
+to = "2450"
+flags = []
+
+[rooms.2455.exits.s]
+direction = "s"
+to = "2460"
+flags = []
+
+[rooms.2455.exits.w]
+direction = "w"
+to = "2454"
+flags = []
+
+[rooms.2456]
+id = "2456"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
 x = 57
 y = 89
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2456.exits.e]
+direction = "e"
+to = "2457"
+flags = []
+
+[rooms.2456.exits.n]
+direction = "n"
+to = "2451"
 flags = []
 
 [rooms.2456.exits.s]
@@ -82831,17 +84652,32 @@ flags = []
 
 [rooms.2457]
 id = "2457"
-name = ""
+name = "Off the Old Forest Road"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Dense_forest"
 symbol = ""
-weight = 1.0
+weight = 6.0
 x = 58
 y = 89
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2457.exits.e]
+direction = "e"
+to = "2458"
+flags = []
+
+[rooms.2457.exits.n]
+direction = "n"
+to = "2452"
 flags = []
 
 [rooms.2457.exits.s]
@@ -82849,19 +84685,39 @@ direction = "s"
 to = "2462"
 flags = []
 
+[rooms.2457.exits.w]
+direction = "w"
+to = "2456"
+flags = []
+
 [rooms.2458]
 id = "2458"
-name = ""
+name = "Heavy Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Dense_forest"
 symbol = ""
-weight = 1.0
+weight = 6.0
 x = 59
 y = 89
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2458.exits.e]
+direction = "e"
+to = "2459"
+flags = []
+
+[rooms.2458.exits.n]
+direction = "n"
+to = "2453"
 flags = []
 
 [rooms.2458.exits.s]
@@ -82869,19 +84725,39 @@ direction = "s"
 to = "2463"
 flags = []
 
+[rooms.2458.exits.w]
+direction = "w"
+to = "2457"
+flags = []
+
 [rooms.2459]
 id = "2459"
-name = ""
+name = "Mirkwood Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Dense_forest"
 symbol = ""
-weight = 1.0
+weight = 6.0
 x = 60
 y = 89
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2459.exits.e]
+direction = "e"
+to = "2460"
+flags = []
+
+[rooms.2459.exits.n]
+direction = "n"
+to = "2454"
 flags = []
 
 [rooms.2459.exits.s]
@@ -82889,24 +84765,43 @@ direction = "s"
 to = "2464"
 flags = []
 
+[rooms.2459.exits.w]
+direction = "w"
+to = "2458"
+flags = []
+
 [rooms.2460]
 id = "2460"
-name = ""
+name = "Mirkwood Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Dense_forest"
 symbol = ""
-weight = 1.0
+weight = 6.0
 x = 61
 y = 89
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.2460.exits.n]
+direction = "n"
+to = "2455"
 flags = []
 
 [rooms.2460.exits.s]
 direction = "s"
 to = "2465"
+flags = []
+
+[rooms.2460.exits.w]
+direction = "w"
+to = "2459"
 flags = []
 
 [rooms.2461]
@@ -109307,6 +111202,524 @@ direction = "e"
 to = "6009"
 flags = []
 
+[rooms.4800]
+id = "4800"
+name = "Island in the Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 62
+y = 86
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4800.exits.e]
+direction = "e"
+to = "4801"
+flags = []
+
+[rooms.4800.exits.n]
+direction = "n"
+to = "6430"
+flags = []
+
+[rooms.4800.exits.s]
+direction = "s"
+to = "4805"
+flags = []
+
+[rooms.4800.exits.w]
+direction = "w"
+to = "2445"
+flags = []
+
+[rooms.4801]
+id = "4801"
+name = "Tree across a Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 63
+y = 86
+z = 0
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.4801.exits.e]
+direction = "e"
+to = "4802"
+flags = []
+
+[rooms.4801.exits.w]
+direction = "w"
+to = "4800"
+flags = []
+
+[rooms.4802]
+id = "4802"
+name = "A Trail through the Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 64
+y = 86
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.4802.exits.e]
+direction = "e"
+to = "4803"
+flags = []
+
+[rooms.4802.exits.n]
+direction = "n"
+to = "6432"
+flags = []
+
+[rooms.4802.exits.w]
+direction = "w"
+to = "4801"
+flags = []
+
+[rooms.4803]
+id = "4803"
+name = "Trail through the Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 65
+y = 86
+z = 0
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.4803.exits.e]
+direction = "e"
+to = "4804"
+flags = []
+
+[rooms.4803.exits.w]
+direction = "w"
+to = "4802"
+flags = []
+
+[rooms.4804]
+id = "4804"
+name = "Island in the Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 66
+y = 86
+z = 0
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4804.exits.s]
+direction = "s"
+to = "4809"
+flags = []
+
+[rooms.4804.exits.w]
+direction = "w"
+to = "4803"
+flags = []
+
+[rooms.4805]
+id = "4805"
+name = "Swampy Trail"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 62
+y = 87
+z = 0
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.4805.exits.n]
+direction = "n"
+to = "4800"
+flags = []
+
+[rooms.4805.exits.s]
+direction = "s"
+to = "4810"
+flags = []
+
+[rooms.4807]
+id = "4807"
+name = "Beside the Tree"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = 64
+y = 87
+z = 0
+exit_order = [
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.4807.exits.e]
+direction = "e"
+to = "4808"
+flags = []
+
+[rooms.4807.exits.s]
+direction = "s"
+to = "4812"
+flags = []
+
+[rooms.4808]
+id = "4808"
+name = "Reeking Lair"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = 65
+y = 87
+z = 0
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4808.exits.s]
+direction = "s"
+to = "4813"
+flags = []
+
+[rooms.4808.exits.w]
+direction = "w"
+to = "4807"
+flags = []
+
+[rooms.4809]
+id = "4809"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = 66
+y = 87
+z = 0
+exit_order = []
+flags = []
+
+[rooms.4809.exits.n]
+direction = "n"
+to = "4804"
+flags = []
+
+[rooms.4810]
+id = "4810"
+name = "Along a Tree"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 62
+y = 88
+z = 0
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.4810.exits.n]
+direction = "n"
+to = "4805"
+flags = []
+
+[rooms.4810.exits.s]
+direction = "s"
+to = "4815"
+flags = []
+
+[rooms.4811]
+id = "4811"
+name = "Inside of a Hut"
+description = ""
+area = ""
+note = ""
+terrain = "Floor"
+symbol = ""
+weight = 1.0
+x = 63
+y = 88
+z = 0
+exit_order = ["e"]
+flags = ["avoid"]
+
+[rooms.4811.exits.e]
+direction = "e"
+to = "4812"
+flags = []
+
+[rooms.4812]
+id = "4812"
+name = "Center of the Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = 64
+y = 88
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4812.exits.e]
+direction = "e"
+to = "4813"
+flags = []
+
+[rooms.4812.exits.n]
+direction = "n"
+to = "4807"
+flags = []
+
+[rooms.4812.exits.s]
+direction = "s"
+to = "4817"
+flags = []
+
+[rooms.4812.exits.w]
+direction = "w"
+to = "4811"
+flags = []
+
+[rooms.4813]
+id = "4813"
+name = "Beside the Fire"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = 65
+y = 88
+z = 0
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.4813.exits.n]
+direction = "n"
+to = "4808"
+flags = []
+
+[rooms.4813.exits.w]
+direction = "w"
+to = "4812"
+flags = []
+
+[rooms.4815]
+id = "4815"
+name = "Along a Tree"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 62
+y = 89
+z = 0
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.4815.exits.n]
+direction = "n"
+to = "4810"
+flags = []
+
+[rooms.4815.exits.s]
+direction = "s"
+to = "4820"
+flags = []
+
+[rooms.4816]
+id = "4816"
+name = "Deeper into the Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 63
+y = 89
+z = 0
+exit_order = [
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.4816.exits.e]
+direction = "e"
+to = "4817"
+flags = []
+
+[rooms.4816.exits.s]
+direction = "s"
+to = "4821"
+flags = []
+
+[rooms.4817]
+id = "4817"
+name = "Mist Shrouded Island"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 64
+y = 89
+z = 0
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.4817.exits.n]
+direction = "n"
+to = "4812"
+flags = []
+
+[rooms.4817.exits.w]
+direction = "w"
+to = "4816"
+flags = []
+
+[rooms.4820]
+id = "4820"
+name = "Upon an Island"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 62
+y = 90
+z = 0
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.4820.exits.e]
+direction = "e"
+to = "4821"
+flags = []
+
+[rooms.4820.exits.n]
+direction = "n"
+to = "4815"
+flags = []
+
+[rooms.4821]
+id = "4821"
+name = "Upon an Island"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 63
+y = 90
+z = 0
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.4821.exits.n]
+direction = "n"
+to = "4816"
+flags = []
+
+[rooms.4821.exits.w]
+direction = "w"
+to = "4820"
+flags = []
+
 [rooms.4825]
 id = "4825"
 name = "Old Forest Road"
@@ -109447,19 +111860,1619 @@ direction = "w"
 to = "4828"
 flags = []
 
-[rooms.4995]
-id = "4995"
-name = ""
+[rooms.4900]
+id = "4900"
+name = "Mirkwood Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 51
+y = 80
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4900.exits.e]
+direction = "e"
+to = "4904"
+flags = []
+
+[rooms.4900.exits.n]
+direction = "n"
+to = "4901"
+flags = []
+
+[rooms.4900.exits.s]
+direction = "s"
+to = "4903"
+flags = []
+
+[rooms.4900.exits.w]
+direction = "w"
+to = "4902"
+flags = []
+
+[rooms.4901]
+id = "4901"
+name = "Path through the Trees"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 51
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4901.exits.e]
+direction = "e"
+to = "4927"
+flags = []
+
+[rooms.4901.exits.n]
+direction = "n"
+to = "4929"
+flags = []
+
+[rooms.4901.exits.s]
+direction = "s"
+to = "4900"
+flags = []
+
+[rooms.4901.exits.w]
+direction = "w"
+to = "4931"
+flags = []
+
+[rooms.4902]
+id = "4902"
+name = "Path through the Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 50
+y = 80
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4902.exits.e]
+direction = "e"
+to = "4900"
+flags = []
+
+[rooms.4902.exits.n]
+direction = "n"
+to = "4931"
+flags = []
+
+[rooms.4902.exits.s]
+direction = "s"
+to = "4938"
+flags = []
+
+[rooms.4902.exits.w]
+direction = "w"
+to = "4935"
+flags = []
+
+[rooms.4903]
+id = "4903"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 51
+y = 81
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4903.exits.e]
+direction = "e"
+to = "4909"
+flags = []
+
+[rooms.4903.exits.n]
+direction = "n"
+to = "4900"
+flags = []
+
+[rooms.4903.exits.s]
+direction = "s"
+to = "4930"
+flags = []
+
+[rooms.4903.exits.w]
+direction = "w"
+to = "4938"
+flags = []
+
+[rooms.4904]
+id = "4904"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 52
+y = 80
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4904.exits.e]
+direction = "e"
+to = "4905"
+flags = []
+
+[rooms.4904.exits.n]
+direction = "n"
+to = "4927"
+flags = []
+
+[rooms.4904.exits.s]
+direction = "s"
+to = "4909"
+flags = []
+
+[rooms.4904.exits.w]
+direction = "w"
+to = "4900"
+flags = []
+
+[rooms.4905]
+id = "4905"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 53
+y = 80
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4905.exits.e]
+direction = "e"
+to = "4915"
+flags = []
+
+[rooms.4905.exits.n]
+direction = "n"
+to = "4924"
+flags = []
+
+[rooms.4905.exits.s]
+direction = "s"
+to = "4911"
+flags = []
+
+[rooms.4905.exits.w]
+direction = "w"
+to = "4904"
+flags = []
+
+[rooms.4908]
+id = "4908"
+name = "The Bear's Cave"
+description = ""
+area = ""
+note = ""
+terrain = "Floor"
 symbol = ""
 weight = 1.0
+x = 50
+y = 82
+z = 0
+exit_order = ["e"]
+flags = ["avoid"]
+
+[rooms.4908.exits.e]
+direction = "e"
+to = "4930"
+flags = []
+
+[rooms.4909]
+id = "4909"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 52
+y = 81
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4909.exits.e]
+direction = "e"
+to = "4911"
+flags = []
+
+[rooms.4909.exits.n]
+direction = "n"
+to = "4904"
+flags = []
+
+[rooms.4909.exits.s]
+direction = "s"
+to = "4910"
+flags = []
+
+[rooms.4909.exits.w]
+direction = "w"
+to = "4903"
+flags = []
+
+[rooms.4910]
+id = "4910"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 52
+y = 82
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.4910.exits.e]
+direction = "e"
+to = "4912"
+flags = []
+
+[rooms.4910.exits.n]
+direction = "n"
+to = "4909"
+flags = []
+
+[rooms.4910.exits.w]
+direction = "w"
+to = "4930"
+flags = []
+
+[rooms.4911]
+id = "4911"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 53
+y = 81
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4911.exits.n]
+direction = "n"
+to = "4905"
+flags = []
+
+[rooms.4911.exits.s]
+direction = "s"
+to = "4912"
+flags = []
+
+[rooms.4911.exits.w]
+direction = "w"
+to = "4909"
+flags = []
+
+[rooms.4912]
+id = "4912"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 53
+y = 82
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.4912.exits.e]
+direction = "e"
+to = "4914"
+flags = []
+
+[rooms.4912.exits.n]
+direction = "n"
+to = "4911"
+flags = []
+
+[rooms.4912.exits.w]
+direction = "w"
+to = "4910"
+flags = []
+
+[rooms.4914]
+id = "4914"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 54
+y = 82
+z = 0
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.4914.exits.e]
+direction = "e"
+to = "4918"
+flags = []
+
+[rooms.4914.exits.w]
+direction = "w"
+to = "4912"
+flags = []
+
+[rooms.4915]
+id = "4915"
+name = "A Dirty Pond"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 54
+y = 80
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.4915.exits.e]
+direction = "e"
+to = "4917"
+flags = []
+
+[rooms.4915.exits.n]
+direction = "n"
+to = "4923"
+flags = []
+
+[rooms.4915.exits.w]
+direction = "w"
+to = "4905"
+flags = []
+
+[rooms.4916]
+id = "4916"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 55
+y = 81
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.4916.exits.e]
+direction = "e"
+to = "5715"
+flags = []
+
+[rooms.4916.exits.n]
+direction = "n"
+to = "4917"
+flags = []
+
+[rooms.4916.exits.s]
+direction = "s"
+to = "4918"
+flags = []
+
+[rooms.4917]
+id = "4917"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 55
+y = 80
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4917.exits.e]
+direction = "e"
+to = "5710"
+flags = []
+
+[rooms.4917.exits.n]
+direction = "n"
+to = "4919"
+flags = []
+
+[rooms.4917.exits.s]
+direction = "s"
+to = "4916"
+flags = []
+
+[rooms.4917.exits.w]
+direction = "w"
+to = "4915"
+flags = []
+
+[rooms.4918]
+id = "4918"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 55
+y = 82
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.4918.exits.e]
+direction = "e"
+to = "5720"
+flags = []
+
+[rooms.4918.exits.n]
+direction = "n"
+to = "4916"
+flags = []
+
+[rooms.4918.exits.w]
+direction = "w"
+to = "4914"
+flags = []
+
+[rooms.4919]
+id = "4919"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 55
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4919.exits.e]
+direction = "e"
+to = "5705"
+flags = []
+
+[rooms.4919.exits.n]
+direction = "n"
+to = "4920"
+flags = []
+
+[rooms.4919.exits.s]
+direction = "s"
+to = "4917"
+flags = []
+
+[rooms.4919.exits.w]
+direction = "w"
+to = "4923"
+flags = []
+
+[rooms.4920]
+id = "4920"
+name = "A Small Forest Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 55
+y = 78
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4920.exits.e]
+direction = "e"
+to = "5700"
+flags = []
+
+[rooms.4920.exits.s]
+direction = "s"
+to = "4919"
+flags = []
+
+[rooms.4920.exits.w]
+direction = "w"
+to = "4921"
+flags = []
+
+[rooms.4921]
+id = "4921"
+name = "Path Through the Trees"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 54
+y = 78
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4921.exits.e]
+direction = "e"
+to = "4920"
+flags = []
+
+[rooms.4921.exits.s]
+direction = "s"
+to = "4923"
+flags = []
+
+[rooms.4921.exits.w]
+direction = "w"
+to = "4925"
+flags = []
+
+[rooms.4922]
+id = "4922"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 78
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4922.exits.e]
+direction = "e"
+to = "4933"
+flags = []
+
+[rooms.4922.exits.n]
+direction = "n"
+to = "4939"
+flags = []
+
+[rooms.4922.exits.s]
+direction = "s"
+to = "4940"
+flags = []
+
+[rooms.4922.exits.w]
+direction = "w"
+to = "4993"
+flags = []
+
+[rooms.4923]
+id = "4923"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 54
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4923.exits.e]
+direction = "e"
+to = "4919"
+flags = []
+
+[rooms.4923.exits.n]
+direction = "n"
+to = "4921"
+flags = []
+
+[rooms.4923.exits.s]
+direction = "s"
+to = "4915"
+flags = []
+
+[rooms.4923.exits.w]
+direction = "w"
+to = "4924"
+flags = []
+
+[rooms.4924]
+id = "4924"
+name = "Thick Vegetation"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 53
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4924.exits.e]
+direction = "e"
+to = "4923"
+flags = []
+
+[rooms.4924.exits.n]
+direction = "n"
+to = "4925"
+flags = []
+
+[rooms.4924.exits.s]
+direction = "s"
+to = "4905"
+flags = []
+
+[rooms.4924.exits.w]
+direction = "w"
+to = "4927"
+flags = []
+
+[rooms.4925]
+id = "4925"
+name = "Path through the Trees"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 53
+y = 78
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4925.exits.e]
+direction = "e"
+to = "4921"
+flags = []
+
+[rooms.4925.exits.s]
+direction = "s"
+to = "4924"
+flags = []
+
+[rooms.4925.exits.w]
+direction = "w"
+to = "4926"
+flags = []
+
+[rooms.4926]
+id = "4926"
+name = "Path Through the Trees"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 52
+y = 78
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4926.exits.e]
+direction = "e"
+to = "4925"
+flags = []
+
+[rooms.4926.exits.s]
+direction = "s"
+to = "4927"
+flags = []
+
+[rooms.4926.exits.w]
+direction = "w"
+to = "4929"
+flags = []
+
+[rooms.4927]
+id = "4927"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 52
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4927.exits.e]
+direction = "e"
+to = "4924"
+flags = []
+
+[rooms.4927.exits.n]
+direction = "n"
+to = "4926"
+flags = []
+
+[rooms.4927.exits.s]
+direction = "s"
+to = "4904"
+flags = []
+
+[rooms.4927.exits.w]
+direction = "w"
+to = "4901"
+flags = []
+
+[rooms.4929]
+id = "4929"
+name = "The Huge Maple Tree"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 51
+y = 78
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4929.exits.e]
+direction = "e"
+to = "4926"
+flags = []
+
+[rooms.4929.exits.s]
+direction = "s"
+to = "4901"
+flags = []
+
+[rooms.4929.exits.w]
+direction = "w"
+to = "4932"
+flags = []
+
+[rooms.4930]
+id = "4930"
+name = "Inside the Cave"
+description = ""
+area = ""
+note = ""
+terrain = "Floor"
+symbol = ""
+weight = 1.0
+x = 51
+y = 82
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = ["avoid"]
+
+[rooms.4930.exits.e]
+direction = "e"
+to = "4910"
+flags = []
+
+[rooms.4930.exits.n]
+direction = "n"
+to = "4903"
+flags = []
+
+[rooms.4930.exits.w]
+direction = "w"
+to = "4908"
+flags = []
+
+[rooms.4931]
+id = "4931"
+name = "Path Through the Trees"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 50
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4931.exits.e]
+direction = "e"
+to = "4901"
+flags = []
+
+[rooms.4931.exits.n]
+direction = "n"
+to = "4932"
+flags = []
+
+[rooms.4931.exits.s]
+direction = "s"
+to = "4902"
+flags = []
+
+[rooms.4931.exits.w]
+direction = "w"
+to = "4933"
+flags = []
+
+[rooms.4932]
+id = "4932"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 78
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4932.exits.e]
+direction = "e"
+to = "4929"
+flags = []
+
+[rooms.4932.exits.n]
+direction = "n"
+to = "6240"
+flags = []
+
+[rooms.4932.exits.s]
+direction = "s"
+to = "4931"
+flags = []
+
+[rooms.4932.exits.w]
+direction = "w"
+to = "4934"
+flags = []
+
+[rooms.4933]
+id = "4933"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4933.exits.e]
+direction = "e"
+to = "4931"
+flags = []
+
+[rooms.4933.exits.n]
+direction = "n"
+to = "4934"
+flags = []
+
+[rooms.4933.exits.s]
+direction = "s"
+to = "4935"
+flags = []
+
+[rooms.4933.exits.w]
+direction = "w"
+to = "4922"
+flags = []
+
+[rooms.4934]
+id = "4934"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 78
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4934.exits.e]
+direction = "e"
+to = "4932"
+flags = []
+
+[rooms.4934.exits.n]
+direction = "n"
+to = "6239"
+flags = []
+
+[rooms.4934.exits.s]
+direction = "s"
+to = "4933"
+flags = []
+
+[rooms.4934.exits.w]
+direction = "w"
+to = "4939"
+flags = []
+
+[rooms.4935]
+id = "4935"
+name = "Path Through the Trees"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 50
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4935.exits.e]
+direction = "e"
+to = "4902"
+flags = []
+
+[rooms.4935.exits.n]
+direction = "n"
+to = "4933"
+flags = []
+
+[rooms.4935.exits.s]
+direction = "s"
+to = "4936"
+flags = []
+
+[rooms.4935.exits.w]
+direction = "w"
+to = "4940"
+flags = []
+
+[rooms.4936]
+id = "4936"
+name = "A Small Lake"
+description = ""
+area = ""
+note = ""
+terrain = "Water_noswim"
+symbol = ""
+weight = 10.0
+x = 50
+y = 80
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.4936.exits.e]
+direction = "e"
+to = "4938"
+flags = []
+
+[rooms.4936.exits.n]
+direction = "n"
+to = "4935"
+flags = []
+
+[rooms.4936.exits.w]
+direction = "w"
+to = "4941"
+flags = []
+
+[rooms.4938]
+id = "4938"
+name = "A Small Lake"
+description = ""
+area = ""
+note = ""
+terrain = "Water_noswim"
+symbol = ""
+weight = 10.0
+x = 50
+y = 81
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.4938.exits.e]
+direction = "e"
+to = "4903"
+flags = []
+
+[rooms.4938.exits.n]
+direction = "n"
+to = "4902"
+flags = []
+
+[rooms.4938.exits.w]
+direction = "w"
+to = "4936"
+flags = []
+
+[rooms.4939]
+id = "4939"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 77
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4939.exits.e]
+direction = "e"
+to = "4934"
+flags = []
+
+[rooms.4939.exits.n]
+direction = "n"
+to = "6238"
+flags = []
+
+[rooms.4939.exits.s]
+direction = "s"
+to = "4922"
+flags = []
+
+[rooms.4939.exits.w]
+direction = "w"
+to = "4994"
+flags = []
+
+[rooms.4940]
+id = "4940"
+name = "Path Through the Trees"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 49
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4940.exits.e]
+direction = "e"
+to = "4935"
+flags = []
+
+[rooms.4940.exits.n]
+direction = "n"
+to = "4922"
+flags = []
+
+[rooms.4940.exits.s]
+direction = "s"
+to = "4941"
+flags = []
+
+[rooms.4940.exits.w]
+direction = "w"
+to = "4992"
+flags = []
+
+[rooms.4941]
+id = "4941"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 80
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4941.exits.e]
+direction = "e"
+to = "4936"
+flags = []
+
+[rooms.4941.exits.n]
+direction = "n"
+to = "4940"
+flags = []
+
+[rooms.4941.exits.s]
+direction = "s"
+to = "4942"
+flags = []
+
+[rooms.4941.exits.w]
+direction = "w"
+to = "4991"
+flags = []
+
+[rooms.4942]
+id = "4942"
+name = "Mirkwood Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 81
+z = 0
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.4942.exits.n]
+direction = "n"
+to = "4941"
+flags = []
+
+[rooms.4942.exits.w]
+direction = "w"
+to = "4990"
+flags = []
+
+[rooms.4990]
+id = "4990"
+name = "Thin Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 81
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.4990.exits.e]
+direction = "e"
+to = "4942"
+flags = []
+
+[rooms.4990.exits.n]
+direction = "n"
+to = "4991"
+flags = []
+
+[rooms.4990.exits.w]
+direction = "w"
+to = "4995"
+flags = []
+
+[rooms.4991]
+id = "4991"
+name = "A Thick Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 80
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4991.exits.e]
+direction = "e"
+to = "4941"
+flags = []
+
+[rooms.4991.exits.n]
+direction = "n"
+to = "4992"
+flags = []
+
+[rooms.4991.exits.s]
+direction = "s"
+to = "4990"
+flags = []
+
+[rooms.4991.exits.w]
+direction = "w"
+to = "4996"
+flags = []
+
+[rooms.4992]
+id = "4992"
+name = "A Bend in the Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 48
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4992.exits.e]
+direction = "e"
+to = "4940"
+flags = []
+
+[rooms.4992.exits.n]
+direction = "n"
+to = "4993"
+flags = []
+
+[rooms.4992.exits.s]
+direction = "s"
+to = "4991"
+flags = []
+
+[rooms.4992.exits.w]
+direction = "w"
+to = "4997"
+flags = []
+
+[rooms.4993]
+id = "4993"
+name = "A Bend in the Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 48
+y = 78
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4993.exits.e]
+direction = "e"
+to = "4922"
+flags = []
+
+[rooms.4993.exits.n]
+direction = "n"
+to = "4994"
+flags = []
+
+[rooms.4993.exits.s]
+direction = "s"
+to = "4992"
+flags = []
+
+[rooms.4993.exits.w]
+direction = "w"
+to = "4998"
+flags = []
+
+[rooms.4994]
+id = "4994"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 77
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4994.exits.e]
+direction = "e"
+to = "4939"
+flags = []
+
+[rooms.4994.exits.n]
+direction = "n"
+to = "6237"
+flags = []
+
+[rooms.4994.exits.s]
+direction = "s"
+to = "4993"
+flags = []
+
+[rooms.4994.exits.w]
+direction = "w"
+to = "4999"
+flags = []
+
+[rooms.4995]
+id = "4995"
+name = "Thin Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
 x = 47
 y = 81
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.4995.exits.e]
+direction = "e"
+to = "4990"
+flags = []
+
+[rooms.4995.exits.n]
+direction = "n"
+to = "4996"
 flags = []
 
 [rooms.4995.exits.w]
@@ -109469,17 +113482,37 @@ flags = []
 
 [rooms.4996]
 id = "4996"
-name = ""
+name = "Thick Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Forest"
 symbol = ""
-weight = 1.0
+weight = 4.0
 x = 47
 y = 80
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4996.exits.e]
+direction = "e"
+to = "4991"
+flags = []
+
+[rooms.4996.exits.n]
+direction = "n"
+to = "4997"
+flags = []
+
+[rooms.4996.exits.s]
+direction = "s"
+to = "4995"
 flags = []
 
 [rooms.4996.exits.w]
@@ -109489,17 +113522,37 @@ flags = []
 
 [rooms.4997]
 id = "4997"
-name = ""
+name = "Dense Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Forest"
 symbol = ""
-weight = 1.0
+weight = 4.0
 x = 47
 y = 79
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4997.exits.e]
+direction = "e"
+to = "4992"
+flags = []
+
+[rooms.4997.exits.n]
+direction = "n"
+to = "4998"
+flags = []
+
+[rooms.4997.exits.s]
+direction = "s"
+to = "4996"
 flags = []
 
 [rooms.4997.exits.w]
@@ -109509,17 +113562,37 @@ flags = []
 
 [rooms.4998]
 id = "4998"
-name = ""
+name = "A Path through the Trees"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Road"
 symbol = ""
-weight = 1.0
+weight = 2.0
 x = 47
 y = 78
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4998.exits.e]
+direction = "e"
+to = "4993"
+flags = []
+
+[rooms.4998.exits.n]
+direction = "n"
+to = "4999"
+flags = []
+
+[rooms.4998.exits.s]
+direction = "s"
+to = "4997"
 flags = []
 
 [rooms.4998.exits.w]
@@ -109529,17 +113602,37 @@ flags = []
 
 [rooms.4999]
 id = "4999"
-name = ""
+name = "Dense Forest"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Forest"
 symbol = ""
-weight = 1.0
+weight = 4.0
 x = 47
 y = 77
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.4999.exits.e]
+direction = "e"
+to = "4994"
+flags = []
+
+[rooms.4999.exits.n]
+direction = "n"
+to = "6236"
+flags = []
+
+[rooms.4999.exits.s]
+direction = "s"
+to = "4998"
 flags = []
 
 [rooms.4999.exits.w]
@@ -114786,6 +118879,1294 @@ flags = []
 [rooms.5609.exits.w]
 direction = "w"
 to = "5606"
+flags = []
+
+[rooms.5700]
+id = "5700"
+name = "Narrowing Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 56
+y = 78
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5700.exits.e]
+direction = "e"
+to = "5701"
+flags = []
+
+[rooms.5700.exits.s]
+direction = "s"
+to = "5705"
+flags = []
+
+[rooms.5700.exits.w]
+direction = "w"
+to = "4920"
+flags = []
+
+[rooms.5701]
+id = "5701"
+name = "Bend in the Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 57
+y = 78
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5701.exits.e]
+direction = "e"
+to = "5702"
+flags = []
+
+[rooms.5701.exits.s]
+direction = "s"
+to = "5706"
+flags = []
+
+[rooms.5701.exits.w]
+direction = "w"
+to = "5700"
+flags = []
+
+[rooms.5702]
+id = "5702"
+name = "Dense Brush In Between The Trees"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 58
+y = 78
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5702.exits.e]
+direction = "e"
+to = "5703"
+flags = []
+
+[rooms.5702.exits.s]
+direction = "s"
+to = "5707"
+flags = []
+
+[rooms.5702.exits.w]
+direction = "w"
+to = "5701"
+flags = []
+
+[rooms.5703]
+id = "5703"
+name = "Dense Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 59
+y = 78
+z = 0
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.5703.exits.e]
+direction = "e"
+to = "5704"
+flags = []
+
+[rooms.5703.exits.w]
+direction = "w"
+to = "5702"
+flags = []
+
+[rooms.5704]
+id = "5704"
+name = "Dark Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 78
+z = 0
+exit_order = [
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.5704.exits.u]
+direction = "u"
+to = "6457"
+flags = []
+
+[rooms.5704.exits.w]
+direction = "w"
+to = "5703"
+flags = []
+
+[rooms.5705]
+id = "5705"
+name = "Thick Brush Among the Pines"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 56
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5705.exits.e]
+direction = "e"
+to = "5706"
+flags = []
+
+[rooms.5705.exits.n]
+direction = "n"
+to = "5700"
+flags = []
+
+[rooms.5705.exits.s]
+direction = "s"
+to = "5710"
+flags = []
+
+[rooms.5705.exits.w]
+direction = "w"
+to = "4919"
+flags = []
+
+[rooms.5706]
+id = "5706"
+name = "Bend in the Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 57
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5706.exits.e]
+direction = "e"
+to = "5707"
+flags = []
+
+[rooms.5706.exits.n]
+direction = "n"
+to = "5701"
+flags = []
+
+[rooms.5706.exits.s]
+direction = "s"
+to = "5711"
+flags = []
+
+[rooms.5706.exits.w]
+direction = "w"
+to = "5705"
+flags = []
+
+[rooms.5707]
+id = "5707"
+name = "End of the Forest Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 58
+y = 79
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.5707.exits.e]
+direction = "e"
+to = "5708"
+flags = []
+
+[rooms.5707.exits.n]
+direction = "n"
+to = "5702"
+flags = []
+
+[rooms.5707.exits.w]
+direction = "w"
+to = "5706"
+flags = []
+
+[rooms.5708]
+id = "5708"
+name = "Clearing Outside a Mud Dwelling"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 59
+y = 79
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5708.exits.e]
+direction = "e"
+to = "5709"
+flags = []
+
+[rooms.5708.exits.s]
+direction = "s"
+to = "5713"
+flags = []
+
+[rooms.5708.exits.w]
+direction = "w"
+to = "5707"
+flags = []
+
+[rooms.5709]
+id = "5709"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = 60
+y = 79
+z = 0
+exit_order = []
+flags = []
+
+[rooms.5709.exits.w]
+direction = "w"
+to = "5708"
+flags = []
+
+[rooms.5710]
+id = "5710"
+name = "Muddy Ground in the Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 56
+y = 80
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5710.exits.e]
+direction = "e"
+to = "5711"
+flags = []
+
+[rooms.5710.exits.n]
+direction = "n"
+to = "5705"
+flags = []
+
+[rooms.5710.exits.s]
+direction = "s"
+to = "5715"
+flags = []
+
+[rooms.5710.exits.w]
+direction = "w"
+to = "4917"
+flags = []
+
+[rooms.5711]
+id = "5711"
+name = "Mudfilled Brush in the Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 57
+y = 80
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5711.exits.e]
+direction = "e"
+to = "5712"
+flags = []
+
+[rooms.5711.exits.n]
+direction = "n"
+to = "5706"
+flags = []
+
+[rooms.5711.exits.s]
+direction = "s"
+to = "5716"
+flags = []
+
+[rooms.5711.exits.w]
+direction = "w"
+to = "5710"
+flags = []
+
+[rooms.5712]
+id = "5712"
+name = "Dense Grove of Pines"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 58
+y = 80
+z = 0
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5712.exits.s]
+direction = "s"
+to = "5717"
+flags = []
+
+[rooms.5712.exits.w]
+direction = "w"
+to = "5711"
+flags = []
+
+[rooms.5713]
+id = "5713"
+name = "Path Around the Mud Dwelling"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 59
+y = 80
+z = 0
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.5713.exits.e]
+direction = "e"
+to = "5714"
+flags = []
+
+[rooms.5713.exits.n]
+direction = "n"
+to = "5708"
+flags = []
+
+[rooms.5714]
+id = "5714"
+name = "Soot Pile Beside a Burnt Hut"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 80
+z = 0
+exit_order = ["w"]
+flags = []
+
+[rooms.5714.exits.w]
+direction = "w"
+to = "5713"
+flags = []
+
+[rooms.5715]
+id = "5715"
+name = "End of a Forest Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 56
+y = 81
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5715.exits.e]
+direction = "e"
+to = "5716"
+flags = []
+
+[rooms.5715.exits.n]
+direction = "n"
+to = "5710"
+flags = []
+
+[rooms.5715.exits.s]
+direction = "s"
+to = "5720"
+flags = []
+
+[rooms.5715.exits.w]
+direction = "w"
+to = "4916"
+flags = []
+
+[rooms.5716]
+id = "5716"
+name = "Edge of a Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 57
+y = 81
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.5716.exits.e]
+direction = "e"
+to = "5717"
+flags = []
+
+[rooms.5716.exits.n]
+direction = "n"
+to = "5711"
+flags = []
+
+[rooms.5716.exits.w]
+direction = "w"
+to = "5715"
+flags = []
+
+[rooms.5717]
+id = "5717"
+name = "Swampy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 58
+y = 81
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5717.exits.e]
+direction = "e"
+to = "5718"
+flags = []
+
+[rooms.5717.exits.n]
+direction = "n"
+to = "5712"
+flags = []
+
+[rooms.5717.exits.s]
+direction = "s"
+to = "5722"
+flags = []
+
+[rooms.5717.exits.w]
+direction = "w"
+to = "5716"
+flags = []
+
+[rooms.5718]
+id = "5718"
+name = "Dense Grove of Pines"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 59
+y = 81
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5718.exits.e]
+direction = "e"
+to = "5719"
+flags = []
+
+[rooms.5718.exits.s]
+direction = "s"
+to = "5723"
+flags = []
+
+[rooms.5718.exits.w]
+direction = "w"
+to = "5717"
+flags = []
+
+[rooms.5719]
+id = "5719"
+name = "Dense Grove of Pines"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 81
+z = 0
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5719.exits.s]
+direction = "s"
+to = "5724"
+flags = []
+
+[rooms.5719.exits.w]
+direction = "w"
+to = "5718"
+flags = []
+
+[rooms.5720]
+id = "5720"
+name = "Valley in the Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 56
+y = 82
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.5720.exits.e]
+direction = "e"
+to = "5721"
+flags = []
+
+[rooms.5720.exits.n]
+direction = "n"
+to = "5715"
+flags = []
+
+[rooms.5720.exits.w]
+direction = "w"
+to = "4918"
+flags = []
+
+[rooms.5721]
+id = "5721"
+name = "Valley in the Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 58
+y = 82
+z = 0
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5721.exits.s]
+direction = "s"
+to = "5726"
+flags = []
+
+[rooms.5721.exits.w]
+direction = "w"
+to = "5720"
+flags = []
+
+[rooms.5722]
+id = "5722"
+name = "Swamp in the Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 58
+y = 82
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.5722.exits.e]
+direction = "e"
+to = "5723"
+flags = []
+
+[rooms.5722.exits.n]
+direction = "n"
+to = "5717"
+flags = []
+
+[rooms.5722.exits.s]
+direction = "s"
+to = "5732"
+flags = []
+
+[rooms.5723]
+id = "5723"
+name = "Forest Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 59
+y = 82
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.5723.exits.e]
+direction = "e"
+to = "5724"
+flags = []
+
+[rooms.5723.exits.n]
+direction = "n"
+to = "5718"
+flags = []
+
+[rooms.5723.exits.w]
+direction = "w"
+to = "5722"
+flags = []
+
+[rooms.5724]
+id = "5724"
+name = "Wetlands in a Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 60
+y = 82
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5724.exits.e]
+direction = "e"
+to = "6420"
+flags = []
+
+[rooms.5724.exits.n]
+direction = "n"
+to = "5719"
+flags = []
+
+[rooms.5724.exits.s]
+direction = "s"
+to = "5729"
+flags = []
+
+[rooms.5724.exits.w]
+direction = "w"
+to = "5723"
+flags = []
+
+[rooms.5725]
+id = "5725"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = 57
+y = 83
+z = 0
+exit_order = []
+flags = []
+
+[rooms.5725.exits.s]
+direction = "s"
+to = "5730"
+flags = []
+
+[rooms.5726]
+id = "5726"
+name = "Forest Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 58
+y = 83
+z = 0
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.5726.exits.e]
+direction = "e"
+to = "5727"
+flags = []
+
+[rooms.5726.exits.n]
+direction = "n"
+to = "5721"
+flags = []
+
+[rooms.5727]
+id = "5727"
+name = "Valley Through the Pines"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 59
+y = 83
+z = 0
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.5727.exits.e]
+direction = "e"
+to = "5728"
+flags = []
+
+[rooms.5727.exits.w]
+direction = "w"
+to = "5726"
+flags = []
+
+[rooms.5728]
+id = "5728"
+name = "Mudslide in the Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 83
+z = 0
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5728.exits.s]
+direction = "s"
+to = "5733"
+flags = []
+
+[rooms.5728.exits.w]
+direction = "w"
+to = "5727"
+flags = []
+
+[rooms.5729]
+id = "5729"
+name = "Mirky Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 60
+y = 83
+z = 0
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.5729.exits.e]
+direction = "e"
+to = "6421"
+flags = []
+
+[rooms.5729.exits.n]
+direction = "n"
+to = "5724"
+flags = []
+
+[rooms.5730]
+id = "5730"
+name = "Dark Green Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 57
+y = 84
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.5730.exits.e]
+direction = "e"
+to = "5731"
+flags = []
+
+[rooms.5730.exits.n]
+direction = "n"
+to = "5725"
+flags = []
+
+[rooms.5730.exits.s]
+direction = "s"
+to = "5735"
+flags = []
+
+[rooms.5731]
+id = "5731"
+name = "At Trunk of a Fallen Pine"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 58
+y = 84
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5731.exits.n]
+direction = "n"
+to = "5732"
+flags = []
+
+[rooms.5731.exits.s]
+direction = "s"
+to = "5736"
+flags = []
+
+[rooms.5731.exits.w]
+direction = "w"
+to = "5730"
+flags = []
+
+[rooms.5732]
+id = "5732"
+name = "Downed Pine Tree High Above the Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 58
+y = 83
+z = 0
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.5732.exits.n]
+direction = "n"
+to = "5722"
+flags = []
+
+[rooms.5732.exits.s]
+direction = "s"
+to = "5731"
+flags = []
+
+[rooms.5733]
+id = "5733"
+name = "Forest Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 84
+z = 0
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.5733.exits.e]
+direction = "e"
+to = "5734"
+flags = []
+
+[rooms.5733.exits.n]
+direction = "n"
+to = "5728"
+flags = []
+
+[rooms.5734]
+id = "5734"
+name = "Shallowing Forest Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 61
+y = 84
+z = 0
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5734.exits.s]
+direction = "s"
+to = "5739"
+flags = []
+
+[rooms.5734.exits.w]
+direction = "w"
+to = "5733"
+flags = []
+
+[rooms.5735]
+id = "5735"
+name = "Black Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 57
+y = 85
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.5735.exits.e]
+direction = "e"
+to = "5736"
+flags = []
+
+[rooms.5735.exits.n]
+direction = "n"
+to = "5730"
+flags = []
+
+[rooms.5735.exits.s]
+direction = "s"
+to = "2441"
+flags = []
+
+[rooms.5736]
+id = "5736"
+name = "Dense Brushy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 58
+y = 85
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5736.exits.e]
+direction = "e"
+to = "5737"
+flags = []
+
+[rooms.5736.exits.n]
+direction = "n"
+to = "5731"
+flags = []
+
+[rooms.5736.exits.s]
+direction = "s"
+to = "2442"
+flags = []
+
+[rooms.5736.exits.w]
+direction = "w"
+to = "5735"
+flags = []
+
+[rooms.5737]
+id = "5737"
+name = "Heavy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 59
+y = 85
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5737.exits.e]
+direction = "e"
+to = "5738"
+flags = []
+
+[rooms.5737.exits.s]
+direction = "s"
+to = "2443"
+flags = []
+
+[rooms.5737.exits.w]
+direction = "w"
+to = "5736"
+flags = []
+
+[rooms.5738]
+id = "5738"
+name = "Muddy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 85
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5738.exits.e]
+direction = "e"
+to = "5739"
+flags = []
+
+[rooms.5738.exits.s]
+direction = "s"
+to = "2444"
+flags = []
+
+[rooms.5738.exits.w]
+direction = "w"
+to = "5737"
+flags = []
+
+[rooms.5739]
+id = "5739"
+name = "End of a Forest Valley"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 61
+y = 85
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.5739.exits.n]
+direction = "n"
+to = "5734"
+flags = []
+
+[rooms.5739.exits.s]
+direction = "s"
+to = "2445"
+flags = []
+
+[rooms.5739.exits.w]
+direction = "w"
+to = "5738"
 flags = []
 
 [rooms.5800]
@@ -124594,17 +129975,37 @@ flags = []
 
 [rooms.6200]
 id = "6200"
-name = ""
+name = "A Dry Clearing"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Field"
 symbol = ""
-weight = 1.0
+weight = 3.0
 x = 47
 y = 69
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6200.exits.e]
+direction = "e"
+to = "6202"
+flags = []
+
+[rooms.6200.exits.n]
+direction = "n"
+to = "17173"
+flags = []
+
+[rooms.6200.exits.s]
+direction = "s"
+to = "6206"
 flags = []
 
 [rooms.6200.exits.w]
@@ -124612,24 +130013,1287 @@ direction = "w"
 to = "8300"
 flags = []
 
-[rooms.6236]
-id = "6236"
-name = ""
+[rooms.6201]
+id = "6201"
+name = "Up Inside the Oak's Branches"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Forest"
 symbol = ""
-weight = 1.0
+weight = 4.0
+x = 49
+y = 71
+z = 1
+exit_order = ["d"]
+flags = []
+
+[rooms.6201.exits.d]
+direction = "d"
+to = "6213"
+flags = []
+
+[rooms.6202]
+id = "6202"
+name = "A Muddy Clearing"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = 48
+y = 69
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6202.exits.e]
+direction = "e"
+to = "6203"
+flags = []
+
+[rooms.6202.exits.n]
+direction = "n"
+to = "17174"
+flags = []
+
+[rooms.6202.exits.s]
+direction = "s"
+to = "6207"
+flags = []
+
+[rooms.6202.exits.w]
+direction = "w"
+to = "6200"
+flags = []
+
+[rooms.6203]
+id = "6203"
+name = "Dark Woods"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 69
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6203.exits.e]
+direction = "e"
+to = "6204"
+flags = []
+
+[rooms.6203.exits.n]
+direction = "n"
+to = "17175"
+flags = []
+
+[rooms.6203.exits.s]
+direction = "s"
+to = "6208"
+flags = []
+
+[rooms.6203.exits.w]
+direction = "w"
+to = "6202"
+flags = []
+
+[rooms.6204]
+id = "6204"
+name = "Dark Woods"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 70
+z = 0
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.6204.exits.n]
+direction = "n"
+to = "17176"
+flags = []
+
+[rooms.6204.exits.w]
+direction = "w"
+to = "6203"
+flags = []
+
+[rooms.6205]
+id = "6205"
+name = "A Glade Among Elms"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 70
+z = 0
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.6205.exits.n]
+direction = "n"
+to = "17177"
+flags = []
+
+[rooms.6205.exits.s]
+direction = "s"
+to = "6210"
+flags = []
+
+[rooms.6206]
+id = "6206"
+name = "Damp Ground"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 70
+z = 0
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.6206.exits.n]
+direction = "n"
+to = "6200"
+flags = []
+
+[rooms.6206.exits.w]
+direction = "w"
+to = "8339"
+flags = []
+
+[rooms.6207]
+id = "6207"
+name = "Firm Ground"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 70
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6207.exits.e]
+direction = "e"
+to = "6208"
+flags = []
+
+[rooms.6207.exits.n]
+direction = "n"
+to = "6202"
+flags = []
+
+[rooms.6207.exits.s]
+direction = "s"
+to = "6212"
+flags = []
+
+[rooms.6208]
+id = "6208"
+name = "A Stand of Birch"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 70
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6208.exits.e]
+direction = "e"
+to = "6209"
+flags = []
+
+[rooms.6208.exits.n]
+direction = "n"
+to = "6203"
+flags = []
+
+[rooms.6208.exits.w]
+direction = "w"
+to = "6207"
+flags = []
+
+[rooms.6209]
+id = "6209"
+name = "Firm Ground"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 71
+z = 0
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6209.exits.e]
+direction = "e"
+to = "6210"
+flags = []
+
+[rooms.6209.exits.w]
+direction = "w"
+to = "6208"
+flags = []
+
+[rooms.6210]
+id = "6210"
+name = "A Shallow Bog"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 71
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6210.exits.n]
+direction = "n"
+to = "6205"
+flags = []
+
+[rooms.6210.exits.s]
+direction = "s"
+to = "6215"
+flags = []
+
+[rooms.6210.exits.w]
+direction = "w"
+to = "6209"
+flags = []
+
+[rooms.6211]
+id = "6211"
+name = "A Shallow Pond"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 71
+z = 0
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6211.exits.e]
+direction = "e"
+to = "6212"
+flags = []
+
+[rooms.6211.exits.w]
+direction = "w"
+to = "8338"
+flags = []
+
+[rooms.6212]
+id = "6212"
+name = "A Stand of Birch"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 71
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6212.exits.e]
+direction = "e"
+to = "6213"
+flags = []
+
+[rooms.6212.exits.n]
+direction = "n"
+to = "6207"
+flags = []
+
+[rooms.6212.exits.w]
+direction = "w"
+to = "6211"
+flags = []
+
+[rooms.6213]
+id = "6213"
+name = "A Thick, Old, Oak Tree"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 71
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.6213.exits.e]
+direction = "e"
+to = "6214"
+flags = []
+
+[rooms.6213.exits.s]
+direction = "s"
+to = "6218"
+flags = []
+
+[rooms.6213.exits.u]
+direction = "u"
+to = "6201"
+flags = []
+
+[rooms.6213.exits.w]
+direction = "w"
+to = "6212"
+flags = []
+
+[rooms.6214]
+id = "6214"
+name = "A Stand of Birch"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 71
+z = 0
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6214.exits.s]
+direction = "s"
+to = "6219"
+flags = []
+
+[rooms.6214.exits.w]
+direction = "w"
+to = "6213"
+flags = []
+
+[rooms.6215]
+id = "6215"
+name = "A Wooded Draw"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 72
+z = 0
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.6215.exits.n]
+direction = "n"
+to = "6210"
+flags = []
+
+[rooms.6215.exits.s]
+direction = "s"
+to = "6220"
+flags = []
+
+[rooms.6216]
+id = "6216"
+name = "An Abandoned Camp"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 72
+z = 0
+exit_order = [
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6216.exits.e]
+direction = "e"
+to = "6217"
+flags = []
+
+[rooms.6216.exits.s]
+direction = "s"
+to = "6221"
+flags = []
+
+[rooms.6217]
+id = "6217"
+name = "A Rocky Place"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 72
+z = 0
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6217.exits.e]
+direction = "e"
+to = "6218"
+flags = []
+
+[rooms.6217.exits.w]
+direction = "w"
+to = "6216"
+flags = []
+
+[rooms.6218]
+id = "6218"
+name = "A Stand of Birch"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 72
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6218.exits.e]
+direction = "e"
+to = "6219"
+flags = []
+
+[rooms.6218.exits.n]
+direction = "n"
+to = "6213"
+flags = []
+
+[rooms.6218.exits.w]
+direction = "w"
+to = "6217"
+flags = []
+
+[rooms.6219]
+id = "6219"
+name = "Firm Ground"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 73
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6219.exits.e]
+direction = "e"
+to = "6220"
+flags = []
+
+[rooms.6219.exits.n]
+direction = "n"
+to = "6214"
+flags = []
+
+[rooms.6219.exits.s]
+direction = "s"
+to = "6224"
+flags = []
+
+[rooms.6219.exits.w]
+direction = "w"
+to = "6218"
+flags = []
+
+[rooms.6220]
+id = "6220"
+name = "A Shallow Bog"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 73
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6220.exits.n]
+direction = "n"
+to = "6215"
+flags = []
+
+[rooms.6220.exits.s]
+direction = "s"
+to = "6225"
+flags = []
+
+[rooms.6220.exits.w]
+direction = "w"
+to = "6219"
+flags = []
+
+[rooms.6221]
+id = "6221"
+name = "Amid Felled Trees"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 73
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6221.exits.e]
+direction = "e"
+to = "6222"
+flags = []
+
+[rooms.6221.exits.n]
+direction = "n"
+to = "6216"
+flags = []
+
+[rooms.6221.exits.s]
+direction = "s"
+to = "6226"
+flags = []
+
+[rooms.6222]
+id = "6222"
+name = "A Deep Bog"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 73
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6222.exits.e]
+direction = "e"
+to = "6223"
+flags = []
+
+[rooms.6222.exits.s]
+direction = "s"
+to = "6227"
+flags = []
+
+[rooms.6222.exits.w]
+direction = "w"
+to = "6221"
+flags = []
+
+[rooms.6223]
+id = "6223"
+name = "A Deep Bog"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 74
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6223.exits.e]
+direction = "e"
+to = "6224"
+flags = []
+
+[rooms.6223.exits.s]
+direction = "s"
+to = "6228"
+flags = []
+
+[rooms.6223.exits.w]
+direction = "w"
+to = "6222"
+flags = []
+
+[rooms.6224]
+id = "6224"
+name = "A Steep Embankment"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 74
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6224.exits.e]
+direction = "e"
+to = "6225"
+flags = []
+
+[rooms.6224.exits.n]
+direction = "n"
+to = "6219"
+flags = []
+
+[rooms.6224.exits.s]
+direction = "s"
+to = "6229"
+flags = []
+
+[rooms.6224.exits.w]
+direction = "w"
+to = "6223"
+flags = []
+
+[rooms.6225]
+id = "6225"
+name = "Atop an Embankment"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 74
+z = 0
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.6225.exits.n]
+direction = "n"
+to = "6220"
+flags = []
+
+[rooms.6225.exits.w]
+direction = "w"
+to = "6224"
+flags = []
+
+[rooms.6226]
+id = "6226"
+name = "A Wooden Lean-too"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 74
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6226.exits.n]
+direction = "n"
+to = "6221"
+flags = []
+
+[rooms.6226.exits.s]
+direction = "s"
+to = "6231"
+flags = []
+
+[rooms.6226.exits.w]
+direction = "w"
+to = "8335"
+flags = []
+
+[rooms.6227]
+id = "6227"
+name = "Spongy Ground"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 74
+z = 0
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.6227.exits.e]
+direction = "e"
+to = "6228"
+flags = []
+
+[rooms.6227.exits.n]
+direction = "n"
+to = "6222"
+flags = []
+
+[rooms.6228]
+id = "6228"
+name = "A Spiny Thicket"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 75
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6228.exits.n]
+direction = "n"
+to = "6223"
+flags = []
+
+[rooms.6228.exits.s]
+direction = "s"
+to = "6233"
+flags = []
+
+[rooms.6228.exits.w]
+direction = "w"
+to = "6227"
+flags = []
+
+[rooms.6229]
+id = "6229"
+name = "Along A Bramble"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 75
+z = 0
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.6229.exits.n]
+direction = "n"
+to = "6224"
+flags = []
+
+[rooms.6229.exits.s]
+direction = "s"
+to = "6234"
+flags = []
+
+[rooms.6230]
+id = "6230"
+name = "A Clearing"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 75
+z = 0
+exit_order = ["s"]
+flags = []
+
+[rooms.6230.exits.s]
+direction = "s"
+to = "6235"
+flags = []
+
+[rooms.6231]
+id = "6231"
+name = "A Rotting Carcas"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 47
+y = 75
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6231.exits.e]
+direction = "e"
+to = "6232"
+flags = []
+
+[rooms.6231.exits.n]
+direction = "n"
+to = "6226"
+flags = []
+
+[rooms.6231.exits.w]
+direction = "w"
+to = "8334"
+flags = []
+
+[rooms.6232]
+id = "6232"
+name = "A Patch of Ivy"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 75
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6232.exits.e]
+direction = "e"
+to = "6233"
+flags = []
+
+[rooms.6232.exits.s]
+direction = "s"
+to = "6237"
+flags = []
+
+[rooms.6232.exits.w]
+direction = "w"
+to = "6231"
+flags = []
+
+[rooms.6233]
+id = "6233"
+name = "In a Thicket"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 75
+z = 0
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.6233.exits.n]
+direction = "n"
+to = "6228"
+flags = []
+
+[rooms.6233.exits.w]
+direction = "w"
+to = "6232"
+flags = []
+
+[rooms.6234]
+id = "6234"
+name = "Along a Bramble"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 76
+z = 0
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.6234.exits.e]
+direction = "e"
+to = "6235"
+flags = []
+
+[rooms.6234.exits.n]
+direction = "n"
+to = "6229"
+flags = []
+
+[rooms.6235]
+id = "6235"
+name = "A Clear Area"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 76
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6235.exits.n]
+direction = "n"
+to = "6230"
+flags = []
+
+[rooms.6235.exits.s]
+direction = "s"
+to = "6240"
+flags = []
+
+[rooms.6235.exits.w]
+direction = "w"
+to = "6234"
+flags = []
+
+[rooms.6236]
+id = "6236"
+name = "Banded Trees"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
 x = 47
 y = 76
 z = 0
-exit_order = []
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6236.exits.e]
+direction = "e"
+to = "6237"
+flags = []
+
+[rooms.6236.exits.s]
+direction = "s"
+to = "4999"
 flags = []
 
 [rooms.6236.exits.w]
 direction = "w"
 to = "8333"
+flags = []
+
+[rooms.6237]
+id = "6237"
+name = "A Large Boulder"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 48
+y = 76
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6237.exits.e]
+direction = "e"
+to = "6238"
+flags = []
+
+[rooms.6237.exits.n]
+direction = "n"
+to = "6232"
+flags = []
+
+[rooms.6237.exits.s]
+direction = "s"
+to = "4994"
+flags = []
+
+[rooms.6237.exits.w]
+direction = "w"
+to = "6236"
+flags = []
+
+[rooms.6238]
+id = "6238"
+name = "South of a Thicket"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 76
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6238.exits.e]
+direction = "e"
+to = "6239"
+flags = []
+
+[rooms.6238.exits.s]
+direction = "s"
+to = "4939"
+flags = []
+
+[rooms.6238.exits.w]
+direction = "w"
+to = "6237"
+flags = []
+
+[rooms.6239]
+id = "6239"
+name = "Below the Pines"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 49
+y = 77
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6239.exits.e]
+direction = "e"
+to = "6240"
+flags = []
+
+[rooms.6239.exits.s]
+direction = "s"
+to = "4934"
+flags = []
+
+[rooms.6239.exits.w]
+direction = "w"
+to = "6238"
+flags = []
+
+[rooms.6240]
+id = "6240"
+name = "Below the Pines"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 50
+y = 77
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6240.exits.n]
+direction = "n"
+to = "6235"
+flags = []
+
+[rooms.6240.exits.s]
+direction = "s"
+to = "4932"
+flags = []
+
+[rooms.6240.exits.w]
+direction = "w"
+to = "6239"
 flags = []
 
 [rooms.6300]
@@ -127460,6 +134124,1128 @@ flags = []
 [rooms.6399.exits.u]
 direction = "u"
 to = "8551"
+flags = []
+
+[rooms.6400]
+id = "6400"
+name = "Nocturnal Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 79
+z = 1
+exit_order = [
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6400.exits.e]
+direction = "e"
+to = "6401"
+flags = []
+
+[rooms.6400.exits.s]
+direction = "s"
+to = "6402"
+flags = []
+
+[rooms.6401]
+id = "6401"
+name = "Thin Forest Before a Wooded Hill"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 61
+y = 79
+z = 1
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.6401.exits.n]
+direction = "n"
+to = "6403"
+flags = []
+
+[rooms.6401.exits.w]
+direction = "w"
+to = "6400"
+flags = []
+
+[rooms.6402]
+id = "6402"
+name = "Nocturnal Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 80
+z = 1
+exit_order = [
+    "n",
+    "s",
+]
+flags = []
+
+[rooms.6402.exits.n]
+direction = "n"
+to = "6400"
+flags = []
+
+[rooms.6402.exits.s]
+direction = "s"
+to = "6404"
+flags = []
+
+[rooms.6403]
+id = "6403"
+name = "Wooded Hill"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = 61
+y = 78
+z = 1
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6403.exits.s]
+direction = "s"
+to = "6401"
+flags = []
+
+[rooms.6403.exits.w]
+direction = "w"
+to = "6457"
+flags = []
+
+[rooms.6404]
+id = "6404"
+name = "Nocturnal Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 81
+z = 1
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.6404.exits.e]
+direction = "e"
+to = "6405"
+flags = []
+
+[rooms.6404.exits.n]
+direction = "n"
+to = "6402"
+flags = []
+
+[rooms.6405]
+id = "6405"
+name = "A Tiny Path Through the Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 61
+y = 81
+z = 1
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6405.exits.e]
+direction = "e"
+to = "6406"
+flags = []
+
+[rooms.6405.exits.n]
+direction = "n"
+to = "6414"
+flags = []
+
+[rooms.6405.exits.s]
+direction = "s"
+to = "6416"
+flags = []
+
+[rooms.6405.exits.w]
+direction = "w"
+to = "6404"
+flags = []
+
+[rooms.6406]
+id = "6406"
+name = "A Forest Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 62
+y = 81
+z = 1
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6406.exits.e]
+direction = "e"
+to = "6407"
+flags = []
+
+[rooms.6406.exits.s]
+direction = "s"
+to = "6417"
+flags = []
+
+[rooms.6406.exits.w]
+direction = "w"
+to = "6405"
+flags = []
+
+[rooms.6407]
+id = "6407"
+name = "Bend In the Forest Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 63
+y = 81
+z = 1
+exit_order = [
+    "n",
+    "w",
+]
+flags = []
+
+[rooms.6407.exits.n]
+direction = "n"
+to = "6408"
+flags = []
+
+[rooms.6407.exits.w]
+direction = "w"
+to = "6406"
+flags = []
+
+[rooms.6408]
+id = "6408"
+name = "A Forest Path"
+description = ""
+area = ""
+note = ""
+terrain = "Road"
+symbol = ""
+weight = 2.0
+x = 63
+y = 80
+z = 1
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6408.exits.e]
+direction = "e"
+to = "6409"
+flags = []
+
+[rooms.6408.exits.n]
+direction = "n"
+to = "6470"
+flags = []
+
+[rooms.6408.exits.s]
+direction = "s"
+to = "6407"
+flags = []
+
+[rooms.6408.exits.w]
+direction = "w"
+to = "6413"
+flags = []
+
+[rooms.6409]
+id = "6409"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = 64
+y = 80
+z = 1
+exit_order = []
+flags = []
+
+[rooms.6409.exits.w]
+direction = "w"
+to = "6408"
+flags = []
+
+[rooms.6413]
+id = "6413"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = 62
+y = 80
+z = 1
+exit_order = []
+flags = []
+
+[rooms.6413.exits.e]
+direction = "e"
+to = "6408"
+flags = []
+
+[rooms.6414]
+id = "6414"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = 61
+y = 80
+z = 1
+exit_order = []
+flags = []
+
+[rooms.6414.exits.s]
+direction = "s"
+to = "6405"
+flags = []
+
+[rooms.6416]
+id = "6416"
+name = "Shadowy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 61
+y = 82
+z = 1
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6416.exits.e]
+direction = "e"
+to = "6417"
+flags = []
+
+[rooms.6416.exits.n]
+direction = "n"
+to = "6405"
+flags = []
+
+[rooms.6416.exits.s]
+direction = "s"
+to = "6418"
+flags = []
+
+[rooms.6416.exits.w]
+direction = "w"
+to = "6420"
+flags = []
+
+[rooms.6417]
+id = "6417"
+name = "Thinning Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 63
+y = 82
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6417.exits.e]
+direction = "e"
+to = "6422"
+flags = []
+
+[rooms.6417.exits.n]
+direction = "n"
+to = "6406"
+flags = []
+
+[rooms.6417.exits.s]
+direction = "s"
+to = "6426"
+flags = []
+
+[rooms.6417.exits.w]
+direction = "w"
+to = "6416"
+flags = []
+
+[rooms.6418]
+id = "6418"
+name = "Thinning Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 62
+y = 83
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6418.exits.e]
+direction = "e"
+to = "6426"
+flags = []
+
+[rooms.6418.exits.n]
+direction = "n"
+to = "6416"
+flags = []
+
+[rooms.6418.exits.w]
+direction = "w"
+to = "6421"
+flags = []
+
+[rooms.6420]
+id = "6420"
+name = "Shadowy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 61
+y = 82
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6420.exits.e]
+direction = "e"
+to = "6416"
+flags = []
+
+[rooms.6420.exits.s]
+direction = "s"
+to = "6421"
+flags = []
+
+[rooms.6420.exits.w]
+direction = "w"
+to = "5724"
+flags = []
+
+[rooms.6421]
+id = "6421"
+name = "Shadowy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 61
+y = 83
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6421.exits.e]
+direction = "e"
+to = "6418"
+flags = []
+
+[rooms.6421.exits.n]
+direction = "n"
+to = "6420"
+flags = []
+
+[rooms.6421.exits.s]
+direction = "s"
+to = "6435"
+flags = []
+
+[rooms.6421.exits.w]
+direction = "w"
+to = "5729"
+flags = []
+
+[rooms.6422]
+id = "6422"
+name = "Shadowy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 64
+y = 82
+z = 0
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6422.exits.e]
+direction = "e"
+to = "6423"
+flags = []
+
+[rooms.6422.exits.w]
+direction = "w"
+to = "6417"
+flags = []
+
+[rooms.6423]
+id = "6423"
+name = "Shadowy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 65
+y = 82
+z = 0
+exit_order = [
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6423.exits.s]
+direction = "s"
+to = "6424"
+flags = []
+
+[rooms.6423.exits.w]
+direction = "w"
+to = "6422"
+flags = []
+
+[rooms.6424]
+id = "6424"
+name = "Shadowy Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 65
+y = 83
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6424.exits.n]
+direction = "n"
+to = "6423"
+flags = []
+
+[rooms.6424.exits.s]
+direction = "s"
+to = "6436"
+flags = []
+
+[rooms.6424.exits.w]
+direction = "w"
+to = "6425"
+flags = []
+
+[rooms.6425]
+id = "6425"
+name = "Thinning Forest"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 64
+y = 83
+z = 0
+exit_order = [
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6425.exits.e]
+direction = "e"
+to = "6424"
+flags = []
+
+[rooms.6425.exits.w]
+direction = "w"
+to = "6426"
+flags = []
+
+[rooms.6426]
+id = "6426"
+name = "Beach on the Forest Lake"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 63
+y = 83
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6426.exits.e]
+direction = "e"
+to = "6425"
+flags = []
+
+[rooms.6426.exits.n]
+direction = "n"
+to = "6417"
+flags = []
+
+[rooms.6426.exits.s]
+direction = "s"
+to = "6429"
+flags = []
+
+[rooms.6426.exits.w]
+direction = "w"
+to = "6418"
+flags = []
+
+[rooms.6427]
+id = "6427"
+name = "Murky Lake Under a Small Overhang"
+description = ""
+area = ""
+note = ""
+terrain = "Water_noswim"
+symbol = ""
+weight = 10.0
+x = 64
+y = 84
+z = 0
+exit_order = [
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.6427.exits.u]
+direction = "u"
+to = "6436"
+flags = []
+
+[rooms.6427.exits.w]
+direction = "w"
+to = "6429"
+flags = []
+
+[rooms.6428]
+id = "6428"
+name = "Murky Forest Lake"
+description = ""
+area = ""
+note = ""
+terrain = "Water_noswim"
+symbol = ""
+weight = 10.0
+x = 62
+y = 84
+z = 0
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6428.exits.e]
+direction = "e"
+to = "6429"
+flags = []
+
+[rooms.6428.exits.s]
+direction = "s"
+to = "6431"
+flags = []
+
+[rooms.6428.exits.w]
+direction = "w"
+to = "6435"
+flags = []
+
+[rooms.6429]
+id = "6429"
+name = "Murky Forest Lake"
+description = ""
+area = ""
+note = ""
+terrain = "Water"
+symbol = ""
+weight = 9.0
+x = 63
+y = 84
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6429.exits.e]
+direction = "e"
+to = "6427"
+flags = []
+
+[rooms.6429.exits.n]
+direction = "n"
+to = "6426"
+flags = []
+
+[rooms.6429.exits.s]
+direction = "s"
+to = "6432"
+flags = []
+
+[rooms.6429.exits.w]
+direction = "w"
+to = "6428"
+flags = []
+
+[rooms.6430]
+id = "6430"
+name = "Forest Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 61
+y = 85
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6430.exits.e]
+direction = "e"
+to = "6431"
+flags = []
+
+[rooms.6430.exits.n]
+direction = "n"
+to = "6435"
+flags = []
+
+[rooms.6430.exits.s]
+direction = "s"
+to = "4800"
+flags = []
+
+[rooms.6431]
+id = "6431"
+name = "Forest Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 62
+y = 85
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6431.exits.e]
+direction = "e"
+to = "6432"
+flags = []
+
+[rooms.6431.exits.n]
+direction = "n"
+to = "6428"
+flags = []
+
+[rooms.6431.exits.w]
+direction = "w"
+to = "6430"
+flags = []
+
+[rooms.6432]
+id = "6432"
+name = "Forest Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 63
+y = 85
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.6432.exits.e]
+direction = "e"
+to = "6433"
+flags = []
+
+[rooms.6432.exits.n]
+direction = "n"
+to = "6429"
+flags = []
+
+[rooms.6432.exits.s]
+direction = "s"
+to = "4802"
+flags = []
+
+[rooms.6432.exits.w]
+direction = "w"
+to = "6431"
+flags = []
+
+[rooms.6433]
+id = "6433"
+name = "Forest Near a Swamp"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 64
+y = 85
+z = 0
+exit_order = [
+    "e",
+    "w",
+    "u",
+]
+flags = []
+
+[rooms.6433.exits.e]
+direction = "e"
+to = "6434"
+flags = []
+
+[rooms.6433.exits.u]
+direction = "u"
+to = "6443"
+flags = []
+
+[rooms.6433.exits.w]
+direction = "w"
+to = "6432"
+flags = []
+
+[rooms.6434]
+id = "6434"
+name = "Shadowy Forest Near a Lake"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 65
+y = 85
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "w",
+]
+flags = []
+
+[rooms.6434.exits.e]
+direction = "e"
+to = "6481"
+flags = []
+
+[rooms.6434.exits.n]
+direction = "n"
+to = "6436"
+flags = []
+
+[rooms.6434.exits.w]
+direction = "w"
+to = "6433"
+flags = []
+
+[rooms.6435]
+id = "6435"
+name = "Forest Swamp Near a Lake"
+description = ""
+area = ""
+note = ""
+terrain = "Swamp"
+symbol = ""
+weight = 8.0
+x = 61
+y = 84
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.6435.exits.e]
+direction = "e"
+to = "6428"
+flags = []
+
+[rooms.6435.exits.n]
+direction = "n"
+to = "6421"
+flags = []
+
+[rooms.6435.exits.s]
+direction = "s"
+to = "6430"
+flags = []
+
+[rooms.6436]
+id = "6436"
+name = "Small Overhang Above The Lake"
+description = ""
+area = ""
+note = ""
+terrain = "Hills"
+symbol = ""
+weight = 5.0
+x = 65
+y = 84
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "d",
+]
+flags = []
+
+[rooms.6436.exits.d]
+direction = "d"
+to = "6427"
+flags = []
+
+[rooms.6436.exits.n]
+direction = "n"
+to = "6424"
+flags = []
+
+[rooms.6436.exits.s]
+direction = "s"
+to = "6434"
+flags = []
+
+[rooms.6443]
+id = "6443"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = 64
+y = 85
+z = 1
+exit_order = []
+flags = []
+
+[rooms.6443.exits.d]
+direction = "d"
+to = "6433"
+flags = []
+
+[rooms.6457]
+id = "6457"
+name = "A Steep Forest Slope"
+description = ""
+area = ""
+note = ""
+terrain = "Dense_forest"
+symbol = ""
+weight = 6.0
+x = 60
+y = 78
+z = 1
+exit_order = [
+    "e",
+    "d",
+]
+flags = []
+
+[rooms.6457.exits.d]
+direction = "d"
+to = "5704"
+flags = []
+
+[rooms.6457.exits.e]
+direction = "e"
+to = "6403"
+flags = []
+
+[rooms.6470]
+id = "6470"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = 63
+y = 79
+z = 1
+exit_order = []
+flags = []
+
+[rooms.6470.exits.s]
+direction = "s"
+to = "6408"
+flags = []
+
+[rooms.6481]
+id = "6481"
+name = ""
+description = ""
+area = ""
+note = ""
+terrain = ""
+symbol = ""
+weight = 1.0
+x = 66
+y = 85
+z = 0
+exit_order = []
+flags = []
+
+[rooms.6481.exits.w]
+direction = "w"
+to = "6434"
 flags = []
 
 [rooms.6501]
@@ -148501,17 +156287,31 @@ flags = []
 
 [rooms.8328]
 id = "8328"
-name = ""
+name = "Atop the Outcrop"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Forest"
 symbol = ""
-weight = 1.0
+weight = 4.0
 x = 45
 y = 72
 z = 0
-exit_order = []
+exit_order = [
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.8328.exits.e]
+direction = "e"
+to = "8337"
+flags = []
+
+[rooms.8328.exits.s]
+direction = "s"
+to = "8329"
 flags = []
 
 [rooms.8328.exits.w]
@@ -148521,17 +156321,37 @@ flags = []
 
 [rooms.8329]
 id = "8329"
-name = ""
+name = "Field of Mud"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Forest"
 symbol = ""
-weight = 1.0
+weight = 4.0
 x = 45
 y = 73
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.8329.exits.e]
+direction = "e"
+to = "8336"
+flags = []
+
+[rooms.8329.exits.n]
+direction = "n"
+to = "8328"
+flags = []
+
+[rooms.8329.exits.s]
+direction = "s"
+to = "8330"
 flags = []
 
 [rooms.8329.exits.w]
@@ -148541,17 +156361,31 @@ flags = []
 
 [rooms.8330]
 id = "8330"
-name = ""
+name = "Phosphorescent Plants"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Forest"
 symbol = ""
-weight = 1.0
+weight = 4.0
 x = 45
 y = 74
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.8330.exits.e]
+direction = "e"
+to = "8335"
+flags = []
+
+[rooms.8330.exits.n]
+direction = "n"
+to = "8329"
 flags = []
 
 [rooms.8330.exits.s]
@@ -148661,24 +156495,208 @@ direction = "w"
 to = "8332"
 flags = []
 
-[rooms.8339]
-id = "8339"
-name = ""
+[rooms.8334]
+id = "8334"
+name = "Within a Ditch"
 description = ""
 area = ""
 note = ""
-terrain = ""
+terrain = "Field"
 symbol = ""
-weight = 1.0
+weight = 3.0
+x = 46
+y = 75
+z = 0
+exit_order = [
+    "n",
+    "e",
+]
+flags = []
+
+[rooms.8334.exits.e]
+direction = "e"
+to = "6231"
+flags = []
+
+[rooms.8334.exits.n]
+direction = "n"
+to = "8335"
+flags = []
+
+[rooms.8335]
+id = "8335"
+name = "Field of Holes"
+description = ""
+area = ""
+note = ""
+terrain = "Field"
+symbol = ""
+weight = 3.0
+x = 46
+y = 74
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.8335.exits.e]
+direction = "e"
+to = "6226"
+flags = []
+
+[rooms.8335.exits.n]
+direction = "n"
+to = "8336"
+flags = []
+
+[rooms.8335.exits.s]
+direction = "s"
+to = "8334"
+flags = []
+
+[rooms.8335.exits.w]
+direction = "w"
+to = "8330"
+flags = []
+
+[rooms.8336]
+id = "8336"
+name = "Tangled Underbrush"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 46
+y = 73
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.8336.exits.n]
+direction = "n"
+to = "8337"
+flags = []
+
+[rooms.8336.exits.s]
+direction = "s"
+to = "8335"
+flags = []
+
+[rooms.8336.exits.w]
+direction = "w"
+to = "8329"
+flags = []
+
+[rooms.8337]
+id = "8337"
+name = "Climbing a Hill"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 46
+y = 72
+z = 0
+exit_order = [
+    "n",
+    "s",
+    "w",
+]
+flags = []
+
+[rooms.8337.exits.n]
+direction = "n"
+to = "8338"
+flags = []
+
+[rooms.8337.exits.s]
+direction = "s"
+to = "8336"
+flags = []
+
+[rooms.8337.exits.w]
+direction = "w"
+to = "8328"
+flags = []
+
+[rooms.8338]
+id = "8338"
+name = "Atop a Small Knoll"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
+x = 46
+y = 71
+z = 0
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.8338.exits.e]
+direction = "e"
+to = "6211"
+flags = []
+
+[rooms.8338.exits.n]
+direction = "n"
+to = "8339"
+flags = []
+
+[rooms.8338.exits.s]
+direction = "s"
+to = "8337"
+flags = []
+
+[rooms.8339]
+id = "8339"
+name = "Sloping Ground"
+description = ""
+area = ""
+note = ""
+terrain = "Forest"
+symbol = ""
+weight = 4.0
 x = 46
 y = 70
 z = 0
-exit_order = []
+exit_order = [
+    "n",
+    "e",
+    "s",
+]
+flags = []
+
+[rooms.8339.exits.e]
+direction = "e"
+to = "6206"
 flags = []
 
 [rooms.8339.exits.n]
 direction = "n"
 to = "8300"
+flags = []
+
+[rooms.8339.exits.s]
+direction = "s"
+to = "8338"
 flags = []
 
 [rooms.8500]
@@ -156015,7 +164033,7 @@ description = ""
 size = ""
 
 [last_move]
-from = "6012"
-to = "6011"
-direction = "e"
+from = "1500"
+to = "1513"
+direction = "n"
 created_room = false

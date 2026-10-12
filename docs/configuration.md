@@ -4,7 +4,15 @@ The active config file is normally `~/.config/mud-client/config.toml`. The repos
 
 Colors accept named terminal colors, bright color names such as `lightred`, indexed colors such as `index:17`, or RGB values such as `#7aa2f7`.
 
-MSDP character-name reports automatically layer `characters/name.toml` over shared configuration; `--character NAME` optionally preselects it at startup. Missing profiles are silently ignored. Tables merge; arrays replace. Connection settings remain shared and runtime saves are isolated per profile. See [character profiles](character-profiles.md) for setup, examples, and reload behavior.
+Configuration files may include one file or an ordered list of files. Paths are relative to the file containing the include; included files are loaded first and the including file overrides them:
+
+```toml
+include = ["shared/targeting.toml", "shared/ui.toml"]
+```
+
+Includes may themselves include other files. Cycles and invalid include values are rejected with an actionable configuration error.
+
+MSDP character-name reports automatically layer `characters/name.toml` over shared configuration; `--character NAME` optionally preselects it at startup. Missing profiles are silently ignored. Tables merge recursively, arrays append, and scalar values replace. Connection settings remain shared and runtime saves are isolated per profile. See [character profiles](character-profiles.md) for setup, examples, and reload behavior.
 
 ## macros
 
@@ -73,6 +81,8 @@ Breakpoints must increase from mobile to tablet to ultrawide.
 
 | Option | Meaning |
 |---|---|
+| `top_height` | Rows reserved for the top pane. |
+| `top` | Top pane role: `status_dashboard`, `details`, `info`, or `none`. |
 | `sidebar_position` | `left` or `right`. When left, command input aligns with MUD output. |
 | `sidebar_width` | Sidebar width in terminal columns. Runtime mouse resizing can override it for the current session. |
 

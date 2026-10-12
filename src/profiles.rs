@@ -53,17 +53,7 @@ pub fn character_path(base: &Path, name: &str) -> Result<PathBuf> {
 }
 
 pub(crate) fn read_overrides(path: &Path) -> Result<toml::Value> {
-    let raw = fs::read_to_string(path).map_err(|error| {
-        MudClientError::ConfigValidation(format!(
-            "cannot read character profile {}: {error}. Create this TOML file before selecting it",
-            path.display(),
-        ))
-    })?;
-    let value: toml::Value =
-        toml::from_str(&raw).map_err(|source| MudClientError::ConfigParse {
-            path: path.to_owned(),
-            source,
-        })?;
+    let value = read_with_includes(path)?;
     if value.get("connection").is_some() {
         return Err(MudClientError::ConfigValidation(format!(
             "character profile {} must not contain [connection]; connection settings belong in shared config.toml",
@@ -73,18 +63,103 @@ pub(crate) fn read_overrides(path: &Path) -> Result<toml::Value> {
     Ok(value)
 }
 
-/// Tables merge recursively; arrays and scalar values replace the shared value.
-/// In particular, rule arrays never append implicitly or duplicate automation.
+/// Load a TOML file and its optional `include` files. Includes are resolved
+/// relative to the including file, loaded in order, and then overlaid by the
+/// including file. This keeps the including file's values authoritative.
+pub(crate) fn read_with_includes(path: &Path) -> Result<toml::Value> {
+    read_with_includes_inner(path, &mut Vec::new())
+}
+
+fn read_with_includes_inner(path: &Path, stack: &mut Vec<PathBuf>) -> Result<toml::Value> {
+    let canonical = fs::canonicalize(path).map_err(|error| {
+        MudClientError::ConfigValidation(format!(
+            "cannot read included configuration {}: {error}",
+            path.display()
+        ))
+    })?;
+    if stack.contains(&canonical) {
+        return Err(MudClientError::ConfigValidation(format!(
+            "configuration include cycle detected at {}",
+            path.display()
+        )));
+    }
+    stack.push(canonical);
+    let raw = fs::read_to_string(path).map_err(|source| {
+        MudClientError::ConfigValidation(format!(
+            "cannot read configuration {}: {source}",
+            path.display()
+        ))
+    })?;
+    let mut value: toml::Value =
+        toml::from_str(&raw).map_err(|source| MudClientError::ConfigParse {
+            path: path.to_owned(),
+            source,
+        })?;
+    let includes = value
+        .as_table_mut()
+        .and_then(|table| table.remove("include"));
+    let include_paths = match includes {
+        None => Vec::new(),
+        Some(toml::Value::String(include)) => vec![include],
+        Some(toml::Value::Array(values)) => values
+            .into_iter()
+            .map(|value| {
+                value.as_str().map(str::to_owned).ok_or_else(|| {
+                    MudClientError::ConfigValidation(format!(
+                        "configuration include in {} must contain only strings",
+                        path.display()
+                    ))
+                })
+            })
+            .collect::<Result<Vec<_>>>()?,
+        Some(_) => {
+            return Err(MudClientError::ConfigValidation(format!(
+                "configuration include in {} must be a string or array of strings",
+                path.display()
+            )));
+        }
+    };
+    let mut merged = toml::Value::Table(Default::default());
+    for include in include_paths {
+        let include_path = path
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join(include);
+        let included = read_with_includes_inner(&include_path, stack)?;
+        merge(&mut merged, included);
+    }
+    merge(&mut merged, value);
+    stack.pop();
+    Ok(merged)
+}
+
+/// Tables merge recursively; arrays append and scalar values replace the shared
+/// value. This lets a character profile add aliases, triggers, scripts, and
+/// other list-based settings without silently removing shared behavior.
 pub(crate) fn merge(base: &mut toml::Value, overrides: toml::Value) {
+    merge_value(base, overrides, None);
+}
+
+fn merge_value(base: &mut toml::Value, overrides: toml::Value, key: Option<&str>) {
     match (base, overrides) {
         (toml::Value::Table(base), toml::Value::Table(overrides)) => {
             for (key, value) in overrides {
                 match base.get_mut(&key) {
-                    Some(existing) => merge(existing, value),
+                    Some(existing) => merge_value(existing, value, Some(&key)),
                     None => {
                         base.insert(key, value);
                     }
                 }
+            }
+        }
+        (toml::Value::Array(base), toml::Value::Array(overrides)) => {
+            for value in overrides {
+                if key == Some("bindings") {
+                    if let Some(new_key) = value.get("key") {
+                        base.retain(|existing| existing.get("key") != Some(new_key));
+                    }
+                }
+                base.push(value);
             }
         }
         (base, overrides) => *base = overrides,
@@ -161,7 +236,7 @@ mod tests {
     }
 
     #[test]
-    fn overrides_merge_tables_replace_arrays_and_keep_shared_connection() {
+    fn overrides_merge_tables_append_arrays_and_keep_shared_connection() {
         let fixture = Fixture::new();
         fs::write(fixture.base(), "[connection]\nhost='shared.example'\nport=4321\n[variables.values]\nshared='yes'\ntarget='orc'\n[[macros.rules]]\nkey='F5'\ncommand='look'\n[panels.output]\ntitle='Shared'\nrefresh_ms=250\n").unwrap();
         fs::write(fixture.profile(), "[variables.values]\ntarget='troll'\n[panels.output]\ntitle='Aragorn'\n[[macros.rules]]\nkey='F6'\ncommand='score'\n").unwrap();
@@ -172,10 +247,11 @@ mod tests {
         assert_eq!(config.variables.values["target"], "troll");
         assert_eq!(config.panels.output.title, "Aragorn");
         assert_eq!(config.panels.output.refresh_ms, 250);
-        assert_eq!(config.macros.rules.len(), 1);
-        assert_eq!(config.macros.rules[0].key, "F6");
+        assert_eq!(config.macros.rules.len(), 2);
+        assert_eq!(config.macros.rules[0].key, "F5");
+        assert_eq!(config.macros.rules[1].key, "F6");
         fs::write(fixture.profile(), "[macros]\nrules=[]\n").unwrap();
-        assert!(fixture.load().unwrap().macros.rules.is_empty());
+        assert_eq!(fixture.load().unwrap().macros.rules.len(), 1);
         let local = AppConfig::load_with_character(
             Some(fixture.base()),
             Some(&fixture.profile()),
@@ -210,6 +286,37 @@ mod tests {
         );
         fs::remove_file(fixture.profile()).unwrap();
         fs::create_dir(fixture.profile()).unwrap();
+        assert!(fixture.load().is_err());
+    }
+
+    #[test]
+    fn includes_load_in_order_and_current_file_overrides_scalars() {
+        let fixture = Fixture::new();
+        let first = fixture.0.join("shared.toml");
+        let second = fixture.0.join("extra.toml");
+        fs::write(&first, "[variables.values]\nfirst='yes'\nvalue='first'\n").unwrap();
+        fs::write(
+            &second,
+            "[variables.values]\nsecond='yes'\nvalue='second'\n",
+        )
+        .unwrap();
+        fs::write(
+            fixture.base(),
+            "include=['shared.toml', 'extra.toml']\n[variables.values]\nvalue='main'\n",
+        )
+        .unwrap();
+        let config = AppConfig::load(Some(fixture.base())).unwrap();
+        assert_eq!(config.variables.values["first"], "yes");
+        assert_eq!(config.variables.values["second"], "yes");
+        assert_eq!(config.variables.values["value"], "main");
+    }
+
+    #[test]
+    fn include_cycles_are_rejected() {
+        let fixture = Fixture::new();
+        let other = fixture.0.join("other.toml");
+        fs::write(fixture.base(), "include='other.toml'\n").unwrap();
+        fs::write(&other, "include='config.toml'\n").unwrap();
         assert!(fixture.load().is_err());
     }
 

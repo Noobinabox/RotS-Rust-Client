@@ -182,32 +182,46 @@ fn resolve_full_hd(
     minimums: LayoutMinimums,
     overrides: LayoutOverrides,
 ) -> ResolvedLayout {
+    let top_height = if config.top == PaneRole::None {
+        0
+    } else {
+        config.top_height.min(
+            area.height
+                .saturating_sub(minimums.input_height + minimums.output_height),
+        )
+    };
+    let rows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(top_height), Constraint::Min(0)])
+        .split(area);
+    let top_area = rows[0];
+    let body = rows[1];
     let requested_width = match config.sidebar_position {
         SidebarPosition::Left => overrides.left_width.unwrap_or(config.sidebar_width),
         SidebarPosition::Right => overrides.right_width.unwrap_or(config.sidebar_width),
     };
     let sidebar_width = requested_width
         .max(minimums.map_width)
-        .min(area.width.saturating_sub(minimums.output_width));
-    let center_width = area.width.saturating_sub(sidebar_width);
+        .min(body.width.saturating_sub(minimums.output_width));
+    let center_width = body.width.saturating_sub(sidebar_width);
     let (sidebar, center) = match config.sidebar_position {
         SidebarPosition::Left => (
-            Rect::new(area.x, area.y, sidebar_width, area.height),
+            Rect::new(body.x, body.y, sidebar_width, body.height),
             Rect::new(
-                area.x.saturating_add(sidebar_width),
-                area.y,
+                body.x.saturating_add(sidebar_width),
+                body.y,
                 center_width,
                 area.height,
             ),
         ),
         SidebarPosition::Right => (
             Rect::new(
-                area.right().saturating_sub(sidebar_width),
-                area.y,
+                body.right().saturating_sub(sidebar_width),
+                body.y,
                 sidebar_width,
-                area.height,
+                body.height,
             ),
-            Rect::new(area.x, area.y, center_width, area.height),
+            Rect::new(body.x, body.y, center_width, body.height),
         ),
     };
     let center_rows = Layout::default()
@@ -221,6 +235,10 @@ fn resolve_full_hd(
         area: sidebar,
         role: PaneRole::ClassicSidebar,
     };
+    let top = (config.top != PaneRole::None).then_some(AssignedPane {
+        area: top_area,
+        role: config.top,
+    });
 
     ResolvedLayout {
         mode: UiMode::FullHd,
@@ -228,18 +246,18 @@ fn resolve_full_hd(
         output: center_rows[0],
         input: center_rows[1],
         compact_status: None,
-        top: None,
+        top,
         left: (config.sidebar_position == SidebarPosition::Left).then_some(pane),
         right: (config.sidebar_position == SidebarPosition::Right).then_some(pane),
         left_divider: (config.sidebar_position == SidebarPosition::Left).then_some(Rect::new(
             sidebar.right().saturating_sub(1),
-            area.y,
+            body.y,
             1,
             area.height,
         )),
         right_divider: (config.sidebar_position == SidebarPosition::Right).then_some(Rect::new(
             sidebar.x,
-            area.y,
+            body.y,
             1,
             area.height,
         )),
@@ -481,7 +499,10 @@ mod tests {
         );
 
         assert_eq!(layout.mode, UiMode::FullHd);
-        assert!(layout.top.is_none());
+        assert_eq!(
+            layout.top.expect("top pane").role,
+            PaneRole::StatusDashboard
+        );
         assert_eq!(
             layout.left.expect("left pane").role,
             PaneRole::ClassicSidebar

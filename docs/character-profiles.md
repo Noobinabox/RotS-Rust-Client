@@ -40,7 +40,7 @@ Windows device names such as `CON`, `NUL`, `COM1`, and `LPT1` are reserved on ev
 
 ## Shared defaults and overrides
 
-Load order is built-in defaults, shared `config.toml`, then the selected character TOML. Missing shared configuration uses built-in defaults. Tables merge recursively, and individual scalar values override shared values. Arrays replace the whole shared array rather than appending. For example, the F5 rule above replaces all shared `macros.rules`; omit that array to inherit it.
+Load order is built-in defaults, shared `config.toml`, then the selected character TOML. Missing shared configuration uses built-in defaults. Tables merge recursively, arrays append to shared arrays, and individual scalar values override shared values. This means profile aliases, triggers, macros, Lua scripts, and similar list settings add to shared behavior instead of deleting it. Omit a setting to inherit it unchanged.
 
 To disable all configured macros for one character:
 

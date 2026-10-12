@@ -113,13 +113,8 @@ impl AppConfig {
         if let Some(character_path) = character_path {
             let path = path.or_else(default_config_path);
             let mut base = match path.as_deref() {
-                Some(path) => match fs::read_to_string(path) {
-                    Ok(raw) => {
-                        toml::from_str(&raw).map_err(|source| MudClientError::ConfigParse {
-                            path: path.to_owned(),
-                            source,
-                        })?
-                    }
+                Some(path) => match fs::metadata(path) {
+                    Ok(_) => crate::profiles::read_with_includes(path)?,
                     Err(error) if error.kind() == io::ErrorKind::NotFound => {
                         toml::Value::Table(Default::default())
                     }
@@ -166,9 +161,10 @@ impl AppConfig {
             return Ok(config);
         }
 
-        let raw = fs::read_to_string(&path)?;
-        let mut config: Self =
-            toml::from_str(&raw).map_err(|source| MudClientError::ConfigParse { path, source })?;
+        let value = crate::profiles::read_with_includes(&path)?;
+        let mut config: Self = value
+            .try_into()
+            .map_err(|source| MudClientError::ConfigParse { path, source })?;
         if options.local_test_endpoint {
             config.use_local_test_endpoint();
         }
@@ -270,6 +266,12 @@ impl AppConfig {
         if self.layout.full_hd.sidebar_width < 20 {
             return Err(MudClientError::ConfigValidation(
                 "layout.full_hd.sidebar_width must be at least 20".to_string(),
+            ));
+        }
+        if self.layout.full_hd.top != PaneRole::None && self.layout.full_hd.top_height < 3 {
+            return Err(MudClientError::ConfigValidation(
+                "layout.full_hd.top_height must be at least 3 when the top pane is enabled"
+                    .to_string(),
             ));
         }
         let layout = &self.layout.ultrawide;
@@ -1024,6 +1026,8 @@ impl Default for LayoutConfig {
                 show_status: true,
             },
             full_hd: FullHdLayoutConfig {
+                top_height: 7,
+                top: PaneRole::StatusDashboard,
                 sidebar_position: SidebarPosition::Right,
                 sidebar_width: 34,
             },
@@ -1102,6 +1106,8 @@ impl Default for StackedLayoutConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default)]
 pub struct FullHdLayoutConfig {
+    pub top_height: u16,
+    pub top: PaneRole,
     pub sidebar_position: SidebarPosition,
     pub sidebar_width: u16,
 }
@@ -1109,6 +1115,8 @@ pub struct FullHdLayoutConfig {
 impl Default for FullHdLayoutConfig {
     fn default() -> Self {
         Self {
+            top_height: 7,
+            top: PaneRole::StatusDashboard,
             sidebar_position: SidebarPosition::Right,
             sidebar_width: 34,
         }
