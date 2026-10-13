@@ -1,8 +1,43 @@
 # Install mud-client
 
-These instructions build the client from source. You do not need to know Rust, but the first build downloads dependencies and can take several minutes. Internet access, the latest stable Rust toolchain, and a C compiler/linker are required. Git is needed only for the manual clone/update workflow, not installation from an extracted ZIP. Lua is bundled: no separate Lua installation is needed.
+You can either download a prebuilt client from [GitHub Releases](https://github.com/Noobinabox/RotS-Rust-Client/releases) or build the client from source. Lua is bundled: no separate Lua installation is needed.
 
-Use the [guided installers](#guided-installers), or follow the manual instructions for [Linux](#linux), [macOS](#macos), or [Windows](#windows). Run commands one block at a time; stop if a command reports an error. Do not run Cargo or the client as administrator/root.
+Use the [prebuilt releases](#prebuilt-releases), [guided installers](#guided-installers), or the manual instructions for [Linux](#linux), [macOS](#macos), or [Windows](#windows). Run commands one block at a time; stop if a command reports an error. Do not run Cargo or the client as administrator/root.
+
+## Prebuilt Releases
+
+For most users, open the repository's [Releases page](https://github.com/Noobinabox/RotS-Rust-Client/releases) and download the newest version:
+
+| Platform | Standalone executable | ZIP bundle |
+|---|---|---|
+| Linux x86_64 | `mud-client-linux-x86_64` | `mud-client-linux-x86_64.zip` |
+| macOS Apple Silicon | `mud-client-macos-arm64` | `mud-client-macos-arm64.zip` |
+| Windows x86_64 | `mud-client-windows-x86_64.exe` | `mud-client-windows-x86_64.zip` |
+
+The standalone file is the executable only. The ZIP bundle includes the
+executable, example configuration files, Lua scripts, documentation, license,
+and available platform installers. Extract the ZIP before running the client;
+do not run it from inside the archive viewer.
+
+On Linux and macOS, make the downloaded standalone file executable if needed:
+
+```sh
+chmod +x mud-client-linux-x86_64
+# or on Apple Silicon:
+chmod +x mud-client-macos-arm64
+```
+
+macOS may display a Gatekeeper warning for an unsigned download. Use the
+system privacy prompt or Control-click the executable and choose **Open** only
+if you trust the release. Windows may display a SmartScreen warning for an
+unsigned executable; verify that the file came from the project's Releases
+page before choosing **More info → Run anyway**.
+
+Prebuilt releases do not install configuration automatically. Copy
+`install/default-config.toml` to the platform configuration location described
+in [First Launch and Configuration](#first-launch-and-configuration), or use
+the example `config.toml` as a starting point. The ZIP also includes the
+example `scripts` directory.
 
 ## Guided Installers
 
@@ -34,7 +69,7 @@ For computers with prerequisites already installed, use `bash install.sh --skip-
 
 ### Installer Status and Legal Terms
 
-These are guided **source installers**, not signed `.msi`/`.pkg` packages or prebuilt application downloads. Automated tests cover non-destructive setup paths; native platform and fresh-machine validation are listed with the development results rather than assumed. A future polished wizard would require release builds for each supported CPU/OS, package signing (and macOS notarization), update/uninstall behavior, and platform testing.
+These are guided **source installers**, not signed `.msi`/`.pkg` packages. They remain useful when you need a local build, a supported platform not covered by the published artifacts, or source-level customization. The prebuilt releases are also unsigned and are not a replacement for package signing or macOS notarization.
 
 Validation so far: a real isolated Linux/WSL release install with existing prerequisites passed. `cargo test --test installer` covers safe defaults, repeated installation, cancellation, build failure and interrupted-copy recovery using mocked system tools. Native Windows PowerShell parsing and read-only prerequisite detection were checked, but installing Windows prerequisites/building the client and running on macOS have not been tested. These checks are not a fresh-machine certification.
 

@@ -1,6 +1,6 @@
 # Getting Started
 
-Start with [Installation for Linux, macOS, and Windows](installation.md) if this is your first setup. It covers Rust/compiler installation, downloading the client, platform-specific configuration paths, and copying bundled Lua scripts.
+Start with [Installation for Linux, macOS, and Windows](installation.md) if this is your first setup. It covers prebuilt GitHub Releases, source builds, platform-specific configuration paths, and copying bundled Lua scripts.
 
 ## Requirements
 

@@ -28,7 +28,7 @@ The layout automatically adjusts to fit your window size — a small window gets
 
 ## Getting started
 
-You don't need to install any programming tools by hand — a guided setup script does that for you.
+You can download a ready-to-run build from the [latest GitHub Release](https://github.com/Noobinabox/RotS-Rust-Client/releases), or use the guided setup script to build it from source.
 
 1. Download this project: click the green **Code** button on this page, choose **Download ZIP**, then extract (unzip) the folder anywhere on your computer.
 2. Open the extracted folder and run the setup script for your computer:
