@@ -8,16 +8,18 @@ Use the [prebuilt releases](#prebuilt-releases), [guided installers](#guided-ins
 
 For most users, open the repository's [Releases page](https://github.com/Noobinabox/RotS-Rust-Client/releases) and download the newest version:
 
-| Platform | Standalone executable | ZIP bundle |
+| Platform | Release executable | Workflow ZIP artifact |
 |---|---|---|
 | Linux x86_64 | `mud-client-linux-x86_64` | `mud-client-linux-x86_64.zip` |
 | macOS Apple Silicon | `mud-client-macos-arm64` | `mud-client-macos-arm64.zip` |
 | Windows x86_64 | `mud-client-windows-x86_64.exe` | `mud-client-windows-x86_64.zip` |
 
-The standalone file is the executable only. The ZIP bundle includes the
-executable, example configuration files, Lua scripts, documentation, license,
-and available platform installers. Extract the ZIP before running the client;
-do not run it from inside the archive viewer.
+The standalone file is the executable only and is attached to each GitHub
+Release. The ZIP bundle includes the executable, example configuration files,
+Lua scripts, documentation, license, and available platform installers. ZIP
+bundles are retained as downloadable artifacts on the corresponding successful
+GitHub Actions workflow run rather than attached to the Release. Extract the
+ZIP before running the client; do not run it from inside the archive viewer.
 
 On Linux and macOS, make the downloaded standalone file executable if needed:
 

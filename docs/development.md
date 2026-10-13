@@ -37,7 +37,7 @@ This is the same sequence as `make ci` and is the minimum bar for a change to be
 
 Pushes to the `main` branch run `make test` first. Linux, macOS, and Windows
 release builds start only after that test job succeeds. The workflow publishes
-two artifacts for each platform:
+two workflow artifacts for each platform:
 
 - a standalone optimized executable;
 - a ZIP bundle containing the executable, example configuration files, Lua
@@ -49,8 +49,9 @@ native GitHub-hosted runner for each platform, so Windows produces a native
 
 Every successful push to `main` also receives the next patch version tag. The
 first release is `v0.1.0`; later releases increment the patch component. The
-workflow creates the GitHub Release automatically and attaches all standalone
-executables and ZIP bundles with generated release notes.
+workflow creates the GitHub Release automatically and attaches the three
+standalone executables with generated release notes. The ZIP bundles remain
+available as downloadable artifacts on the workflow run.
 
 ## Runtime diagnostics
 

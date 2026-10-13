@@ -83,11 +83,21 @@ jobs:
               7z a -tzip "$ARCHIVE" "mud-client-${{ matrix.platform }}"
             fi
           )
+      - name: Stage standalone executable artifact
+        shell: bash
+        env:
+          BINARY: ${{ matrix.binary }}
+        run: |
+          set -euo pipefail
+          rm -rf standalone-artifact
+          mkdir -p standalone-artifact
+          cp "$BINARY" standalone-artifact/
+          test "$(find standalone-artifact -maxdepth 1 -type f | wc -l)" -eq 1
       - name: Upload standalone executable
         uses: actions/upload-artifact@v7
         with:
           name: mud-client-${{ matrix.platform }}-executable
-          path: dist/${{ matrix.standalone }}
+          path: standalone-artifact/*
           if-no-files-found: error
       - name: Upload runtime ZIP bundle
         uses: actions/upload-artifact@v7
@@ -153,11 +163,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rm -rf release-assets-flat
           mkdir -p release-assets-flat
           find release-assets -type f -print
           find release-assets -type f -path '*-executable/*' -exec cp {} release-assets-flat/ \;
-          find release-assets -type f -path '*-bundle/*' -name '*.zip' -exec cp {} release-assets-flat/ \;
-          test "$(find release-assets-flat -maxdepth 1 -type f | wc -l)" -eq 6
+          test "$(find release-assets -type f -path '*-executable/*' | wc -l)" -eq 3
+          test "$(find release-assets-flat -maxdepth 1 -type f | wc -l)" -eq 3
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
