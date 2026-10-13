@@ -45,7 +45,12 @@ two artifacts for each platform:
 
 The workflow is defined in `.github/workflows/make-build.yml` and uses the
 native GitHub-hosted runner for each platform, so Windows produces a native
-`.exe` and macOS uses the macOS toolchain.
+`.exe` and macOS produces an Apple Silicon ARM64 binary.
+
+Every successful push to `main` also receives the next patch version tag. The
+first release is `v0.1.0`; later releases increment the patch component. The
+workflow creates the GitHub Release automatically and attaches all standalone
+executables and ZIP bundles with generated release notes.
 
 ## Runtime diagnostics
 
