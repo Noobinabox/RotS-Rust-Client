@@ -145,19 +145,23 @@ jobs:
             patch=$((patch + 1))
           done
 
-      - name: Create and push version tag
-        env:
-          TAG: ${{ steps.version.outputs.tag }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "Release $TAG" "$GITHUB_SHA"
-          git push origin "$TAG"
-
-      - name: Download platform artifacts
+      - name: Download Linux executable
         uses: actions/download-artifact@v8
         with:
-          path: release-assets
+          name: mud-client-linux-x86_64-executable
+          path: release-assets/linux
+
+      - name: Download macOS executable
+        uses: actions/download-artifact@v8
+        with:
+          name: mud-client-macos-arm64-executable
+          path: release-assets/macos
+
+      - name: Download Windows executable
+        uses: actions/download-artifact@v8
+        with:
+          name: mud-client-windows-x86_64-executable
+          path: release-assets/windows
 
       - name: Select release deliverables
         shell: bash
@@ -166,9 +170,25 @@ jobs:
           rm -rf release-assets-flat
           mkdir -p release-assets-flat
           find release-assets -type f -print
-          find release-assets -type f -path '*-executable/*' -exec cp {} release-assets-flat/ \;
-          test "$(find release-assets -type f -path '*-executable/*' | wc -l)" -eq 3
+          mapfile -t linux_binaries < <(find release-assets/linux -maxdepth 1 -type f -name 'mud-client')
+          mapfile -t macos_binaries < <(find release-assets/macos -maxdepth 1 -type f -name 'mud-client')
+          mapfile -t windows_binaries < <(find release-assets/windows -maxdepth 1 -type f -name 'mud-client.exe')
+          test "${#linux_binaries[@]}" -eq 1
+          test "${#macos_binaries[@]}" -eq 1
+          test "${#windows_binaries[@]}" -eq 1
+          cp "${linux_binaries[0]}" release-assets-flat/mud-client-linux-x86_64
+          cp "${macos_binaries[0]}" release-assets-flat/mud-client-macos-arm64
+          cp "${windows_binaries[0]}" release-assets-flat/mud-client-windows-x86_64.exe
           test "$(find release-assets-flat -maxdepth 1 -type f | wc -l)" -eq 3
+
+      - name: Create and push version tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG" "$GITHUB_SHA"
+          git push origin "$TAG"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
