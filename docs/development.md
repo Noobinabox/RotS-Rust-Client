@@ -33,6 +33,20 @@ git diff --check
 
 This is the same sequence as `make ci` and is the minimum bar for a change to be considered ready.
 
+## GitHub Actions builds
+
+Pushes to the `make` branch run `make test` first. Linux, macOS, and Windows
+release builds start only after that test job succeeds. The workflow publishes
+two artifacts for each platform:
+
+- a standalone optimized executable;
+- a ZIP bundle containing the executable, example configuration files, Lua
+  scripts, documentation, license, and available platform installers.
+
+The workflow is defined in `.github/workflows/make-build.yml` and uses the
+native GitHub-hosted runner for each platform, so Windows produces a native
+`.exe` and macOS uses the macOS toolchain.
+
 ## Runtime diagnostics
 
 These in-client commands and settings are useful while developing or debugging behavior, not just for players:

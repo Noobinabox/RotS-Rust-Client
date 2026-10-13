@@ -1,0 +1,93 @@
+name: Verify and build make branch
+
+on:
+  push:
+    branches:
+      - make
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run unit and integration tests
+        run: make test
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x86_64
+            runner: ubuntu-latest
+            binary: target/release/mud-client
+            standalone: mud-client-linux-x86_64
+            archive: mud-client-linux-x86_64.zip
+          - platform: macos-x86_64
+            runner: macos-13
+            binary: target/release/mud-client
+            standalone: mud-client-macos-x86_64
+            archive: mud-client-macos-x86_64.zip
+          - platform: windows-x86_64
+            runner: windows-latest
+            binary: target/release/mud-client.exe
+            standalone: mud-client-windows-x86_64.exe
+            archive: mud-client-windows-x86_64.zip
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build release executable
+        run: cargo build --release --locked
+      - name: Stage standalone executable and runtime bundle
+        shell: bash
+        env:
+          BINARY: ${{ matrix.binary }}
+          STANDALONE: ${{ matrix.standalone }}
+          ARCHIVE: ${{ matrix.archive }}
+        run: |
+          set -euo pipefail
+          package_root="dist/mud-client-${{ matrix.platform }}"
+          mkdir -p "$package_root/docs" "$package_root/install" "$package_root/scripts"
+          cp "$BINARY" "dist/$STANDALONE"
+          cp "$BINARY" "$package_root/"
+          cp README.md LICENSE config.toml rots.toml "$package_root/"
+          cp install/default-config.toml "$package_root/install/"
+          cp -R scripts/. "$package_root/scripts/"
+          cp -R docs/. "$package_root/docs/"
+          for installer in install.sh install.ps1 Install-Windows.cmd Install-macOS.command; do
+            if [[ -f "$installer" ]]; then
+              cp "$installer" "$package_root/"
+            fi
+          done
+          (
+            cd dist
+            if command -v zip >/dev/null 2>&1; then
+              zip -qr "$ARCHIVE" "mud-client-${{ matrix.platform }}"
+            else
+              7z a -tzip "$ARCHIVE" "mud-client-${{ matrix.platform }}"
+            fi
+          )
+      - name: Upload standalone executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: mud-client-${{ matrix.platform }}-executable
+          path: dist/${{ matrix.standalone }}
+          if-no-files-found: error
+      - name: Upload runtime ZIP bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: mud-client-${{ matrix.platform }}-bundle
+          path: dist/${{ matrix.archive }}
+          if-no-files-found: error
