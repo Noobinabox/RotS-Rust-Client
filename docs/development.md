@@ -35,7 +35,7 @@ This is the same sequence as `make ci` and is the minimum bar for a change to be
 
 ## GitHub Actions builds
 
-Pushes to the `make` branch run `make test` first. Linux, macOS, and Windows
+Pushes to the `main` branch run `make test` first. Linux, macOS, and Windows
 release builds start only after that test job succeeds. The workflow publishes
 two artifacts for each platform:
 

@@ -1,5 +1,7 @@
 # mud-client
 
+[![Verify and build main branch](https://github.com/Noobinabox/RotS-Rust-Client/actions/workflows/make-build.yml/badge.svg)](https://github.com/Noobinabox/RotS-Rust-Client/actions/workflows/make-build.yml)
+
 A friendly terminal app for playing the text-based online game **Return of the Shadow (RoTS)**. It connects to the game and shows your health, mana, and stamina as easy-to-read bars, a live map of where you are, who you're fighting, and your group's status — all inside one window, alongside the game's normal text.
 
 You do not need to know anything about Rust (the programming language it's built with) or command-line tools to use it. This page will get you playing; everything else is organized below so you can find deeper answers only when you want them.

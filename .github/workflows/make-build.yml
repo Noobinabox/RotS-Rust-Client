@@ -1,9 +1,9 @@
-name: Verify and build make branch
+name: Verify and build main branch
 
 on:
   push:
     branches:
-      - make
+      - main
 
 permissions:
   contents: read
