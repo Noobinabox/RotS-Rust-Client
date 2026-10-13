@@ -140,10 +140,25 @@ jobs:
         with:
           path: release-assets
 
+      - name: Select release deliverables
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets-flat
+          find release-assets -type f \( \
+            -name 'mud-client-linux-x86_64' -o \
+            -name 'mud-client-linux-x86_64.zip' -o \
+            -name 'mud-client-macos-arm64' -o \
+            -name 'mud-client-macos-arm64.zip' -o \
+            -name 'mud-client-windows-x86_64.exe' -o \
+            -name 'mud-client-windows-x86_64.zip' \
+          \) -exec cp {} release-assets-flat/ \;
+          test "$(find release-assets-flat -maxdepth 1 -type f | wc -l)" -eq 6
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
           generate_release_notes: true
-          files: release-assets/**/**
+          files: release-assets-flat/*
