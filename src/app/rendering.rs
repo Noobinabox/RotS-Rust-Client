@@ -50,6 +50,11 @@ pub(super) fn pane_min_width(role: PaneRole, config: &AppConfig) -> u16 {
     match role {
         PaneRole::Map | PaneRole::ClassicSidebar => config.panels.map.min_width,
         PaneRole::Info => config.panels.info.min_width,
+        PaneRole::Social => config.panels.social.min_width,
+        PaneRole::NearbyMap => config.panels.map.min_width,
+        PaneRole::Opponent => config.panels.opponent.min_width,
+        PaneRole::Group => config.panels.group.min_width,
+        PaneRole::Character => config.panels.character.min_width,
         PaneRole::Details | PaneRole::StatusDashboard => MIN_CENTER_WIDTH,
         PaneRole::None => 0,
     }
@@ -115,7 +120,6 @@ pub(super) fn render_with_overrides(
     for pane in [layout.top, layout.left, layout.right]
         .into_iter()
         .flatten()
-        .filter(|pane| pane.role != PaneRole::Map)
     {
         render_assigned_pane(
             frame,
@@ -161,7 +165,23 @@ fn render_assigned_pane(
     }
     let theme = renderer.theme;
     match role {
-        PaneRole::Map | PaneRole::None => {}
+        PaneRole::Map => renderer.render(
+            PanelId::Map,
+            &config.panels.map,
+            area,
+            frame.buffer_mut(),
+            |buf, theme| {
+                render_map(
+                    area,
+                    buf,
+                    &state.map,
+                    theme,
+                    &config.map,
+                    &config.panels.map.title,
+                )
+            },
+        ),
+        PaneRole::None => {}
         PaneRole::StatusDashboard => render_status_dashboard(
             area,
             frame.buffer_mut(),
@@ -201,6 +221,85 @@ fn render_assigned_pane(
             frame.buffer_mut(),
             |buf, theme| render_info(area, buf, state, theme, &config.panels, &config.weather),
         ),
+        PaneRole::Social => renderer.render(
+            PanelId::Social,
+            &config.panels.social,
+            area,
+            frame.buffer_mut(),
+            |buf, theme| {
+                crate::ui::character::render_social_panel(
+                    area,
+                    buf,
+                    state,
+                    theme,
+                    &config.panels.social.title,
+                )
+            },
+        ),
+        PaneRole::NearbyMap => renderer.render(
+            PanelId::NearbyMap,
+            &config.panels.map,
+            area,
+            frame.buffer_mut(),
+            |buf, theme| {
+                crate::ui::map::render_nearby_map(
+                    area,
+                    buf,
+                    &state.map,
+                    theme,
+                    &config.map,
+                    "Nearby Map",
+                )
+            },
+        ),
+        PaneRole::Opponent => renderer.render(
+            PanelId::Opponent,
+            &config.panels.opponent,
+            area,
+            frame.buffer_mut(),
+            |buf, theme| {
+                crate::ui::character::render_opponent_panel(
+                    area,
+                    buf,
+                    state,
+                    theme,
+                    &config.gauges,
+                    &config.panels.opponent.title,
+                )
+            },
+        ),
+        PaneRole::Group => renderer.render(
+            PanelId::Group,
+            &config.panels.group,
+            area,
+            frame.buffer_mut(),
+            |buf, theme| {
+                crate::ui::character::render_group_panel(
+                    area,
+                    buf,
+                    state,
+                    theme,
+                    &config.gauges,
+                    &config.panels.group.title,
+                )
+            },
+        ),
+        PaneRole::Character => renderer.render(
+            PanelId::Character,
+            &config.panels.character,
+            area,
+            frame.buffer_mut(),
+            |buf, theme| {
+                crate::ui::character::render_character_panel(
+                    area,
+                    buf,
+                    state,
+                    theme,
+                    &config.gauges,
+                    &config.panels.character.title,
+                )
+            },
+        ),
         PaneRole::ClassicSidebar => render_classic_sidebar(
             area,
             frame.buffer_mut(),
@@ -216,6 +315,7 @@ fn render_assigned_pane(
                 false,
             )
             .with_cache(renderer.cache),
+            &config.layout.full_hd.sidebar_panels,
         ),
     }
 }

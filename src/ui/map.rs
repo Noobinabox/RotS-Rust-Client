@@ -525,10 +525,29 @@ fn map_header(current: &crate::map::Room) -> String {
     let exits = if current.exits.is_empty() {
         "--".to_string()
     } else {
-        let labels = current
-            .exit_order
+        // RotS emits exits by its direction index: north, east, south, west,
+        // up, down. Keep the map header in that same order even when the
+        // backing map uses a BTreeMap or an older learned exit order.
+        const GAME_DIRECTION_ORDER: [&str; 6] = ["n", "e", "s", "w", "u", "d"];
+        let mut directions = GAME_DIRECTION_ORDER
             .iter()
-            .filter(|direction| current.exits.contains_key(*direction))
+            .filter(|direction| current.exits.contains_key(**direction))
+            .map(|direction| (*direction).to_string())
+            .collect::<Vec<_>>();
+        let known_directions = directions.clone();
+        directions.extend(
+            current
+                .exit_order
+                .iter()
+                .map(|direction| direction.to_ascii_lowercase())
+                .filter(|direction| {
+                    current.exits.contains_key(direction)
+                        && !GAME_DIRECTION_ORDER.contains(&direction.as_str())
+                        && !known_directions.contains(direction)
+                }),
+        );
+        let labels = directions
+            .iter()
             .map(|direction| direction.to_ascii_uppercase())
             .collect::<Vec<_>>();
         if labels.is_empty() {
@@ -1905,7 +1924,7 @@ mod tests {
         assert_eq!(lines.len(), 5);
         let rendered = plain_lines(lines);
         assert!(rendered[0].contains("Room 1"));
-        assert!(rendered[0].contains("Exits: W E S"));
+        assert!(rendered[0].contains("Exits: E S W"));
         assert!(!rendered[0].contains("1 Room 1"));
     }
 

@@ -211,7 +211,7 @@ fn resolve_full_hd(
                 body.x.saturating_add(sidebar_width),
                 body.y,
                 center_width,
-                area.height,
+                body.height,
             ),
         ),
         SidebarPosition::Right => (
@@ -511,6 +511,7 @@ mod tests {
         assert_eq!(layout.map.width, 40);
         assert_eq!(layout.output.width, 120);
         assert_eq!(layout.output.bottom(), layout.input.y);
+        assert_eq!(layout.input.bottom(), 40);
     }
 
     #[test]

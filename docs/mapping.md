@@ -134,6 +134,7 @@ Examples:
 | `roomterrain` | `terrain` | Terrain type. Also updates the default path weight for known RoTS terrain names. |
 | `roomsymbol` | `symbol` | Custom room symbol, up to three single-cell non-control characters. Invalid input is rejected; omit the value to clear. |
 | `roomweight` | `weight` | Numeric pathing weight used by `/map find` and `/map run`. |
+| `roomz` | `z`, `zindex` | Integer display-layer coordinate used to separate rooms into visible map layers. |
 
 ### Room notes and legend
 

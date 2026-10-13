@@ -9,12 +9,12 @@ use unicode_width::UnicodeWidthChar;
 use crate::{
     animation::weather::WeatherKind,
     config::{
-        GaugeConfig, LayoutConfig, MapRenderConfig, PanelConfig, PanelMode, PanelOptions,
+        GaugeConfig, LayoutConfig, MapRenderConfig, PaneRole, PanelConfig, PanelMode, PanelOptions,
         WeatherConfig,
     },
     state::{AppState, GroupMember, SocialChannel, SocialMessage},
     ui::{
-        gauges::{GaugeKind, GaugeValue, compact_gauge, compact_line, render_gauge, status_line},
+        gauges::{GaugeKind, GaugeValue, compact_line, render_gauge, status_line},
         layout::UiMode,
         map::{render_map, render_nearby_map},
         panels::{PanelCache, PanelId, PanelRenderer, panel},
@@ -203,23 +203,41 @@ pub fn render_classic_sidebar(
     state: &AppState,
     theme: &Theme,
     config: ResponsivePanelConfig<'_>,
+    configured_panels: &[PaneRole],
 ) {
     let panels = config.panels;
-    let mut optional = Vec::new();
-    if panel_visible(&panels.info, UiMode::FullHd) {
-        optional.push(ClassicSidebarPanel::Info);
+    let mut optional = configured_panels
+        .iter()
+        .copied()
+        .filter_map(ClassicSidebarPanel::from_role)
+        .collect::<Vec<_>>();
+    let include_map = configured_panels.is_empty() && config.layout.full_hd.top != PaneRole::Map;
+    if !configured_panels.is_empty() {
+        optional.retain(|kind| sidebar_panel_visible(*kind, config));
+    } else {
+        optional.clear();
+        if panel_visible(&panels.info, UiMode::FullHd) {
+            optional.push(ClassicSidebarPanel::Info);
+        }
+        if config.layout.show_opponent && panel_visible(&panels.opponent, UiMode::FullHd) {
+            optional.push(ClassicSidebarPanel::Opponent);
+        }
+        if config.layout.show_group && panel_visible(&panels.group, UiMode::FullHd) {
+            optional.push(ClassicSidebarPanel::Group);
+        }
+        if config.layout.show_character && panel_visible(&panels.character, UiMode::FullHd) {
+            optional.push(ClassicSidebarPanel::Character);
+        }
+        if config.layout.show_social && panel_visible(&panels.social, UiMode::FullHd) {
+            optional.push(ClassicSidebarPanel::Social);
+        }
+        optional.sort_by_key(|kind| std::cmp::Reverse(kind.priority(panels)));
     }
-    if config.layout.show_opponent && panel_visible(&panels.opponent, UiMode::FullHd) {
-        optional.push(ClassicSidebarPanel::Opponent);
-    }
-    if config.layout.show_group && panel_visible(&panels.group, UiMode::FullHd) {
-        optional.push(ClassicSidebarPanel::Group);
-    }
-    if config.layout.show_character && panel_visible(&panels.character, UiMode::FullHd) {
-        optional.push(ClassicSidebarPanel::Character);
-    }
-    optional.sort_by_key(|kind| std::cmp::Reverse(kind.priority(panels)));
-    let map_height = panels.map.min_height.min(area.height);
+    let map_height = if include_map {
+        panels.map.min_height.min(area.height)
+    } else {
+        0
+    };
     let mut used = map_height;
     optional.retain(|kind| {
         let minimum = kind.min_height(panels);
@@ -229,9 +247,14 @@ pub fn render_classic_sidebar(
         used = used.saturating_add(minimum);
         true
     });
-    let mut kinds = vec![ClassicSidebarPanel::Map];
+    let mut kinds = Vec::new();
+    if include_map {
+        kinds.push(ClassicSidebarPanel::Map);
+    }
     kinds.extend(optional);
-    kinds.sort_by_key(|kind| kind.display_order());
+    if configured_panels.is_empty() {
+        kinds.sort_by_key(|kind| kind.display_order());
+    }
     let panel_rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints(kinds.iter().map(|kind| kind.sidebar_constraint(panels)))
@@ -243,6 +266,7 @@ pub fn render_classic_sidebar(
             ClassicSidebarPanel::Opponent => (PanelId::Opponent, &panels.opponent),
             ClassicSidebarPanel::Group => (PanelId::Group, &panels.group),
             ClassicSidebarPanel::Character => (PanelId::Character, &panels.character),
+            ClassicSidebarPanel::Social => (PanelId::Social, &panels.social),
         };
         PanelRenderer {
             theme,
@@ -274,6 +298,9 @@ pub fn render_classic_sidebar(
                 config.gauges,
                 &panels.character.title,
             ),
+            ClassicSidebarPanel::Social => {
+                render_social_panel(row, buf, state, theme, &panels.social.title)
+            }
         });
     }
 }
@@ -323,9 +350,22 @@ enum ClassicSidebarPanel {
     Opponent,
     Group,
     Character,
+    Social,
 }
 
 impl ClassicSidebarPanel {
+    fn from_role(role: PaneRole) -> Option<Self> {
+        match role {
+            PaneRole::Map => Some(Self::Map),
+            PaneRole::Info => Some(Self::Info),
+            PaneRole::Social => Some(Self::Social),
+            PaneRole::Opponent => Some(Self::Opponent),
+            PaneRole::Group => Some(Self::Group),
+            PaneRole::Character => Some(Self::Character),
+            _ => None,
+        }
+    }
+
     fn priority(self, panels: &PanelConfig) -> i32 {
         match self {
             Self::Info => panels.info.priority,
@@ -333,6 +373,7 @@ impl ClassicSidebarPanel {
             Self::Opponent => panels.opponent.priority,
             Self::Group => panels.group.priority,
             Self::Character => panels.character.priority,
+            Self::Social => panels.social.priority,
         }
     }
 
@@ -343,6 +384,7 @@ impl ClassicSidebarPanel {
             Self::Opponent => panels.opponent.min_height,
             Self::Group => panels.group.min_height,
             Self::Character => panels.character.min_height,
+            Self::Social => panels.social.min_height,
         }
     }
 
@@ -353,6 +395,7 @@ impl ClassicSidebarPanel {
             Self::Opponent => 2,
             Self::Group => 3,
             Self::Character => 4,
+            Self::Social => 5,
         }
     }
 
@@ -361,6 +404,26 @@ impl ClassicSidebarPanel {
             Self::Info => Constraint::Length(self.min_height(panels)),
             Self::Opponent => Constraint::Length(self.min_height(panels)),
             _ => Constraint::Min(self.min_height(panels)),
+        }
+    }
+}
+
+fn sidebar_panel_visible(kind: ClassicSidebarPanel, config: ResponsivePanelConfig<'_>) -> bool {
+    let panels = config.panels;
+    match kind {
+        ClassicSidebarPanel::Map => panel_visible(&panels.map, UiMode::FullHd),
+        ClassicSidebarPanel::Info => panel_visible(&panels.info, UiMode::FullHd),
+        ClassicSidebarPanel::Social => {
+            config.layout.show_social && panel_visible(&panels.social, UiMode::FullHd)
+        }
+        ClassicSidebarPanel::Opponent => {
+            config.layout.show_opponent && panel_visible(&panels.opponent, UiMode::FullHd)
+        }
+        ClassicSidebarPanel::Group => {
+            config.layout.show_group && panel_visible(&panels.group, UiMode::FullHd)
+        }
+        ClassicSidebarPanel::Character => {
+            config.layout.show_character && panel_visible(&panels.character, UiMode::FullHd)
         }
     }
 }
@@ -437,7 +500,7 @@ impl DashboardPanel {
     }
 }
 
-fn render_social_panel(
+pub fn render_social_panel(
     area: ratatui::layout::Rect,
     buf: &mut ratatui::buffer::Buffer,
     state: &AppState,
@@ -743,7 +806,7 @@ fn wrap_words(text: &str, first_width: usize, next_width: usize) -> Vec<String> 
     lines
 }
 
-fn render_opponent_panel(
+pub fn render_opponent_panel(
     area: ratatui::layout::Rect,
     buf: &mut ratatui::buffer::Buffer,
     state: &AppState,
@@ -786,7 +849,7 @@ fn render_opponent_panel(
     }
 }
 
-fn render_group_panel(
+pub fn render_group_panel(
     area: ratatui::layout::Rect,
     buf: &mut ratatui::buffer::Buffer,
     state: &AppState,
@@ -827,122 +890,101 @@ fn group_lines<'a>(
     if height == 0 {
         return Vec::new();
     }
-    if members.len().saturating_mul(2) <= height && width >= 32 {
-        return rich_group_lines(members, theme, gauges);
-    }
-    compact_group_lines(members, width, height, theme)
-}
-
-fn rich_group_lines<'a>(
-    members: &[GroupMember],
-    theme: &Theme,
-    gauges: &GaugeConfig,
-) -> Vec<Line<'a>> {
-    let mut lines = Vec::with_capacity(members.len().saturating_mul(2));
-    for member in members {
-        lines.push(Line::from(Span::styled(
-            member.name.clone(),
-            Style::new().fg(theme.foreground),
-        )));
-        lines.push(status_line(vec![
-            compact_gauge(
-                GaugeKind::Health,
-                percent_value(member.health_percent),
-                gauges,
-            ),
-            compact_gauge(GaugeKind::Mana, percent_value(member.mana_percent), gauges),
-            compact_gauge(
-                GaugeKind::Movement,
-                percent_value(member.movement_percent),
-                gauges,
-            ),
-        ]));
-    }
-    lines
-}
-
-fn compact_group_lines<'a>(
-    members: &[GroupMember],
-    width: usize,
-    height: usize,
-    theme: &Theme,
-) -> Vec<Line<'a>> {
-    const MIN_CELL_WIDTH: usize = 20;
-
-    let max_columns = (width / MIN_CELL_WIDTH).max(1);
-    let needed_columns = members.len().div_ceil(height).max(1);
-    let columns = needed_columns.min(max_columns);
-    let cell_width = (width / columns).max(1);
-    let capacity = columns.saturating_mul(height);
-    let (visible_members, hidden) = if members.len() > capacity {
-        let visible = capacity.saturating_sub(1);
-        (visible, members.len().saturating_sub(visible))
+    let column_widths = group_column_widths(width, gauges);
+    let header = group_header(&column_widths, theme);
+    let member_capacity = height.saturating_sub(1);
+    let overflow_row = members.len() > member_capacity;
+    let visible_count = if overflow_row {
+        member_capacity.saturating_sub(1)
     } else {
-        (members.len(), 0)
+        members.len().min(member_capacity)
     };
 
     let mut lines = Vec::with_capacity(height);
-    for row in 0..height {
-        let mut spans = Vec::new();
-        for column in 0..columns {
-            let slot = row.saturating_mul(columns).saturating_add(column);
-            if slot >= capacity {
-                continue;
-            }
-            if slot < visible_members {
-                spans.extend(group_member_cell(&members[slot], cell_width, theme));
-            } else if hidden > 0 && slot == visible_members {
-                spans.push(Span::styled(
-                    fit_cell(&format!("+{hidden} more"), cell_width),
-                    Style::new().fg(theme.muted),
-                ));
-            } else {
-                spans.push(Span::raw(" ".repeat(cell_width)));
-            }
-        }
-        lines.push(Line::from(spans));
+    lines.push(header);
+    for member in members.iter().take(visible_count) {
+        lines.push(group_member_row(member, &column_widths, theme));
+    }
+    if overflow_row && lines.len() < height {
+        let hidden = members.len().saturating_sub(visible_count);
+        lines.push(Line::from(Span::styled(
+            fit_cell(&format!("+{hidden} more"), width),
+            Style::new().fg(theme.muted),
+        )));
     }
     lines
 }
 
-fn group_member_cell<'a>(member: &GroupMember, width: usize, theme: &Theme) -> Vec<Span<'a>> {
-    const VITALS_WIDTH: usize = 12;
+fn group_column_widths(width: usize, gauges: &GaugeConfig) -> [usize; 4] {
+    const GAP: usize = 1;
+    const PERCENT_WIDTH: usize = 5;
+    let bar_resource_width = gauges.width.clamp(3, 8) as usize + 6;
+    let resource_width =
+        if width >= 8 + bar_resource_width.saturating_mul(3) + GAP.saturating_mul(3) {
+            bar_resource_width
+        } else {
+            PERCENT_WIDTH
+        };
+    let name_width = width
+        .saturating_sub(resource_width.saturating_mul(3) + GAP.saturating_mul(3))
+        .max(1);
+    [name_width, resource_width, resource_width, resource_width]
+}
 
-    if width < VITALS_WIDTH + 1 {
-        return vec![Span::styled(
-            fit_cell(&member.name, width),
-            Style::new().fg(theme.foreground),
-        )];
+fn group_header(widths: &[usize; 4], theme: &Theme) -> Line<'static> {
+    let labels = ["Name", "HP", "MP", "MV"];
+    let mut spans = Vec::with_capacity(labels.len().saturating_mul(2));
+    for (index, label) in labels.into_iter().enumerate() {
+        if index > 0 {
+            spans.push(Span::raw(" "));
+        }
+        spans.push(Span::styled(
+            fit_cell(label, widths[index]),
+            Style::new().fg(theme.muted).bold(),
+        ));
     }
+    Line::from(spans)
+}
 
-    let name_width = width.saturating_sub(VITALS_WIDTH).max(1);
-    let name = truncate_cell(&member.name, name_width);
-    let name_len = name.chars().count();
-
-    let mut spans = vec![
-        Span::styled(name, Style::new().fg(theme.foreground)),
-        Span::raw(" ".repeat(name_width.saturating_sub(name_len))),
-        Span::styled("H", Style::new().fg(GaugeKind::Health.color())),
-        Span::styled(
-            format!("{:>3}", percent_text(member.health_percent)),
-            Style::new().fg(GaugeKind::Health.color()),
-        ),
-        Span::styled("M", Style::new().fg(GaugeKind::Mana.color())),
-        Span::styled(
-            format!("{:>3}", percent_text(member.mana_percent)),
-            Style::new().fg(GaugeKind::Mana.color()),
-        ),
-        Span::styled("V", Style::new().fg(GaugeKind::Movement.color())),
-        Span::styled(
-            format!("{:>3}", percent_text(member.movement_percent)),
-            Style::new().fg(GaugeKind::Movement.color()),
-        ),
+fn group_member_row(member: &GroupMember, widths: &[usize; 4], theme: &Theme) -> Line<'static> {
+    let values = [
+        (member.health_percent, GaugeKind::Health),
+        (member.mana_percent, GaugeKind::Mana),
+        (member.movement_percent, GaugeKind::Movement),
     ];
-    let used_width = name_width.saturating_add(VITALS_WIDTH);
-    if width > used_width {
-        spans.push(Span::raw(" ".repeat(width - used_width)));
+    let mut spans = vec![Span::styled(
+        fit_cell(&truncate_cell(&member.name, widths[0]), widths[0]),
+        Style::new().fg(theme.foreground),
+    )];
+    for (percent, kind) in values {
+        spans.push(Span::raw(" "));
+        let value = if widths[1] >= 10 {
+            let bar_width = widths[1].saturating_sub(5);
+            format!(
+                "{} {:>3}%",
+                gauge_bar(percent, bar_width),
+                percent_text(percent)
+            )
+        } else {
+            format!("{:>3}%", percent_text(percent))
+        };
+        spans.push(Span::styled(
+            fit_cell(&value, widths[1]),
+            Style::new().fg(kind.color()),
+        ));
     }
-    spans
+    Line::from(spans)
+}
+
+fn gauge_bar(percent: Option<i64>, width: usize) -> String {
+    let filled = percent
+        .map(|value| value.clamp(0, 100) as usize * width / 100)
+        .unwrap_or(0);
+    format!(
+        "{}{}",
+        "█".repeat(filled),
+        "░".repeat(width.saturating_sub(filled))
+    )
 }
 
 fn percent_text(percent: Option<i64>) -> String {
@@ -976,7 +1018,7 @@ fn fit_cell(value: &str, width: usize) -> String {
     output
 }
 
-fn render_character_panel(
+pub fn render_character_panel(
     area: ratatui::layout::Rect,
     buf: &mut ratatui::buffer::Buffer,
     state: &AppState,
@@ -1210,13 +1252,6 @@ fn opponent_title_line(name: &str, level: Option<&str>, theme: &Theme) -> Line<'
     Line::from(Span::styled(label, Style::new().fg(theme.enemy))).bold()
 }
 
-fn percent_value(percent: Option<i64>) -> GaugeValue {
-    GaugeValue {
-        current: percent,
-        max: Some(100),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use ratatui::{buffer::Buffer, layout::Rect, style::Color};
@@ -1277,34 +1312,32 @@ mod tests {
     }
 
     #[test]
-    fn small_group_uses_rich_two_line_layout_when_it_fits() {
+    fn group_table_keeps_resource_columns_aligned() {
         let members = group_members(2);
 
         let lines = group_lines(&members, 56, 4, &theme(), &GaugeConfig::default());
         let rendered = lines.iter().map(line_text).collect::<Vec<_>>();
 
-        assert_eq!(rendered.len(), 4);
-        assert!(rendered[0].contains("Member01"));
-        assert!(rendered[1].contains("HP"));
-        assert!(rendered[2].contains("Member02"));
-        assert!(rendered[3].contains("MP"));
+        assert_eq!(rendered.len(), 3);
+        assert!(rendered[0].contains("Name") && rendered[0].contains("HP"));
+        assert!(rendered[1].contains("Member01") && rendered[1].contains("100%"));
+        assert!(rendered[2].contains("Member02") && rendered[2].contains("100%"));
+        assert_eq!(rendered[1].find("100%"), rendered[2].find("100%"));
     }
 
     #[test]
-    fn large_group_uses_multicolumn_compact_rows() {
+    fn narrow_group_table_uses_percentages_without_cutting_columns() {
         let members = group_members(20);
 
-        let lines = group_lines(&members, 68, 8, &theme(), &GaugeConfig::default());
+        let lines = group_lines(&members, 30, 8, &theme(), &GaugeConfig::default());
         let rendered = lines.iter().map(line_text).collect::<Vec<_>>();
         let joined = rendered.join("\n");
 
         assert_eq!(rendered.len(), 8);
         assert!(joined.contains("Member01"));
-        assert!(joined.contains("Member20"));
-        assert!(joined.contains("H100"));
-        assert!(joined.contains("M 71"));
-        assert!(joined.contains("V  8"));
-        assert!(!joined.contains("more"));
+        assert!(joined.contains("HP") && joined.contains("MP") && joined.contains("MV"));
+        assert!(joined.contains("+14 more"));
+        assert!(!joined.contains("█"));
     }
 
     #[test]
@@ -1315,8 +1348,8 @@ mod tests {
         let joined = lines.iter().map(line_text).collect::<Vec<_>>().join("\n");
 
         assert!(joined.contains("Member01"));
-        assert!(joined.contains("Member05"));
-        assert!(joined.contains("+5 more"));
+        assert!(!joined.contains("Member02"));
+        assert!(joined.contains("+9 more"));
         assert!(!joined.contains("Member10"));
     }
 

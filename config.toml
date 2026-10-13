@@ -30,7 +30,7 @@ echo_commands = true
 [layout]
 show_character = true
 show_opponent = true
-show_group = false
+show_group = true
 show_social = true
 show_output = true
 scrollback_lines = 2000
@@ -54,6 +54,8 @@ show_status = true
 [layout.full_hd]
 sidebar_position = "left"
 sidebar_width = 70
+top = "nearby_map"
+sidebar_panels = ["info", "social", "group", "character"]
 
 [layout.ultrawide]
 top_height = 9
@@ -119,7 +121,7 @@ title = "Social"
 min_width = 30
 min_height = 5
 priority = 95
-visible_modes = ["ultrawide"]
+visible_modes = ["1080p", "ultrawide"]
 
 [panels.map]
 enabled = true
@@ -188,7 +190,7 @@ void_color = "#414868"
 [map.persistence]
 load_on_startup = true
 path = "rots.toml"
-save_on_exit = false
+save_on_exit = true
 
 [map.doors]
 show = true

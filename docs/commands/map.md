@@ -37,6 +37,7 @@ This creates a test graph, names room `2` as `Home`, previews a route, and saves
 - `/map move <direction>` changes mapper state only.
 - `/map dig`, `/map link`, and `/map unlink` edit exits.
 - `/map set roomterrain <name>` and `/map set roomweight <number>` control path costs.
+- `/map set roomz <integer>` changes the current room's display-layer z coordinate.
 - `/map flag <name> [on|off]` changes mapper-wide behavior.
 - `/map roomflag <flag> [on|off]` changes current-room flags.
 - `/map exitflag <direction> <flag> [on|off]` changes exit flags.

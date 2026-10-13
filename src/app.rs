@@ -2400,7 +2400,10 @@ impl App {
     fn social_panel_area(&self, layout: &ResolvedLayout) -> Option<Rect> {
         let top = layout
             .top
-            .filter(|pane| pane.role == PaneRole::StatusDashboard)?;
+            .filter(|pane| matches!(pane.role, PaneRole::StatusDashboard | PaneRole::Social))?;
+        if top.role == PaneRole::Social {
+            return Some(top.area);
+        }
         status_dashboard_social_area(
             top.area,
             ResponsivePanelConfig::new(

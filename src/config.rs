@@ -274,6 +274,20 @@ impl AppConfig {
                     .to_string(),
             ));
         }
+        if let Some(role) = self.layout.full_hd.sidebar_panels.iter().find(|role| {
+            matches!(
+                role,
+                PaneRole::StatusDashboard
+                    | PaneRole::Details
+                    | PaneRole::ClassicSidebar
+                    | PaneRole::None
+            )
+        }) {
+            return Err(MudClientError::ConfigValidation(format!(
+                "layout.full_hd.sidebar_panels does not support grouped or empty role {:?}",
+                role
+            )));
+        }
         let layout = &self.layout.ultrawide;
         if [layout.top, layout.left, layout.right].contains(&PaneRole::ClassicSidebar) {
             return Err(MudClientError::ConfigValidation(
@@ -1030,6 +1044,7 @@ impl Default for LayoutConfig {
                 top: PaneRole::StatusDashboard,
                 sidebar_position: SidebarPosition::Right,
                 sidebar_width: 34,
+                sidebar_panels: Vec::new(),
             },
             ultrawide: LargeLayoutConfig {
                 top_height: 9,
@@ -1110,6 +1125,7 @@ pub struct FullHdLayoutConfig {
     pub top: PaneRole,
     pub sidebar_position: SidebarPosition,
     pub sidebar_width: u16,
+    pub sidebar_panels: Vec<PaneRole>,
 }
 
 impl Default for FullHdLayoutConfig {
@@ -1119,6 +1135,7 @@ impl Default for FullHdLayoutConfig {
             top: PaneRole::StatusDashboard,
             sidebar_position: SidebarPosition::Right,
             sidebar_width: 34,
+            sidebar_panels: Vec::new(),
         }
     }
 }
@@ -1161,6 +1178,11 @@ pub enum PaneRole {
     StatusDashboard,
     Details,
     Info,
+    Social,
+    NearbyMap,
+    Opponent,
+    Group,
+    Character,
     ClassicSidebar,
     None,
 }

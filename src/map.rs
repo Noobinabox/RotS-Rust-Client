@@ -902,6 +902,11 @@ impl MapState {
                     .parse::<f32>()
                     .map_err(|_| "roomweight must be a number".to_string())?;
             }
+            "roomz" | "z" | "zindex" => {
+                room.z = value
+                    .parse::<i32>()
+                    .map_err(|_| "roomz must be an integer".to_string())?;
+            }
             _ => return Err(format!("Unknown map set option `{}`.", option)),
         }
         Ok(())
@@ -1832,6 +1837,21 @@ mod tests {
         restored.execute("set roomnote").unwrap();
         assert!(restored.rooms["1"].symbol.is_empty());
         assert!(restored.rooms["1"].note.is_empty());
+    }
+
+    #[test]
+    fn room_z_coordinate_can_be_corrected_and_persisted() {
+        let mut map = MapState::default();
+        map.create();
+
+        map.execute("set roomz 4").unwrap();
+        assert_eq!(map.rooms["1"].z, 4);
+        assert!(map.execute("set zindex -2").is_ok());
+        assert_eq!(map.rooms["1"].z, -2);
+        assert!(map.execute("set zindex not-a-number").is_err());
+
+        let restored: MapState = toml::from_str(&toml::to_string(&map).unwrap()).unwrap();
+        assert_eq!(restored.rooms["1"].z, -2);
     }
 
     #[test]

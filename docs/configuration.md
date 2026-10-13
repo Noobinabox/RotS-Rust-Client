@@ -82,9 +82,10 @@ Breakpoints must increase from mobile to tablet to ultrawide.
 | Option | Meaning |
 |---|---|
 | `top_height` | Rows reserved for the top pane. |
-| `top` | Top pane role: `status_dashboard`, `details`, `info`, or `none`. |
+| `top` | Top pane role: grouped roles `status_dashboard` or `details`; individual roles `map`, `info`, `social`, `nearby_map`, `opponent`, `group`, or `character`; or `none`. |
 | `sidebar_position` | `left` or `right`. When left, command input aligns with MUD output. |
 | `sidebar_width` | Sidebar width in terminal columns. Runtime mouse resizing can override it for the current session. |
+| `sidebar_panels` | Optional ordered list of individual panels: `map`, `info`, `social`, `opponent`, `group`, or `character`. When omitted or empty, the default priority-based sidebar is used. Grouped roles are not valid here. |
 
 ### layout.ultrawide
 
@@ -93,7 +94,7 @@ Breakpoints must increase from mobile to tablet to ultrawide.
 | `top_height` | Rows reserved for the top pane. |
 | `left_width` | Columns reserved for the left pane. |
 | `right_width` | Columns reserved for the right pane. |
-| `top`, `left`, `right` | Pane roles: `map`, `status_dashboard`, `details`, `info`, or `none`. Exactly one slot must contain `map`. Defaults place `details` on the left and `map` on the right. |
+| `top`, `left`, `right` | Pane roles: `map`, `status_dashboard`, `details`, `info`, `social`, `nearby_map`, `opponent`, `group`, `character`, or `none`. Exactly one slot must contain `map`. Defaults place `details` on the left and `map` on the right. |
 
 ## colors
 
@@ -235,7 +236,9 @@ Each panel table supports the same fields:
 | `refresh_ms` | Minimum content-refresh interval, 0–60000 ms; `0` (default) renders each frame. Input must use `0`. |
 | `theme` | Partial color overrides in `[panels.<name>.theme]`; omitted colors inherit `[colors]`. |
 
-Panel tables are `panels.info`, `panels.social`, `panels.map`, `panels.opponent`, `panels.group`, `panels.character`, `panels.output`, and `panels.input`. The `panels.info` table controls the World pane title and compact sidebar height. The `panels.social` table controls the ultrawide Social dashboard pane.
+Panel tables are `panels.info`, `panels.social`, `panels.map`, `panels.opponent`, `panels.group`, `panels.character`, `panels.output`, and `panels.input`. The `panels.info` table controls the World/weather pane title and compact sidebar height. The `panels.social` table controls the Social dashboard or 1080p sidebar pane, depending on `visible_modes`.
+
+The group panel keeps HP, MP, and MV aligned beneath a header row. It uses bars and percentages when the panel is wide enough, then switches to percentage-only cells before content is clipped. `panels.group.min_width`, `panels.group.min_height`, and `gauges.width` influence the available table shape; hidden members are summarized with `+N more`.
 
 Accepted `visible_modes` values are `mobile`, `tablet`, `1080p`, and `ultrawide`. Legacy aliases `tiny`, `compact`, `standard`, and `wide` are also accepted.
 
@@ -248,7 +251,7 @@ title = "Social"
 min_width = 30
 min_height = 5
 priority = 95
-visible_modes = ["ultrawide"]
+visible_modes = ["1080p", "ultrawide"]
 border_style = "rounded"
 alignment = "left"
 refresh_ms = 250

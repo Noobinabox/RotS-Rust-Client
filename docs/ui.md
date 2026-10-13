@@ -15,7 +15,9 @@ Breakpoints and pane dimensions are configured in `[layout.*]`; see [Configurati
 
 ## Panels
 
-The 1080p sidebar is split into these logical panels from top to bottom:
+The 1080p layout uses a configurable top pane and sidebar. Set `layout.full_hd.top` to `map`, `info`, `social`, `nearby_map`, `opponent`, `group`, or `character` for an individual panel; `status_dashboard` and `details` remain grouped presets, and `none` disables the top pane. Sidebar content is controlled by `panels.*.visible_modes`, `layout.show_group`, `layout.show_opponent`, and `layout.show_social`. The World panel contains weather information. For example, Social can be enabled in 1080p with `visible_modes = ["1080p", "ultrawide"]`.
+
+When `layout.full_hd.sidebar_panels` is omitted or empty, the default 1080p sidebar is split into these logical panels from top to bottom:
 
 1. World
 2. Map
@@ -24,6 +26,15 @@ The 1080p sidebar is split into these logical panels from top to bottom:
 5. Character
 
 World remains a compact fixed-height pane. Map, group, and character share the remaining available sidebar space when enabled, while opponent also stays compact. If the sidebar is on the left, the command input starts at the same column as the MUD output.
+
+To explicitly control the sidebar order and contents, configure individual panel roles:
+
+```toml
+[layout.full_hd]
+sidebar_panels = ["info", "social", "group"]
+```
+
+The list order is preserved. Disabled panels, panels hidden from `1080p` by `visible_modes`, and optional panels disabled by `layout.show_group`, `layout.show_opponent`, or `layout.show_social` are filtered out. Include `"map"` to place the map in the sidebar; otherwise an omitted list retains the default map placement.
 
 In ultrawide mode, the top dashboard shows World, Social, and a compressed Nearby Map. Social captures tells, chats, says, narrates, group-says, yells, and sings with local machine `HH:MM` timestamps, extracts the text inside RoTS single quotes, displays `[HH:MM](channel) Prefix Text`, word-wraps long messages, and can be scrolled with the mouse wheel while the pointer is over the panel. Nearby Map centers on the current room, uses the same room and terrain symbols as the full map, omits link lines, butts adjacent road and city route symbols together, overlays up/down exit indicators when needed, and keeps the full linked map on the right side pane.
 
@@ -74,7 +85,7 @@ Panel borders, text alignment, local colors, and refresh intervals are configura
 
 Character, opponent, and group vitals use gauges. Character health and opponent health are red, mana is blue, and movement is green. Full character, opponent, and TNL gauges expand across the available panel row while keeping fixed-width numeric suffixes so value changes do not shift the layout. Compact gauges keep the configured fixed bar width. The Character sheet separates gauges from stats with a blank row, shows base stats on one row, then leaves another blank row before one class-specific detail row. Mage shows `Mana Regen`, `Spell Power`, and `Spell Pen`; Mystic shows `Willpower`, `Spirits`, `Health Regen`, and `Movement Regen`. Class-specific metrics wrap between complete label/value pairs when the pane is narrow.
 
-Group display uses a richer layout for small groups and a compact layout for large groups so more members remain visible.
+Group display uses an aligned table with a `Name`, `HP`, `MP`, and `MV` header. Resource columns remain fixed across every member row. Wider panels show compact bars with percentages; narrow panels fall back to aligned percentages before clipping values. Long names are truncated safely, and an explicit `+N more` row reports members hidden by the panel height.
 
 ## World Pane
 
