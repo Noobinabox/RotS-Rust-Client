@@ -145,14 +145,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release-assets-flat
-          find release-assets -type f \( \
-            -name 'mud-client-linux-x86_64' -o \
-            -name 'mud-client-linux-x86_64.zip' -o \
-            -name 'mud-client-macos-arm64' -o \
-            -name 'mud-client-macos-arm64.zip' -o \
-            -name 'mud-client-windows-x86_64.exe' -o \
-            -name 'mud-client-windows-x86_64.zip' \
-          \) -exec cp {} release-assets-flat/ \;
+          find release-assets -type f -print
+          find release-assets -type f -path '*-executable/*' -exec cp {} release-assets-flat/ \;
+          find release-assets -type f -path '*-bundle/*' -name '*.zip' -exec cp {} release-assets-flat/ \;
           test "$(find release-assets-flat -maxdepth 1 -type f | wc -l)" -eq 6
 
       - name: Create GitHub Release
