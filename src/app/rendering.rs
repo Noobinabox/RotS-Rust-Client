@@ -115,7 +115,9 @@ pub(super) fn render_with_overrides(
         );
     }
     if let Some(status_area) = layout.compact_status {
-        Paragraph::new(compact_status(state, theme)).render(status_area, frame.buffer_mut());
+        Paragraph::new(compact_status(state, theme))
+            .style(ratatui::style::Style::new().bg(theme.background))
+            .render(status_area, frame.buffer_mut());
     }
     for pane in [layout.top, layout.left, layout.right]
         .into_iter()
@@ -335,6 +337,42 @@ mod tests {
         state::OutputCategory,
     };
     use ratatui::{Terminal, backend::TestBackend, style::Color};
+
+    #[test]
+    fn tablet_compact_status_paints_the_theme_background() {
+        let config = AppConfig::default();
+        let app = App::new(config.clone());
+        let theme = Theme::from_config(&config.colors);
+        let area = Rect::new(0, 0, 100, 30);
+        let layout = resolve_layout(
+            area,
+            &config.layout,
+            layout_minimums(&config),
+            LayoutOverrides::default(),
+        );
+        let status_area = layout.compact_status.expect("tablet status area");
+        let mut terminal = Terminal::new(TestBackend::new(area.width, area.height)).unwrap();
+
+        terminal
+            .draw(|frame| {
+                render_with_overrides(
+                    frame,
+                    &config,
+                    &app.state,
+                    &theme,
+                    LayoutOverrides::default(),
+                    None,
+                )
+            })
+            .unwrap();
+
+        let buffer = terminal.backend().buffer();
+        for y in status_area.top()..status_area.bottom() {
+            for x in status_area.left()..status_area.right() {
+                assert_eq!(buffer[(x, y)].bg, theme.background);
+            }
+        }
+    }
 
     #[test]
     fn customized_panels_render_in_all_profiles_and_tiny_areas() {
