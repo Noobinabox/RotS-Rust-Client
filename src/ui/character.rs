@@ -1086,7 +1086,9 @@ fn render_compact(
     state: &AppState,
     theme: &Theme,
 ) {
-    Paragraph::new(compact_status(state, theme)).render(area, buf);
+    Paragraph::new(compact_status(state, theme))
+        .style(Style::new().bg(theme.background))
+        .render(area, buf);
 }
 
 fn health(state: &AppState) -> GaugeValue {
@@ -1254,7 +1256,11 @@ fn opponent_title_line(name: &str, level: Option<&str>, theme: &Theme) -> Line<'
 
 #[cfg(test)]
 mod tests {
-    use ratatui::{buffer::Buffer, layout::Rect, style::Color};
+    use ratatui::{
+        buffer::Buffer,
+        layout::Rect,
+        style::{Color, Style},
+    };
 
     use crate::{
         config::{GaugeConfig, LayoutConfig, MapRenderConfig},
@@ -1263,6 +1269,23 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn compact_status_paints_over_previous_panel_background() {
+        let config = crate::config::AppConfig::default();
+        let state = AppState::new(&config);
+        let theme = theme();
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buffer = Buffer::empty(area);
+        buffer.set_style(area, Style::default().bg(Color::Magenta));
+
+        render_compact(area, &mut buffer, &state, &theme);
+
+        assert_eq!(
+            buffer.cell((39, 0)).map(|cell| cell.bg),
+            Some(theme.background)
+        );
+    }
 
     #[test]
     fn detail_panels_drop_lower_priority_content_when_height_is_limited() {
