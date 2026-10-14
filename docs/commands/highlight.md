@@ -15,7 +15,7 @@ Apply local styling to matching MUD output without changing the raw text stored 
 
 Styles include `bold`, `dim`, `italic`, `underline`, and `reverse`.
 
-## Keep a highlight after restarting
+## Keep a Highlight After Restarting
 
 ```text
 /highlight {You are hit} {red}

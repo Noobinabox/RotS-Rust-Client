@@ -19,7 +19,7 @@ Without braces, the first word is the alias pattern and everything after it is o
 
 If a value starts with `{`, it is parsed as a braced field; wrap literal leading braces in an outer pair. Semicolons in a definition are stored without executing anything: `/alias rr recall;look` runs `recall` and `look` only when you invoke `rr`. Separate braced actions also work. `clear` and `unset` remain subcommands; brace those words when using them as alias patterns.
 
-## Keep an alias after restarting
+## Keep an Alias After Restarting
 
 ```text
 /alias {rr} {look}

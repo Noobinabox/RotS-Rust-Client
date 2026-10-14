@@ -52,10 +52,10 @@ map_height = 8
 show_status = true
 
 [layout.full_hd]
-sidebar_position = "left"
+sidebar_position = "right"
 sidebar_width = 70
-top = "nearby_map"
-sidebar_panels = ["info", "social", "group", "character"]
+top = "info"
+sidebar_panels = ["map", "character"]
 
 [layout.ultrawide]
 top_height = 9
@@ -454,6 +454,12 @@ name = "Regeneration and Vit"
 match_type = "regex"
 pattern = "^rr(.*)"
 lua = "regen_and_vit"
+
+[[aliases.rules]]
+name = "Mark Room Avoid"
+match_type = "exact"
+pattern = "mv"
+commands = ["/map roomflag avoid"]
 
 [[aliases.rules]]
 name = "Open door"

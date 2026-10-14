@@ -5,7 +5,7 @@ Scenes stay inside the pane's content area and leave text unobscured; they never
 command input or MUD output. `/help weather` and `/help animation`
 show this reference; there is no separate `/weather` command.
 
-## RoTS weather
+## RoTS Weather
 
 RoTS defines six sky states in `src/structs.h`. Its `src/weather.cpp` supplies
 sector-specific descriptions, sent as MSDP `WEATHER` by `src/comm.cpp`.
@@ -13,14 +13,14 @@ The client recognizes all nonempty descriptions, including the crack-sector
 water-stream and `slowflake` messages. Snowstorms mean blizzards; mist in a
 cloudless description still means clear weather.
 
-| RoTS state | Background scene |
-|---|---|
-| Clear | Sunshine by day; a round, cratered moon at night. |
-| Cloudy | Overlapping cloud layers drifting in front of the sun or moon, with sunrise/sunset gradients. |
-| Rain | Falling rain over clouds; no sun/moon after the transition. |
-| Lightning | Rain and clouds with immediate bright lightning. |
-| Snow | Falling snow over clouds; no sun/moon after the transition. |
-| Blizzard | Wind-driven snow over clouds; no sun/moon after the transition. |
+| RoTS state | Background scene                                                                              |
+| ---------- | --------------------------------------------------------------------------------------------- |
+| Clear      | Sunshine by day; a round, cratered moon at night.                                             |
+| Cloudy     | Overlapping cloud layers drifting in front of the sun or moon, with sunrise/sunset gradients. |
+| Rain       | Falling rain over clouds; no sun/moon after the transition.                                   |
+| Lightning  | Rain and clouds with immediate bright lightning.                                              |
+| Snow       | Falling snow over clouds; no sun/moon after the transition.                                   |
+| Blizzard   | Wind-driven snow over clouds; no sun/moon after the transition.                               |
 
 Scenes animate without shifting the text. Indoor, empty, and
 unrecognized descriptions have no scene; the
@@ -28,7 +28,7 @@ description remains visible. Sunrise and sunset are time announcements, not
 additional sky states. Generic fog, wind, ash, and dust descriptions remain
 supported with background scenes, although RoTS has no separate sky constants for them.
 
-## Game time and colors
+## Game Time and Colors
 
 To preview every weather scene without connecting, run `cargo run -- --demo weather`
 from the source checkout, or `mud-client --demo weather` after rebuilding/installing.
@@ -46,12 +46,12 @@ display-lighting rules, not a claim about the server's season-specific sunrise.
 Colors come from the World pane's theme, including panel-specific overrides,
 except snow/blizzard flakes, which stay neutral white or gray:
 
-| Lighting | Scene colors |
-|---|---|
-| Dawn or dusk | Cloud gradients use `muted`, `danger`, and `warning`; other non-clear weather uses warm `warning` except rain/storm and snow/blizzard. |
-| Day | Rain/storm use `rain`; snow/blizzard use contrasting white/gray shades; clouds/fog/wind/ash use `muted`; dust uses `warning`. Day scenes are not dimmed. |
-| Night | Rain/storm keep dimmed `rain`; snow/blizzard keep neutral shades, dimmed only when no contrast correction is needed; other non-clear weather uses dimmed `muted` scenery with `accent` highlights. |
-| Missing or unrecognized time | Dimmed `muted`/`accent`, except rain/storm keep `rain` and snow/blizzard keep contrasting neutral shades. |
+| Lighting                     | Scene colors                                                                                                                                                                                       |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dawn or dusk                 | Cloud gradients use `muted`, `danger`, and `warning`; other non-clear weather uses warm `warning` except rain/storm and snow/blizzard.                                                             |
+| Day                          | Rain/storm use `rain`; snow/blizzard use contrasting white/gray shades; clouds/fog/wind/ash use `muted`; dust uses `warning`. Day scenes are not dimmed.                                           |
+| Night                        | Rain/storm keep dimmed `rain`; snow/blizzard keep neutral shades, dimmed only when no contrast correction is needed; other non-clear weather uses dimmed `muted` scenery with `accent` highlights. |
+| Missing or unrecognized time | Dimmed `muted`/`accent`, except rain/storm keep `rain` and snow/blizzard keep contrasting neutral shades.                                                                                          |
 
 Snow dots use soft white and star-shaped flakes use bright white on dark
 backgrounds, dimmed outside daytime. Pale panel backgrounds use contrasting
@@ -87,7 +87,7 @@ Lighting applies to every supported outdoor weather scene. Indoor and unknown
 weather still have no scene. Reduced motion freezes animation, not game time:
 lighting and celestial positions can still change as `WORLD_TIME` updates.
 
-### Sun and moon paths
+### Sun and Moon Paths
 
 The World pane uses north-up orientation: east is the right edge and west is the
 left. In clear or cloudy weather, the sun and moon travel from right to left.
@@ -129,7 +129,7 @@ their outlines or interiors overlap, revealing it through gaps. Cloud colors
 and movement remain independent of the body's fade. Rain, storms, snow, and
 blizzards share the cloud layer, but only clear/cloudy weather keeps the sun/moon visible.
 
-## Shared weather transitions
+## Shared Weather Transitions
 
 Weather changes blend clouds and particles over 1.5 seconds; the sun/moon layer
 fades in or out more quickly, over 0.5 seconds.
@@ -163,7 +163,7 @@ timing follows `weather_fps`, not a separate real-time timer. Reduced motion or
 disabled animation freezes the layers. Preview with `cargo run -- --demo weather`,
 Right once for cloudy, then Up/Down to 6 AM or 6 PM.
 
-## Configuration example
+## Configuration Example
 
 Edit the existing sections in `config.toml`, then run `/reload`:
 

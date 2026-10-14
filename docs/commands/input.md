@@ -11,7 +11,7 @@ Optional [Vim-style editing](vim.md) adds Insert/Normal modes, operators, visual
 - `#<count> {command}` repeats a command or braced command group.
 - `/quit` exits; `Ctrl-C` clears input and never exits.
 
-## Editing and history
+## Editing and History
 
 - `Left`, `Right`, `Home`, and `End` move the cursor.
 - `Ctrl-Left` / `Alt-B` move back one word; `Ctrl-Right` / `Alt-F` move forward one word.
@@ -30,7 +30,7 @@ Your terminal must report the chord distinctly. Some terminals send ordinary Bac
 
 For example, type `say hello world`, press Ctrl-Left to reach `world`, then Ctrl-W to remove `hello `, leaving `say world`. To override word deletion with a macro, use `/macro --override {Alt+D} {look}`.
 
-## Paste and multiline editing
+## Paste and Multiline Editing
 
 On supported terminals, bracketed paste inserts text without triggering macros, shortcuts, completion, or commands—even when printable-key macros are enabled. Pasting replaces a highlighted previous submission, or inserts at the cursor in a draft. In search mode it edits the search text without submitting it.
 
@@ -56,7 +56,7 @@ Paste payloads and resulting pasted drafts are limited to 64 KiB. The normalized
 
 Safety depends on terminal support: terminals that do not report bracketed paste—including the current native Windows input backend—deliver ordinary key events, which cannot reliably be distinguished from typing. Such pastes may trigger macros or execute newline-separated commands; do not paste untrusted or multiline text there. Alt+Enter also requires the terminal to report its modifier distinctly; otherwise use bracketed paste for multiline editing. Bracketed-paste mode is restored on exit.
 
-## Output navigation
+## Output Navigation
 
 Defaults below can be customized through [keybindings](keybindings.md), also available with `/help keybindings`.
 
@@ -68,7 +68,7 @@ Defaults below can be customized through [keybindings](keybindings.md), also ava
 - Mouse wheel scrolls output when the pointer is over the output pane.
 - `F2` cycles styled, plain, and debug output views.
 
-## Repeat examples
+## Repeat Examples
 
 ```text
 #10 {kill orc}

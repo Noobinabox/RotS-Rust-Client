@@ -34,29 +34,29 @@ If you disable or replace Enter, bind another key to `submit` first so you can s
 
 ## Actions
 
-| Action | Behavior |
-|---|---|
-| `none` | Consume the key without doing anything. |
-| `submit` | Submit the command draft through the normal command pipeline. |
-| `backspace`, `delete` | Delete the character before/at the cursor. |
-| `cursor_left`, `cursor_right` | Move one character. |
-| `line_start`, `line_end` | Move to the start/end of the entire draft. |
-| `word_left`, `word_right` | Move across whitespace-delimited words. |
-| `delete_word_left`, `delete_word_right` | Delete a word before/after the cursor. |
-| `history_previous`, `history_next` | Navigate prefix-filtered command history. |
-| `complete_next`, `complete_previous` | Cycle command completions. |
-| `scroll_page_up`, `scroll_page_down` | Scroll output by ten rows. |
-| `scroll_line_up`, `scroll_line_down` | Scroll output by one row. |
-| `follow_output` | Return to the latest output. |
-| `clear_output` | Clear retained output. |
-| `search_output` | Open output search. |
-| `search_next`, `search_previous` | Navigate output matches. |
-| `toggle_output_display_mode` | Cycle styled, plain, and debug output. |
-| `reconnect` | Replace the connection with a fresh connection to the same server. |
-| `reload` | Reload configuration. |
-| `quit` | Exit the client. |
+| Action                                  | Behavior                                                           |
+| --------------------------------------- | ------------------------------------------------------------------ |
+| `none`                                  | Consume the key without doing anything.                            |
+| `submit`                                | Submit the command draft through the normal command pipeline.      |
+| `backspace`, `delete`                   | Delete the character before/at the cursor.                         |
+| `cursor_left`, `cursor_right`           | Move one character.                                                |
+| `line_start`, `line_end`                | Move to the start/end of the entire draft.                         |
+| `word_left`, `word_right`               | Move across whitespace-delimited words.                            |
+| `delete_word_left`, `delete_word_right` | Delete a word before/after the cursor.                             |
+| `history_previous`, `history_next`      | Navigate prefix-filtered command history.                          |
+| `complete_next`, `complete_previous`    | Cycle command completions.                                         |
+| `scroll_page_up`, `scroll_page_down`    | Scroll output by ten rows.                                         |
+| `scroll_line_up`, `scroll_line_down`    | Scroll output by one row.                                          |
+| `follow_output`                         | Return to the latest output.                                       |
+| `clear_output`                          | Clear retained output.                                             |
+| `search_output`                         | Open output search.                                                |
+| `search_next`, `search_previous`        | Navigate output matches.                                           |
+| `toggle_output_display_mode`            | Cycle styled, plain, and debug output.                             |
+| `reconnect`                             | Replace the connection with a fresh connection to the same server. |
+| `reload`                                | Reload configuration.                                              |
+| `quit`                                  | Exit the client.                                                   |
 
-## Precedence and safety
+## Precedence and Safety
 
 - Ctrl-C and Escape are protected and cannot be rebound, including by macros. Ctrl-C clears input/leaves printable macro mode; Escape retains search/Vim recovery behavior. Existing Escape macros must be moved to another key.
 - Output search and Vim history search retain their own keys; custom shortcuts and macros do not intercept them.
