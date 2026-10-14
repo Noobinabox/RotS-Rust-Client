@@ -45,6 +45,12 @@ pub const BUILTIN_THEME_NAMES: &[&str] = &[
     "olog-hai",
     "uruk-lhuth",
     "haradrim",
+    "mordor",
+    "dol-guldur",
+    "erebor",
+    "rohan",
+    "shire",
+    "rivendell",
 ];
 
 pub fn normalize_theme_name(value: &str) -> String {

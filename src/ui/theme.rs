@@ -559,6 +559,60 @@ fn named_theme_config(name: &str) -> Option<ThemeConfig> {
                 "#91ad55", "#e4a53c", "#ee4566", "#ac8e7c", "#69a8a2", "#f08b57",
             ],
         ),
+        // Mordor in The Lord of the Rings: ash, blood-red iron, dying fire,
+        // diseased olive, and the harsh gold of Sauron's war machine.
+        "mordor" => set(
+            &mut config,
+            [
+                "#120b0a", "#d8c7a5", "#5c2418", "#d14b32", "#b83b25", "#6b7778", "#f0c96a",
+                "#9b9d55", "#d58b32", "#e04b32", "#806b5e", "#d6a23a", "#e04b32",
+            ],
+        ),
+        // Dol Guldur in The Hobbit: wet forest, dead woodland, spectral green,
+        // diseased yellow, and necromantic shadow.
+        "dol-guldur" => set(
+            &mut config,
+            [
+                "#0b100d", "#b7c5a1", "#304936", "#8fae72", "#6f965c", "#536f65", "#d5d083",
+                "#83a65e", "#b8a14b", "#b84c45", "#5e7060", "#b6ca8a", "#b84c45",
+            ],
+        ),
+        // Erebor in The Hobbit: carved black stone, molten gold, bronze,
+        // emerald treasure, and warm ivory forge light.
+        "erebor" => set(
+            &mut config,
+            [
+                "#11100d", "#e4d5b3", "#69502b", "#e3ad3d", "#c98a24", "#71858b", "#fff0a6",
+                "#91a85e", "#e7b94d", "#c75b35", "#81745d", "#f0c45e", "#c75b35",
+            ],
+        ),
+        // Rohan in The Lord of the Rings: weathered steel, horse leather,
+        // grassland gold, pale sky, and muted green.
+        "rohan" => set(
+            &mut config,
+            [
+                "#101414", "#d5d3b2", "#536b62", "#d6b65a", "#b99442", "#78949a", "#eee7b0",
+                "#9cad72", "#d6b65a", "#bd604b", "#71807b", "#d7c37a", "#bd604b",
+            ],
+        ),
+        // The Shire in The Fellowship of the Ring: round-door green, warm
+        // plaster, polished wood, garden earth, and golden hearthlight.
+        "shire" => set(
+            &mut config,
+            [
+                "#11160f", "#d8d6a8", "#536b38", "#d2aa55", "#87a94b", "#6d9a91", "#e8df91",
+                "#9fbd61", "#d0a94c", "#bd5545", "#71805b", "#d9c477", "#bd5545",
+            ],
+        ),
+        // Rivendell in The Lord of the Rings: moonlit blue, silver-green
+        // water, elven teal, pale stone, and restrained gold.
+        "rivendell" => set(
+            &mut config,
+            [
+                "#0c1118", "#d3dce0", "#45647a", "#a9d4d2", "#75b8b6", "#6ca3c4", "#e7f1cf",
+                "#88c69a", "#d4b66a", "#d87575", "#718391", "#b7e1d1", "#d87575",
+            ],
+        ),
         _ => return None,
     }
     Some(config)

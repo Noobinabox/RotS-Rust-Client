@@ -63,6 +63,20 @@ fn objects_visual_registers_and_paste() {
 }
 
 #[test]
+fn visual_big_word_object_selects_the_whole_word_from_inside_it() {
+    let mut s = state("one-two three");
+    keys(&mut s, "lvi");
+    let key = KeyEvent::new(KeyCode::Char('w'), KeyModifiers::SHIFT);
+    assert_eq!(handle_key(&mut s, key), InputAction::None);
+
+    let selection = s
+        .vim
+        .selection(&s.input, s.cursor)
+        .expect("visual selection");
+    assert_eq!(&s.input[selection], "one-two");
+}
+
+#[test]
 fn insert_session_repeat_is_editing_only() {
     let mut s = state("");
     keys(&mut s, "ihello");

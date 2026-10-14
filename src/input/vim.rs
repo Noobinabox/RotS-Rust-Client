@@ -495,6 +495,9 @@ impl VimEditor {
             return InputAction::None;
         }
         let ch = match key.code {
+            KeyCode::Char(ch) if key.modifiers.contains(KeyModifiers::SHIFT) => {
+                ch.to_ascii_uppercase()
+            }
             KeyCode::Char(ch) => ch,
             KeyCode::Left => 'h',
             KeyCode::Right => 'l',

@@ -54,7 +54,10 @@ pub fn render_input(
             Span::raw(viewport.text[..selection.start].to_owned()),
             Span::styled(
                 viewport.text[selection.clone()].to_owned(),
-                Style::new().add_modifier(Modifier::REVERSED),
+                Style::new()
+                    .fg(theme.contrasting_foreground(theme.accent))
+                    .bg(theme.accent)
+                    .add_modifier(Modifier::BOLD),
             ),
             Span::raw(viewport.text[selection.end..].to_owned()),
         ])
@@ -494,12 +497,44 @@ mod tests {
                     if width >= 20 {
                         let row: String = (0..width).map(|x| buf[(x, 1)].symbol()).collect();
                         assert!(row.contains("VISUAL"));
-                        assert!(
-                            (0..width).any(|x| buf[(x, 1)].modifier.contains(Modifier::REVERSED))
-                        );
+                        assert!((0..width).any(|x| buf[(x, 1)].bg == theme.accent));
                     }
                 }
             }
+        }
+    }
+
+    #[test]
+    fn visual_big_word_selection_is_visible_on_both_sides_of_the_cursor() {
+        use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+        let mut config = AppConfig::default();
+        config.terminal.input_mode = crate::config::InputMode::Vim;
+        let mut state = AppState::new(&config);
+        state.input = "theme use catppuccin-frappe".into();
+        state.cursor = "theme use catppuccin-frappe"
+            .find("catppuccin-frappe")
+            .unwrap()
+            + 4;
+        state.vim.mode = crate::input::vim::Mode::Normal;
+        for key in [
+            KeyEvent::new(KeyCode::Char('v'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('i'), KeyModifiers::NONE),
+            KeyEvent::new(KeyCode::Char('w'), KeyModifiers::SHIFT),
+        ] {
+            crate::input::handle_key(&mut state, key);
+        }
+
+        let area = Rect::new(0, 0, 80, 3);
+        let mut buf = Buffer::empty(area);
+        let theme = Theme::from_config(&config.colors);
+        render_input(area, &mut buf, &state, &theme, "Command");
+
+        let word_start = 1 + state.input.find("catppuccin-frappe").unwrap();
+        let word_end = word_start + "catppuccin-frappe".len();
+        for x in word_start as u16..word_end as u16 {
+            assert_eq!(buf[(x, 1)].bg, theme.accent);
+            assert_eq!(buf[(x, 1)].fg, theme.contrasting_foreground(theme.accent));
         }
     }
 }

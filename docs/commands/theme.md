@@ -20,6 +20,12 @@ Inspect and switch the client palette while it is running.
 /theme use tokyo-night-storm
 /theme use tokyo-night-moon
 /theme use tokyo-night-day
+/theme use mordor
+/theme use dol-guldur
+/theme use erebor
+/theme use rohan
+/theme use shire
+/theme use rivendell
 /theme auto on
 /theme auto off
 ```
@@ -37,6 +43,15 @@ Additional dark themes use official upstream colors:
 - [`tokyo-night-moon`](https://github.com/folke/tokyonight.nvim/blob/main/extras/alacritty/tokyonight_moon.toml) — Moon background (`#222436`), brighter blue/violet accents, and gold warnings.
 
 These palettes apply throughout the client, including gauges, maps, and weather. They support panel color overrides and `/reload` through the existing theme settings. Selecting a client theme does not change your terminal emulator's theme.
+
+Film-inspired Middle-earth themes:
+
+- `mordor` — ash, blood-red iron, dying fire, diseased olive, and harsh war-machine gold.
+- `dol-guldur` — wet forest, spectral green, diseased yellow, and necromantic shadow.
+- `erebor` — carved black stone, molten gold, bronze, emerald treasure, and forge light.
+- `rohan` — weathered steel, horse leather, grassland gold, pale sky, and muted green.
+- `shire` — round-door green, warm plaster, garden earth, and golden hearthlight.
+- `rivendell` — moonlit blue, silver-green water, elven teal, pale stone, and restrained gold.
 
 Catppuccin themes use the [official palette](https://catppuccin.com/palette/):
 
