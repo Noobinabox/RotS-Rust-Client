@@ -1,7 +1,7 @@
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
     net::TcpStream,
-    sync::mpsc,
+    sync::{mpsc, watch},
 };
 use tracing::{error, info};
 
@@ -15,11 +15,36 @@ use crate::{
     },
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConnectionControl {
+    Disconnect,
+    Reconnect,
+    Quit,
+}
+
 pub async fn run_connection(
+    config: AppConfig,
+    network_tx: mpsc::Sender<NetworkEvent>,
+    command_rx: mpsc::Receiver<ClientCommand>,
+    initial_window_size: Option<(u16, u16)>,
+) {
+    let (_control_tx, control_rx) = watch::channel(None);
+    run_connection_with_controls(
+        config,
+        network_tx,
+        command_rx,
+        initial_window_size,
+        control_rx,
+    )
+    .await;
+}
+
+pub async fn run_connection_with_controls(
     config: AppConfig,
     network_tx: mpsc::Sender<NetworkEvent>,
     mut command_rx: mpsc::Receiver<ClientCommand>,
     initial_window_size: Option<(u16, u16)>,
+    mut controls: watch::Receiver<Option<ConnectionControl>>,
 ) {
     let address = format!("{}:{}", config.connection.host, config.connection.port);
     let mut window_size = initial_window_size;
@@ -30,17 +55,25 @@ pub async fn run_connection(
             return;
         }
         if matches!(next, SessionEnd::Disconnected) {
-            next = wait_for_reconnect(&mut command_rx, &mut window_size).await;
+            next = controlled_session(
+                async { Ok(wait_for_reconnect(&mut command_rx, &mut window_size).await) },
+                &mut controls,
+            )
+            .await
+            .unwrap_or(SessionEnd::Quit);
             continue;
         }
 
         info!(target: "mud_client::network", "[Connection.run_connection] connecting to {}", address);
-        let result = connect_session(
-            &address,
-            &config,
-            &network_tx,
-            &mut command_rx,
-            &mut window_size,
+        let result = controlled_session(
+            connect_session(
+                &address,
+                &config,
+                &network_tx,
+                &mut command_rx,
+                &mut window_size,
+            ),
+            &mut controls,
         )
         .await;
         next = match result {
@@ -55,6 +88,30 @@ pub async fn run_connection(
         };
         if network_tx.send(NetworkEvent::Disconnected).await.is_err() {
             return;
+        }
+    }
+}
+
+async fn controlled_session(
+    session: impl std::future::Future<Output = std::io::Result<SessionEnd>>,
+    controls: &mut watch::Receiver<Option<ConnectionControl>>,
+) -> std::io::Result<SessionEnd> {
+    tokio::pin!(session);
+    loop {
+        tokio::select! {
+            biased;
+            changed = controls.changed() => {
+                if changed.is_err() { return Ok(SessionEnd::Quit); }
+                let control = *controls.borrow_and_update();
+                if let Some(control) = control {
+                    return Ok(match control {
+                        ConnectionControl::Disconnect => SessionEnd::Disconnected,
+                        ConnectionControl::Reconnect => SessionEnd::Reconnect,
+                        ConnectionControl::Quit => SessionEnd::Quit,
+                    });
+                }
+            }
+            result = &mut session => return result,
         }
     }
 }
@@ -108,52 +165,90 @@ async fn connect_session(
         }
     };
 
-    let (mut reader, mut writer) = stream.into_split();
+    run_session(stream, config, network_tx, command_rx, window_size).await
+}
+
+async fn run_session(
+    stream: impl AsyncRead + AsyncWrite + Unpin,
+    config: &AppConfig,
+    network_tx: &mpsc::Sender<NetworkEvent>,
+    command_rx: &mut mpsc::Receiver<ClientCommand>,
+    window_size: &mut Option<(u16, u16)>,
+) -> std::io::Result<SessionEnd> {
+    let (mut reader, mut writer) = tokio::io::split(stream);
     if let Some((width, height)) = *window_size {
         write_naws_size(&mut writer, width, height).await?;
     }
     if network_tx.send(NetworkEvent::Connected).await.is_err() {
         return Ok(SessionEnd::Quit);
     }
-    let mut parser = TelnetParser::default();
-    let mut output_buffer = OutputAccumulator::new(config.msdp.utf_8);
-    let mut buffer = [0_u8; 4096];
-
-    loop {
-        tokio::select! {
-            read = reader.read(&mut buffer) => {
-                match read {
-                    Ok(0) => {
-                        return Ok(SessionEnd::Disconnected);
-                    }
-                    Ok(count) => {
-                        for event in parser.push(&buffer[..count]) {
-                            handle_telnet_event(event, config, network_tx, &mut writer, &mut output_buffer, *window_size).await?;
+    let (protocol_tx, mut protocol_rx) = mpsc::channel::<Vec<u8>>(64);
+    let (size_tx, size_rx) = watch::channel(*window_size);
+    let read = read_session(&mut reader, config, network_tx, protocol_tx, size_rx);
+    let write = async {
+        loop {
+            tokio::select! {
+                Some(bytes) = protocol_rx.recv() => writer.write_all(&bytes).await?,
+                command = command_rx.recv() => {
+                    match command {
+                        Some(ClientCommand::SendText(text)) => {
+                            let mut bytes = encode_mud_text(&text, config.msdp.utf_8);
+                            bytes.extend_from_slice(config.connection.line_ending.as_bytes());
+                            writer.write_all(&bytes).await?;
                         }
-                    }
-                    Err(error) => {
-                        return Err(error);
+                        Some(ClientCommand::SendRaw(bytes)) => writer.write_all(&bytes).await?,
+                        Some(ClientCommand::SetWindowSize { width, height }) => {
+                            *window_size = Some((width, height));
+                            size_tx.send_replace(*window_size);
+                            write_naws_size(&mut writer, width, height).await?;
+                        }
+                        Some(ClientCommand::Disconnect) => return Ok(SessionEnd::Disconnected),
+                        Some(ClientCommand::Reconnect) => return Ok(SessionEnd::Reconnect),
+                        Some(ClientCommand::Quit) | None => return Ok(SessionEnd::Quit),
                     }
                 }
             }
-            command = command_rx.recv() => {
-                match command {
-                    Some(ClientCommand::SendText(text)) => {
-                        let mut bytes = encode_mud_text(&text, config.msdp.utf_8);
-                        bytes.extend_from_slice(config.connection.line_ending.as_bytes());
-                        writer.write_all(&bytes).await?;
-                    }
-                    Some(ClientCommand::SendRaw(bytes)) => {
-                        writer.write_all(&bytes).await?;
-                    }
-                    Some(ClientCommand::SetWindowSize { width, height }) => {
-                        *window_size = Some((width, height));
-                        write_naws_size(&mut writer, width, height).await?;
-                    }
-                    Some(ClientCommand::Disconnect) => return Ok(SessionEnd::Disconnected),
-                    Some(ClientCommand::Reconnect) => return Ok(SessionEnd::Reconnect),
-                    Some(ClientCommand::Quit) | None => return Ok(SessionEnd::Quit),
+        }
+    };
+    // Poll both halves independently: output backpressure must not stop commands
+    // or disconnects, and a slow socket write must not stop incoming reads.
+    tokio::select! {
+        result = read => result,
+        result = write => result,
+    }
+}
+
+async fn read_session(
+    reader: &mut (impl AsyncRead + Unpin),
+    config: &AppConfig,
+    network_tx: &mpsc::Sender<NetworkEvent>,
+    protocol_tx: mpsc::Sender<Vec<u8>>,
+    size_rx: watch::Receiver<Option<(u16, u16)>>,
+) -> std::io::Result<SessionEnd> {
+    let mut parser = TelnetParser::default();
+    let mut output_buffer = OutputAccumulator::new(config.msdp.utf_8);
+    let mut buffer = [0_u8; 4096];
+    loop {
+        match reader.read(&mut buffer).await {
+            Ok(0) => {
+                return Ok(SessionEnd::Disconnected);
+            }
+            Ok(count) => {
+                for event in parser.push(&buffer[..count]) {
+                    let size = *size_rx.borrow();
+                    handle_telnet_event(
+                        event,
+                        config,
+                        network_tx,
+                        &protocol_tx,
+                        &mut output_buffer,
+                        size,
+                    )
+                    .await?;
                 }
+            }
+            Err(error) => {
+                return Err(error);
             }
         }
     }
@@ -163,7 +258,7 @@ async fn handle_telnet_event(
     event: TelnetEvent,
     config: &AppConfig,
     network_tx: &mpsc::Sender<NetworkEvent>,
-    writer: &mut tokio::net::tcp::OwnedWriteHalf,
+    protocol_tx: &mpsc::Sender<Vec<u8>>,
     output_buffer: &mut OutputAccumulator,
     window_size: Option<(u16, u16)>,
 ) -> std::io::Result<()> {
@@ -179,16 +274,16 @@ async fn handle_telnet_event(
         }
         TelnetEvent::MsdpEnabled => {
             for frame in rots_msdp_setup(config) {
-                writer.write_all(&frame).await?;
+                queue_protocol(protocol_tx, frame).await?;
             }
         }
         TelnetEvent::NawsRequested => {
             if let Some((width, height)) = window_size {
-                writer.write_all(&naws_frame(width, height)).await?;
+                queue_protocol(protocol_tx, naws_frame(width, height)).await?;
             }
         }
         TelnetEvent::Send(bytes) => {
-            writer.write_all(&bytes).await?;
+            queue_protocol(protocol_tx, bytes).await?;
         }
         TelnetEvent::ProtocolError(message) => {
             let _ = network_tx.send(NetworkEvent::Error(message)).await;
@@ -197,8 +292,14 @@ async fn handle_telnet_event(
     Ok(())
 }
 
+async fn queue_protocol(tx: &mpsc::Sender<Vec<u8>>, bytes: Vec<u8>) -> std::io::Result<()> {
+    tx.send(bytes)
+        .await
+        .map_err(|_| std::io::Error::other("socket writer stopped"))
+}
+
 async fn write_naws_size(
-    writer: &mut tokio::net::tcp::OwnedWriteHalf,
+    writer: &mut (impl AsyncWrite + Unpin),
     width: u16,
     height: u16,
 ) -> std::io::Result<()> {
@@ -389,6 +490,123 @@ mod tests {
         tokio::time::timeout(Duration::from_secs(5), test)
             .await
             .expect("connection test timed out");
+    }
+
+    #[tokio::test]
+    async fn output_backpressure_does_not_block_commands_or_quit() {
+        bounded(async {
+            let (client, mut server) = tokio::io::duplex(1024);
+            let (network_tx, mut events) = mpsc::channel(1);
+            let observer = network_tx.clone();
+            let (commands, mut command_rx) = mpsc::channel(1);
+            let task = tokio::spawn(async move {
+                run_session(
+                    client,
+                    &AppConfig::default(),
+                    &network_tx,
+                    &mut command_rx,
+                    &mut None,
+                )
+                .await
+            });
+            assert_eq!(events.recv().await, Some(NetworkEvent::Connected));
+            server.write_all(b"first\nsecond\nthird\n").await.unwrap();
+            while observer.capacity() != 0 {
+                tokio::task::yield_now().await;
+            }
+            commands
+                .send(ClientCommand::SendText("look".into()))
+                .await
+                .unwrap();
+            let mut bytes = [0; 6];
+            server.read_exact(&mut bytes).await.unwrap();
+            assert_eq!(&bytes, b"look\r\n");
+            commands.send(ClientCommand::Quit).await.unwrap();
+            assert_eq!(task.await.unwrap().unwrap(), SessionEnd::Quit);
+            assert_eq!(
+                events.recv().await,
+                Some(NetworkEvent::Text("first".into()))
+            );
+        })
+        .await;
+    }
+
+    #[tokio::test]
+    async fn stalled_socket_write_does_not_block_incoming_text() {
+        bounded(async {
+            let (client, mut server) = tokio::io::duplex(16);
+            let (network_tx, mut events) = mpsc::channel(4);
+            let (commands, mut command_rx) = mpsc::channel(1);
+            let task = tokio::spawn(async move {
+                run_session(
+                    client,
+                    &AppConfig::default(),
+                    &network_tx,
+                    &mut command_rx,
+                    &mut None,
+                )
+                .await
+            });
+            assert_eq!(events.recv().await, Some(NetworkEvent::Connected));
+            commands
+                .send(ClientCommand::SendRaw(vec![b'x'; 1024]))
+                .await
+                .unwrap();
+            // Reading one byte proves the write began; leave the rest blocked.
+            let mut byte = [0];
+            server.read_exact(&mut byte).await.unwrap();
+            server.write_all(b"incoming\n").await.unwrap();
+            assert_eq!(
+                events.recv().await,
+                Some(NetworkEvent::Text("incoming".into()))
+            );
+            task.abort();
+            assert!(task.await.unwrap_err().is_cancelled());
+        })
+        .await;
+    }
+
+    #[tokio::test]
+    async fn connection_controls_interrupt_stalled_writes_even_with_a_full_command_queue() {
+        bounded(async {
+            for (control, expected) in [
+                (ConnectionControl::Reconnect, SessionEnd::Reconnect),
+                (ConnectionControl::Disconnect, SessionEnd::Disconnected),
+                (ConnectionControl::Quit, SessionEnd::Quit),
+            ] {
+                let (client, mut server) = tokio::io::duplex(16);
+                let (network_tx, mut events) = mpsc::channel(4);
+                let (commands, mut command_rx) = mpsc::channel(1);
+                let (controls, mut control_rx) = watch::channel(None);
+                let task = tokio::spawn(async move {
+                    controlled_session(
+                        run_session(
+                            client,
+                            &AppConfig::default(),
+                            &network_tx,
+                            &mut command_rx,
+                            &mut None,
+                        ),
+                        &mut control_rx,
+                    )
+                    .await
+                });
+                assert_eq!(events.recv().await, Some(NetworkEvent::Connected));
+                commands
+                    .send(ClientCommand::SendRaw(vec![b'x'; 1024]))
+                    .await
+                    .unwrap();
+                let mut byte = [0];
+                server.read_exact(&mut byte).await.unwrap();
+                commands
+                    .try_send(ClientCommand::SendText("pending".into()))
+                    .unwrap();
+                assert_eq!(commands.capacity(), 0);
+                controls.send(Some(control)).unwrap();
+                assert_eq!(task.await.unwrap().unwrap(), expected);
+            }
+        })
+        .await;
     }
 
     fn start_connection(

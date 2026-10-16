@@ -9,7 +9,11 @@ use std::{
 use chrono::Local;
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{Frame, layout::Rect};
-use tokio::{sync::mpsc, task::JoinHandle, time::timeout};
+use tokio::{
+    sync::{mpsc, watch},
+    task::JoinHandle,
+    time::timeout,
+};
 
 mod character_profiles;
 mod completion;
@@ -24,6 +28,8 @@ mod output_edits;
 mod paste_tests;
 mod rendering;
 mod runtime_settings;
+#[cfg(test)]
+mod runtime_tests;
 mod social;
 mod substitutions;
 #[cfg(test)]
@@ -53,7 +59,7 @@ use crate::{
     events::{AppEvent, NetworkEvent, ScriptEvent, TerminalEvent, TimerEvent},
     input::{InputAction, handle_key},
     map::is_movement_command,
-    network::connection::run_connection,
+    network::connection::{ConnectionControl, run_connection_with_controls},
     scripting::{
         aliases::AliasEngine,
         events::EventEngine,
@@ -66,7 +72,7 @@ use crate::{
         AppState, ConnectionStatus, OutputCategory, OutputStyle, SearchDirection,
         is_casting_spinner_line, plain_text,
     },
-    terminal::{TerminalGuard, spawn_terminal_events},
+    terminal::{TerminalGuard, TerminalOutput, spawn_terminal_events},
     ui::{
         character::{ResponsivePanelConfig, social_scroll_max, status_dashboard_social_area},
         layout::{
@@ -122,6 +128,7 @@ pub struct App {
     dispatching_handler_commands: bool,
     mud_ansi_colors: AnsiColorState,
     lua_timers: BTreeMap<String, LuaTimer>,
+    network_controls: Option<watch::Sender<Option<ConnectionControl>>>,
 }
 
 struct LuaTimer {
@@ -136,6 +143,14 @@ struct CommandBudget {
     remaining: usize,
     limit: usize,
     source: &'static str,
+}
+
+struct AbortConnectionOnDrop(tokio::task::AbortHandle);
+
+impl Drop for AbortConnectionOnDrop {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
 }
 
 impl App {
@@ -276,29 +291,31 @@ impl App {
             dispatching_handler_commands: false,
             mud_ansi_colors: AnsiColorState::default(),
             lua_timers: BTreeMap::new(),
+            network_controls: None,
         }
     }
 
     pub async fn run(&mut self) -> Result<()> {
-        let (_guard, mut terminal) = TerminalGuard::enter(self.config.terminal.mouse)?;
+        let (guard, terminal) = TerminalGuard::enter(self.config.terminal.mouse)?;
         let initial_size = terminal.size()?;
+        let mut output = TerminalOutput::start(guard, terminal)?;
+        let mut terminal = ratatui::Terminal::new(ratatui::backend::TestBackend::new(
+            initial_size.width,
+            initial_size.height,
+        ))?;
         self.last_terminal_area = Rect::new(0, 0, initial_size.width, initial_size.height);
         let initial_window_size = self.mud_window_size();
         let (event_tx, mut event_rx) = mpsc::channel(512);
         let (network_tx, mut network_rx) = mpsc::channel(256);
         let (command_tx, command_rx) = mpsc::channel(256);
-        let mut network_handle = self.spawn_connection(network_tx, command_rx, initial_window_size);
-        spawn_terminal_events(self.config.terminal.tick_rate(), event_tx.clone());
-        tokio::spawn({
-            let event_tx = event_tx.clone();
-            async move {
-                while let Some(event) = network_rx.recv().await {
-                    if event_tx.send(AppEvent::Network(event)).await.is_err() {
-                        break;
-                    }
-                }
-            }
-        });
+        let (controls, control_rx) = watch::channel(None);
+        self.network_controls = Some(controls);
+        let mut network_handle =
+            self.spawn_connection(network_tx, command_rx, initial_window_size, control_rx);
+        let _connection_cleanup = AbortConnectionOnDrop(network_handle.abort_handle());
+        let terminal_events =
+            spawn_terminal_events(self.config.terminal.tick_rate(), event_tx.clone());
+        drop(event_tx);
 
         self.state.connection = ConnectionStatus::Connecting;
         self.state.push_output(
@@ -310,20 +327,41 @@ impl App {
         );
 
         let mut tick = tokio::time::interval(self.config.terminal.tick_rate());
+        tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         let mut should_quit = false;
         let mut needs_draw = true;
+        // Input and output updates coalesce within a frame, independently of the
+        // slower gameplay tick. Never drain a continuously replenished queue.
+        let frame_interval = Duration::from_millis(16);
+        let mut next_draw = tokio::time::Instant::now();
 
         while !should_quit {
-            if needs_draw {
+            if needs_draw && tokio::time::Instant::now() >= next_draw {
+                let area = self.last_terminal_area;
+                let size = terminal.size()?;
+                if (size.width, size.height) != (area.width, area.height) {
+                    terminal.backend_mut().resize(area.width, area.height);
+                    terminal.resize(area)?;
+                }
                 self.update_weather_animation(Instant::now());
-                terminal.draw(|frame| {
+                let screen = terminal.draw(|frame| {
                     self.last_terminal_area = frame.area();
                     self.render(frame);
                 })?;
+                let input = self.resolved_layout(self.last_terminal_area).input;
+                let cursor = crate::ui::input::input_cursor_position(
+                    input,
+                    &self.state,
+                    &self.theme.for_panel(&self.config.panels.input),
+                )
+                .map(Into::into);
+                output.submit(screen.buffer.clone(), cursor)?;
                 needs_draw = false;
+                next_draw = tokio::time::Instant::now() + frame_interval;
             }
 
             tokio::select! {
+                _ = tokio::time::sleep_until(next_draw), if needs_draw => {}
                 _ = tick.tick() => {
                     self.handle_app_event(AppEvent::Timer(TimerEvent::Tick), &command_tx).await;
                     needs_draw = true;
@@ -332,32 +370,29 @@ impl App {
                     if let Some(event) = event {
                         should_quit = self.handle_app_event(event, &command_tx).await;
                         needs_draw = true;
-                        while !should_quit {
-                            match event_rx.try_recv() {
-                                Ok(event) => {
-                                    should_quit = self.handle_app_event(event, &command_tx).await;
-                                }
-                                Err(mpsc::error::TryRecvError::Empty) => break,
-                                Err(mpsc::error::TryRecvError::Disconnected) => {
-                                    should_quit = true;
-                                    break;
-                                }
-                            }
-                        }
                     } else {
                         should_quit = true;
                     }
                 }
+                Some(event) = network_rx.recv() => {
+                    self.handle_network_event(event, &command_tx).await;
+                    needs_draw = true;
+                }
             }
         }
 
-        let _ = command_tx.send(ClientCommand::Quit).await;
+        // Closing the consumer also releases a reader blocked on backpressure.
+        drop(event_rx);
+        drop(network_rx);
+        self.queue_network_command(ClientCommand::Quit, &command_tx);
         if timeout(self.config.terminal.tick_rate(), &mut network_handle)
             .await
             .is_err()
         {
             network_handle.abort();
         }
+        let _ = terminal_events.join();
+        output.finish()?;
         self.save_exit_map();
         if let Some(error) = self.finish_runtime_save().await {
             return Err(crate::error::MudClientError::ConfigValidation(error));
@@ -410,10 +445,18 @@ impl App {
         network_tx: mpsc::Sender<NetworkEvent>,
         command_rx: mpsc::Receiver<ClientCommand>,
         initial_window_size: Option<(u16, u16)>,
+        controls: watch::Receiver<Option<ConnectionControl>>,
     ) -> JoinHandle<()> {
         let config = self.config.clone();
         tokio::spawn(async move {
-            run_connection(config, network_tx, command_rx, initial_window_size).await;
+            run_connection_with_controls(
+                config,
+                network_tx,
+                command_rx,
+                initial_window_size,
+                controls,
+            )
+            .await;
         })
     }
 
@@ -462,7 +505,7 @@ impl App {
         match command {
             ClientCommand::SendText(text) => {
                 if text.is_empty() {
-                    let _ = command_tx.send(ClientCommand::SendText(text)).await;
+                    self.queue_network_command(ClientCommand::SendText(text), command_tx);
                     return false;
                 }
                 let text = if preserves_variable_templates(&text) {
@@ -490,7 +533,7 @@ impl App {
                     .await;
             }
             command => {
-                let _ = command_tx.send(command).await;
+                self.queue_network_command(command, command_tx);
             }
         }
         false
@@ -719,7 +762,7 @@ impl App {
         if command == "reconnect" {
             self.state
                 .push_output("Reconnect requested.", OutputCategory::System);
-            let _ = command_tx.send(ClientCommand::Reconnect).await;
+            self.queue_network_command(ClientCommand::Reconnect, command_tx);
             return true;
         }
         if command == "alias" || command.starts_with("alias ") {
@@ -1800,10 +1843,12 @@ impl App {
         command_tx: &mpsc::Sender<ClientCommand>,
     ) {
         for command in self.state.map.mud_commands_for_movement(command) {
+            if !self.queue_network_command(ClientCommand::SendText(command.clone()), command_tx) {
+                break;
+            }
             self.state.path.record(&command);
             self.track_movement_command(&command);
             self.echo_mud_command(&command);
-            let _ = command_tx.send(ClientCommand::SendText(command)).await;
         }
     }
 
@@ -1813,9 +1858,11 @@ impl App {
         command_tx: &mpsc::Sender<ClientCommand>,
     ) {
         for command in self.state.map.mud_commands_for_movement(command) {
+            if !self.queue_network_command(ClientCommand::SendText(command.clone()), command_tx) {
+                break;
+            }
             self.track_movement_command(&command);
             self.echo_mud_command(&command);
-            let _ = command_tx.send(ClientCommand::SendText(command)).await;
         }
     }
 
@@ -2461,11 +2508,43 @@ impl App {
         ))
     }
 
-    async fn send_mud_window_size(&self, command_tx: &mpsc::Sender<ClientCommand>) {
+    fn queue_network_command(
+        &mut self,
+        command: ClientCommand,
+        command_tx: &mpsc::Sender<ClientCommand>,
+    ) -> bool {
+        if let Some(controls) = &self.network_controls {
+            let control = match &command {
+                ClientCommand::Disconnect => Some(ConnectionControl::Disconnect),
+                ClientCommand::Reconnect => Some(ConnectionControl::Reconnect),
+                ClientCommand::Quit => Some(ConnectionControl::Quit),
+                _ => None,
+            };
+            if let Some(control) = control {
+                return controls.send(Some(control)).is_ok();
+            }
+        }
+        match command_tx.try_send(command) {
+            Ok(()) => true,
+            Err(error) => {
+                let message = match error {
+                    mpsc::error::TrySendError::Full(_) => {
+                        "Network command queue is full; command was not sent. Wait and retry."
+                    }
+                    mpsc::error::TrySendError::Closed(_) => {
+                        "Network command queue is closed; command was not sent."
+                    }
+                };
+                tracing::warn!(target: "mud_client::app", "[App.queue_network_command] {message}");
+                self.state.push_output(message, OutputCategory::Error);
+                false
+            }
+        }
+    }
+
+    async fn send_mud_window_size(&mut self, command_tx: &mpsc::Sender<ClientCommand>) {
         if let Some((width, height)) = self.mud_window_size() {
-            let _ = command_tx
-                .send(ClientCommand::SetWindowSize { width, height })
-                .await;
+            self.queue_network_command(ClientCommand::SetWindowSize { width, height }, command_tx);
         }
     }
 

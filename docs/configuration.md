@@ -39,7 +39,7 @@ See [key macro configuration](commands/macro.md#persistent-configuration): `[[ma
 
 | Option | Meaning |
 |---|---|
-| `tick_rate_ms` | Main event/render tick interval in milliseconds. Must be greater than zero. |
+| `tick_rate_ms` | Gameplay/status tick interval in milliseconds. Must be greater than zero. Input and network redraws run independently, capped at approximately 60 FPS. |
 | `animation_fps` | Maximum animation frame rate. Must be greater than zero. |
 | `mouse` | Enables mouse events such as output scrolling and pane resizing. |
 | `true_color` | Enables RGB color output when the terminal supports it. |

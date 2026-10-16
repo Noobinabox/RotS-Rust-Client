@@ -55,6 +55,36 @@ available as downloadable artifacts on the workflow run.
 
 ## Runtime diagnostics
 
+### Responsiveness and thread ownership
+
+Terminal input is read on its own OS thread. A separate terminal output thread
+owns stdout, Ratatui's terminal diff, and terminal restoration. The application
+renders complete screens into memory and publishes only the latest screen; slow
+terminal writes cannot build an unbounded frame queue or block command editing.
+Intermediate screens may be skipped, but MUD output remains in scrollback.
+
+Networking runs on Tokio worker threads with independently polled read and write
+halves. Bounded queues provide backpressure without making incoming output and
+outgoing commands wait for each other. Keyboard and network events have separate
+queues, and the app selects one event at a time so sustained output cannot trap it
+in a queue-draining loop. Screen updates coalesce at approximately 60 FPS;
+gameplay ticks skip missed ticks instead of replaying a backlog.
+Connection controls use a separate latest-request channel so disconnect,
+reconnect, and quit can interrupt a stalled socket write even when commands are
+queued. Rapid consecutive controls coalesce to the most recent request.
+
+State updates, scripts, and widget composition remain ordered on the application
+thread to preserve trigger ordering and avoid shared mutable state. Lua hooks
+retain their instruction budget. These operations can still take time, as can
+explicit configuration/map loading. This architecture does not guarantee a
+maximum latency for arbitrary scripts or a terminal that has stopped responding.
+
+If the outgoing command queue fills, the app reports that a command was not sent
+and remains responsive. Retry it after the connection catches up. A rejected
+movement command does not update the local map or recorded path. Commands already
+accepted into the queue retain their order. Use a release build (`make install`)
+when assessing interactive performance.
+
 These in-client commands and settings are useful while developing or debugging behavior, not just for players:
 
 - `/msdp`: show the current stored MSDP values.

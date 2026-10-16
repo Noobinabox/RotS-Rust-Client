@@ -10,8 +10,8 @@ use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{Terminal, backend::CrosstermBackend};
-use tokio::sync::mpsc;
+use ratatui::{Terminal, backend::CrosstermBackend, buffer::Buffer, layout::Position};
+use tokio::sync::{mpsc, watch};
 
 use crate::{
     error::Result,
@@ -19,6 +19,96 @@ use crate::{
 };
 
 pub type Tui = Terminal<CrosstermBackend<io::Stdout>>;
+
+struct Screen {
+    buffer: Buffer,
+    cursor: Option<Position>,
+}
+
+/// Publishes complete screens so a slow terminal can skip obsolete frames safely.
+/// Ratatui's terminal diff and all stdout writes belong to the output thread.
+pub struct TerminalOutput {
+    screens: Option<watch::Sender<Option<Screen>>>,
+    thread: Option<std::thread::JoinHandle<io::Result<()>>>,
+}
+
+impl TerminalOutput {
+    pub fn start(guard: TerminalGuard, mut terminal: Tui) -> io::Result<Self> {
+        let (screens, receiver) = watch::channel::<Option<Screen>>(None);
+        let runtime = tokio::runtime::Handle::current();
+        let thread = std::thread::Builder::new()
+            .name("mud-terminal-output".into())
+            .spawn(move || {
+                let _guard = guard;
+                consume_screens(&runtime, receiver, |screen| {
+                    terminal.draw(|frame| paint_screen(frame, &screen))?;
+                    Ok(())
+                })
+            })?;
+        Ok(Self {
+            screens: Some(screens),
+            thread: Some(thread),
+        })
+    }
+
+    pub fn submit(&mut self, buffer: Buffer, cursor: Option<Position>) -> io::Result<()> {
+        let Some(sender) = &self.screens else {
+            return Err(io::Error::other("terminal output has stopped"));
+        };
+        if sender.send(Some(Screen { buffer, cursor })).is_err() {
+            // Join the completed worker to retain the actual draw/panic error.
+            self.finish()?;
+            return Err(io::Error::other("terminal output thread stopped"));
+        }
+        Ok(())
+    }
+
+    pub fn finish(&mut self) -> io::Result<()> {
+        self.screens.take();
+        match self.thread.take() {
+            Some(thread) => thread
+                .join()
+                .map_err(|_| io::Error::other("terminal output thread panicked"))?,
+            None => Ok(()),
+        }
+    }
+}
+
+fn consume_screens(
+    runtime: &tokio::runtime::Handle,
+    mut receiver: watch::Receiver<Option<Screen>>,
+    mut draw: impl FnMut(Screen) -> io::Result<()>,
+) -> io::Result<()> {
+    while runtime.block_on(receiver.changed()).is_ok() {
+        // Release the watch lock before any potentially slow I/O.
+        let screen = receiver.borrow_and_update().as_ref().map(|screen| Screen {
+            buffer: screen.buffer.clone(),
+            cursor: screen.cursor,
+        });
+        if let Some(screen) = screen {
+            draw(screen)?;
+        }
+    }
+    Ok(())
+}
+
+fn paint_screen(frame: &mut ratatui::Frame, screen: &Screen) {
+    let area = frame.area().intersection(screen.buffer.area);
+    for y in area.y..area.bottom() {
+        for x in area.x..area.right() {
+            frame.buffer_mut()[(x, y)] = screen.buffer[(x, y)].clone();
+        }
+    }
+    if let Some(cursor) = screen.cursor.filter(|p| area.contains(*p)) {
+        frame.set_cursor_position(cursor);
+    }
+}
+
+impl Drop for TerminalOutput {
+    fn drop(&mut self) {
+        let _ = self.finish();
+    }
+}
 
 pub struct TerminalGuard {
     mouse: bool,
@@ -108,9 +198,12 @@ fn normalize_terminal_key(mut key: KeyEvent) -> KeyEvent {
     key
 }
 
-pub fn spawn_terminal_events(timeout: Duration, tx: mpsc::Sender<AppEvent>) {
+pub fn spawn_terminal_events(
+    timeout: Duration,
+    tx: mpsc::Sender<AppEvent>,
+) -> std::thread::JoinHandle<()> {
     std::thread::spawn(move || {
-        loop {
+        while !tx.is_closed() {
             match crossterm::event::poll(timeout) {
                 Ok(true) => match crossterm::event::read() {
                     Ok(crossterm::event::Event::Key(key)) => {
@@ -160,7 +253,103 @@ pub fn spawn_terminal_events(timeout: Duration, tx: mpsc::Sender<AppEvent>) {
                 Err(_) => break,
             }
         }
-    });
+    })
+}
+
+#[cfg(test)]
+mod output_tests {
+    use super::*;
+    use ratatui::{backend::TestBackend, layout::Rect};
+
+    fn screen(text: &str) -> Screen {
+        Screen {
+            buffer: Buffer::with_lines([text]),
+            cursor: None,
+        }
+    }
+
+    #[test]
+    fn screens_are_clipped_when_the_terminal_shrinks() {
+        let screen = screen("abcdef");
+        for (width, height) in [(3, 1), (10, 2), (0, 0)] {
+            let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
+            terminal.draw(|frame| paint_screen(frame, &screen)).unwrap();
+            assert_eq!(
+                terminal.backend().buffer().area,
+                Rect::new(0, 0, width, height)
+            );
+            if width > 0 {
+                assert_eq!(terminal.backend().buffer()[(0, 0)].symbol(), "a");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn slow_output_coalesces_frames_without_blocking_the_publisher() {
+        let (tx, rx) = watch::channel(None);
+        let runtime = tokio::runtime::Handle::current();
+        let (started_tx, started_rx) = tokio::sync::oneshot::channel();
+        let (release_tx, release_rx) = std::sync::mpsc::channel();
+        let (seen_tx, mut seen_rx) = mpsc::unbounded_channel();
+        let thread = std::thread::spawn(move || {
+            let mut started = Some(started_tx);
+            consume_screens(&runtime, rx, |screen| {
+                seen_tx
+                    .send(screen.buffer[(0, 0)].symbol().to_owned())
+                    .unwrap();
+                if let Some(started) = started.take() {
+                    started.send(()).unwrap();
+                    release_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+                }
+                Ok(())
+            })
+        });
+        tx.send(Some(screen("A"))).unwrap();
+        started_rx.await.unwrap();
+        for _ in 0..1000 {
+            tx.send(Some(screen("B"))).unwrap();
+        }
+        tx.send(Some(screen("Z"))).unwrap();
+        release_tx.send(()).unwrap();
+        assert_eq!(seen_rx.recv().await.as_deref(), Some("A"));
+        assert_eq!(seen_rx.recv().await.as_deref(), Some("Z"));
+        drop(tx);
+        thread.join().unwrap().unwrap();
+    }
+
+    #[tokio::test]
+    async fn output_failure_closes_the_publisher_and_preserves_the_error() {
+        let (tx, rx) = watch::channel(None);
+        let runtime = tokio::runtime::Handle::current();
+        tx.send(Some(screen("A"))).unwrap();
+        let task = tokio::task::spawn_blocking(move || {
+            consume_screens(&runtime, rx, |_| Err(io::Error::other("broken terminal")))
+        });
+        assert_eq!(
+            task.await.unwrap().unwrap_err().to_string(),
+            "broken terminal"
+        );
+        assert!(tx.send(Some(screen("B"))).is_err());
+    }
+
+    #[tokio::test]
+    async fn submit_preserves_the_worker_io_error_and_joins_it() {
+        let (tx, rx) = watch::channel(None);
+        let runtime = tokio::runtime::Handle::current();
+        tx.send(Some(screen("A"))).unwrap();
+        let thread = std::thread::spawn(move || {
+            consume_screens(&runtime, rx, |_| Err(io::Error::other("broken pipe")))
+        });
+        tx.closed().await;
+        let mut output = TerminalOutput {
+            screens: Some(tx),
+            thread: Some(thread),
+        };
+        let error = output.submit(screen("B").buffer, None).unwrap_err();
+        assert_eq!(error.to_string(), "broken pipe");
+        assert!(output.thread.is_none());
+        output.finish().unwrap();
+    }
 }
 
 #[cfg(all(test, unix))]
