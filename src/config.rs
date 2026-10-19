@@ -1917,6 +1917,7 @@ pub struct HighlightRuleConfig {
     pub italic: bool,
     pub underline: bool,
     pub reverse: bool,
+    pub blink: bool,
     pub categories: Vec<OutputCategoryConfig>,
 }
 
@@ -1935,6 +1936,7 @@ impl Default for HighlightRuleConfig {
             italic: false,
             underline: false,
             reverse: false,
+            blink: false,
             categories: Vec::new(),
         }
     }

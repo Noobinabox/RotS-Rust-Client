@@ -500,6 +500,9 @@ fn apply_output_style(
     if style.reverse {
         extra = extra.add_modifier(Modifier::REVERSED);
     }
+    if style.blink {
+        extra = extra.add_modifier(Modifier::SLOW_BLINK);
+    }
     Line::from(
         line.spans
             .into_iter()

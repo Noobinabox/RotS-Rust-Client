@@ -90,6 +90,7 @@ pub struct OutputStyle {
     pub italic: bool,
     pub underline: bool,
     pub reverse: bool,
+    pub blink: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

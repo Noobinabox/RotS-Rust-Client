@@ -61,6 +61,7 @@ impl HighlightEngine {
                 italic: rule.config.italic,
                 underline: rule.config.underline,
                 reverse: rule.config.reverse,
+                blink: rule.config.blink,
             })
     }
 
@@ -143,6 +144,7 @@ impl CompiledHighlight {
             && !config.italic
             && !config.underline
             && !config.reverse
+            && !config.blink
         {
             return Err(MudClientError::ConfigValidation(format!(
                 "highlight `{}` must define at least one color or style",
@@ -218,6 +220,7 @@ mod tests {
                     pattern: "orc".to_string(),
                     foreground: Some("#7aa2f7".to_string()),
                     bold: true,
+                    blink: true,
                     ..HighlightRuleConfig::default()
                 },
             ],
@@ -231,6 +234,7 @@ mod tests {
 
         assert_eq!(style.foreground.as_deref(), Some("#7aa2f7"));
         assert!(style.bold);
+        assert!(style.blink);
     }
 
     #[test]

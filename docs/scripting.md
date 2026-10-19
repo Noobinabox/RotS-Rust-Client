@@ -90,6 +90,7 @@ match_type = "plain"
 pattern = "You are hit"
 foreground = "#f7768e"
 bold = true
+blink = true
 ```
 
 Runtime highlights:

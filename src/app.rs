@@ -1366,6 +1366,7 @@ impl App {
             && !config.italic
             && !config.underline
             && !config.reverse
+            && !config.blink
         {
             return Err("highlight must define at least one color or style".to_string());
         }
@@ -3002,6 +3003,9 @@ fn highlight_listing(highlights: &HighlightEngine) -> String {
         if config.reverse {
             styles.push("reverse");
         }
+        if config.blink {
+            styles.push("blink");
+        }
         let styles = if styles.is_empty() {
             "none".to_string()
         } else {
@@ -3060,9 +3064,10 @@ fn apply_highlight_styles(
             "italic" => config.italic = true,
             "underline" => config.underline = true,
             "reverse" => config.reverse = true,
+            "blink" => config.blink = true,
             _ => {
                 return Err(format!(
-                    "unknown highlight style `{style}`; use bold, dim, italic, underline, or reverse"
+                    "unknown highlight style `{style}`; use bold, dim, italic, underline, reverse, or blink"
                 ));
             }
         }
@@ -5758,7 +5763,7 @@ commands = ["kill ${target}"]
             "/highlight regex {[} {red}",
             "/highlight {bad color} {ultraviolet}",
             "/highlight {no style} {none}",
-            "/highlight {bad style} {red} {none} {blink}",
+            "/highlight {bad style} {red} {none} {sparkle}",
         ] {
             app.handle_command(ClientCommand::SendText(command.to_string()), &tx)
                 .await;

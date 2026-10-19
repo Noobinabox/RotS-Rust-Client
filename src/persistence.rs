@@ -111,6 +111,7 @@ impl SavedRuleFields for HighlightRuleConfig {
         "italic",
         "underline",
         "reverse",
+        "blink",
         "categories",
     ];
 }
