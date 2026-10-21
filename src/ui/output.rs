@@ -11,6 +11,7 @@ use crate::{
     color::parse_sgr_parameters,
     state::{AppState, OutputCategory, OutputDisplayMode, OutputLine, OutputStyle, plain_text},
     ui::{
+        markdown::{MarkdownState, markdown_heading},
         panels::panel,
         theme::{Theme, parse_color},
     },
@@ -275,6 +276,7 @@ fn ansi_lines(
 ) -> Vec<Line<'static>> {
     let default_fg = theme.foreground;
     let mut mud_style = Style::new().fg(default_fg);
+    let mut markdown_state = MarkdownState::default();
     let mut rendered = Vec::with_capacity(visible_end.saturating_sub(visible_start));
     // Earlier styles cannot cross an explicit reset boundary. A prompt resets
     // after its text, so a hidden prompt itself need not be parsed.
@@ -302,6 +304,7 @@ fn ansi_lines(
         let index = parse_start + offset;
         if line.starts_new_output {
             mud_style = Style::new().fg(default_fg);
+            markdown_state = MarkdownState::default();
         }
         if let Some(prefix) = &line.source_prefix {
             AnsiParser {
@@ -313,6 +316,11 @@ fn ansi_lines(
             .scan(false);
         }
         if index < visible_start {
+            if line.category == OutputCategory::System {
+                markdown_state.render(&line.normalized, theme);
+            } else {
+                markdown_state = MarkdownState::default();
+            }
             if matches!(
                 line.category,
                 OutputCategory::Normal
@@ -329,6 +337,9 @@ fn ansi_lines(
                 .scan(false);
             }
             continue;
+        }
+        if line.category != OutputCategory::System {
+            markdown_state = MarkdownState::default();
         }
         let rendered_line = match line.category {
             OutputCategory::Snapshot => ansi_line_for_theme(&line.normalized, default_fg, theme),
@@ -348,7 +359,7 @@ fn ansi_lines(
                 mud_style = Style::new().fg(default_fg);
                 rendered_line
             }
-            OutputCategory::System => markdown_system_line(&line.normalized, theme),
+            OutputCategory::System => markdown_state.render(&line.normalized, theme),
             OutputCategory::Error => {
                 mud_style = Style::new().fg(default_fg);
                 ansi_line_for_theme(
@@ -367,71 +378,6 @@ fn ansi_lines(
     }
 
     rendered
-}
-
-fn markdown_system_line(raw: &str, theme: &Theme) -> Line<'static> {
-    let text = plain_text(raw);
-    if text.trim().is_empty() {
-        return Line::from("");
-    }
-    if let Some((level, title)) = markdown_heading(&text) {
-        return Line::from(Span::styled(
-            title.to_string(),
-            Style::new()
-                .fg(if level == 1 {
-                    theme.title
-                } else {
-                    theme.accent
-                })
-                .add_modifier(Modifier::BOLD),
-        ));
-    }
-    if let Some(item) = text.strip_prefix("- ") {
-        let mut spans = vec![Span::styled("• ", Style::new().fg(theme.accent))];
-        spans.extend(inline_code_spans(item, theme));
-        return Line::from(spans);
-    }
-    Line::from(inline_code_spans(&text, theme))
-}
-
-fn markdown_heading(text: &str) -> Option<(usize, &str)> {
-    let level = text.bytes().take_while(|byte| *byte == b'#').count();
-    if !(1..=6).contains(&level) || text.as_bytes().get(level) != Some(&b' ') {
-        return None;
-    }
-    Some((level, &text[level + 1..]))
-}
-
-fn inline_code_spans(text: &str, theme: &Theme) -> Vec<Span<'static>> {
-    let mut spans = Vec::new();
-    let mut rest = text;
-    let mut in_code = false;
-    while let Some(index) = rest.find('`') {
-        let (before, after_tick) = rest.split_at(index);
-        if !before.is_empty() {
-            spans.push(Span::styled(
-                before.to_string(),
-                Style::new().fg(if in_code {
-                    theme.warning
-                } else {
-                    theme.foreground
-                }),
-            ));
-        }
-        in_code = !in_code;
-        rest = &after_tick[1..];
-    }
-    if !rest.is_empty() {
-        spans.push(Span::styled(
-            rest.to_string(),
-            Style::new().fg(if in_code {
-                theme.warning
-            } else {
-                theme.foreground
-            }),
-        ));
-    }
-    spans
 }
 
 fn plain_lines(
@@ -840,6 +786,7 @@ fn color_for(category: OutputCategory, theme: &Theme) -> ratatui::style::Color {
 mod tests {
     use super::*;
     use crate::config::ThemeConfig;
+    use crate::ui::markdown::markdown_system_line;
 
     fn output_line(value: &str, category: OutputCategory) -> OutputLine {
         OutputLine {
@@ -1208,6 +1155,116 @@ mod tests {
         assert_eq!(heading.spans[0].style.fg, Some(theme.title));
         assert_eq!(bullet.spans[0].content.as_ref(), "• ");
         assert_eq!(bullet.spans[1].style.fg, Some(theme.warning));
+    }
+
+    #[test]
+    fn markdown_system_line_styles_bold_and_italic_text() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let line =
+            markdown_system_line("**bold** and *italic* __also bold__ _also italic_", &theme);
+
+        assert_eq!(
+            line.spans
+                .iter()
+                .map(|span| span.content.as_ref())
+                .collect::<Vec<_>>(),
+            [
+                "bold",
+                " and ",
+                "italic",
+                " ",
+                "also bold",
+                " ",
+                "also italic"
+            ]
+        );
+        assert!(line.spans[0].style.add_modifier.contains(Modifier::BOLD));
+        assert!(line.spans[2].style.add_modifier.contains(Modifier::ITALIC));
+        assert!(line.spans[4].style.add_modifier.contains(Modifier::BOLD));
+        assert!(line.spans[6].style.add_modifier.contains(Modifier::ITALIC));
+    }
+
+    #[test]
+    fn markdown_inline_spans_preserve_code_and_word_underscores() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let line = markdown_system_line("`*literal*` file_name", &theme);
+
+        assert_eq!(
+            line.spans
+                .iter()
+                .map(|span| span.content.as_ref())
+                .collect::<Vec<_>>(),
+            ["*literal*", " file_name"]
+        );
+        assert!(line.spans[0].style.add_modifier.is_empty());
+        assert!(line.spans[1].style.add_modifier.is_empty());
+        assert_eq!(line.spans[0].style.fg, Some(theme.warning));
+    }
+
+    #[test]
+    fn markdown_system_line_styles_lists_quotes_rules_and_strikethrough() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+
+        let ordered = markdown_system_line("12. **second**", &theme);
+        assert_eq!(ordered.spans[0].content.as_ref(), "• ");
+        assert!(ordered.spans[1].style.add_modifier.contains(Modifier::BOLD));
+
+        let quote = markdown_system_line("> quoted *text*", &theme);
+        assert_eq!(quote.spans[0].content.as_ref(), "│ ");
+        assert!(
+            quote
+                .spans
+                .iter()
+                .any(|span| span.style.add_modifier.contains(Modifier::ITALIC))
+        );
+
+        let strike = markdown_system_line("~~removed~~", &theme);
+        assert!(
+            strike.spans[0]
+                .style
+                .add_modifier
+                .contains(Modifier::CROSSED_OUT)
+        );
+
+        let rule = markdown_system_line("---", &theme);
+        assert_eq!(rule.spans[0].content.as_ref(), "───");
+    }
+
+    #[test]
+    fn markdown_fenced_code_preserves_inline_markers_until_close() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let mut markdown = MarkdownState::default();
+
+        let opening = markdown.render("```rust", &theme);
+        let body = markdown.render("**literal**", &theme);
+        let closing = markdown.render("```", &theme);
+        let after = markdown.render("**styled**", &theme);
+
+        assert_eq!(opening.spans[0].style.fg, Some(theme.accent));
+        assert_eq!(body.spans[0].content.as_ref(), "**literal**");
+        assert_eq!(body.spans[0].style.fg, Some(theme.warning));
+        assert_eq!(closing.spans[0].style.fg, Some(theme.warning));
+        assert!(after.spans[0].style.add_modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn markdown_links_render_as_underlined_labels_without_urls() {
+        let theme = Theme::from_config(&ThemeConfig::default());
+        let line = markdown_system_line("Read [the guide](https://example.test/help).", &theme);
+
+        assert_eq!(
+            line.spans
+                .iter()
+                .map(|span| span.content.as_ref())
+                .collect::<Vec<_>>(),
+            ["Read ", "the guide", "."]
+        );
+        assert!(
+            line.spans[1]
+                .style
+                .add_modifier
+                .contains(Modifier::UNDERLINED)
+        );
     }
 
     #[test]

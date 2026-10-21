@@ -132,7 +132,9 @@ client.send_all({ "stand", "open gate w", "w" })
 ### `client.echo(text, opts)`
 
 Adds local output to the MUD output pane. Use it for script messages that should not fire trigger notifications.
-Set `markdown = true` to render headings, lists, inline code, and tables in styled
+Set `markdown = true` to render headings, ordered and unordered lists, blockquotes,
+horizontal rules, bold and italic text, strikethrough, inline code, links, fenced code
+blocks, and tables in styled
 output. Markdown messages are split into logical scrollback lines; plain and debug
 display modes retain the source text.
 

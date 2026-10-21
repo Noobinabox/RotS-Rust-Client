@@ -8,7 +8,8 @@ use ratatui::{
 
 use unicode_width::UnicodeWidthStr;
 
-use super::{apply_output_style, inline_code_spans, mark_search_match, styled_tokens};
+use super::{apply_output_style, mark_search_match, styled_tokens};
+use crate::ui::markdown::markdown_inline_spans;
 use crate::{
     state::{AppState, OutputCategory, plain_text},
     ui::theme::Theme,
@@ -186,7 +187,7 @@ pub(super) fn render(
             if let Some(cells) = row(index) {
                 for (column, cell) in cells.iter().enumerate() {
                     widths[column] = widths[column].max(
-                        Line::from(inline_code_spans(cell, theme))
+                        Line::from(markdown_inline_spans(cell, theme))
                             .width()
                             .min(width),
                     );
@@ -229,7 +230,7 @@ pub(super) fn render(
                     .iter()
                     .zip(&widths)
                     .map(|(cell, w)| {
-                        wrap_cell(Line::from(inline_code_spans(cell, &cell_theme)), *w)
+                        wrap_cell(Line::from(markdown_inline_spans(cell, &cell_theme)), *w)
                     })
                     .collect::<Vec<_>>();
                 let height = wrapped.iter().map(Vec::len).max().unwrap_or(1);
