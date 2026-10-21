@@ -49,11 +49,12 @@ Runtime aliases are in-memory:
 Repeated command syntax runs through the same alias pipeline:
 
 ```text
+#50 buy meat
 #3 {k orc}
 #2 {look;score};rest
 ```
 
-Only the braced group repeats. A semicolon after the closing brace starts the next command normally.
+An unbraced repeat runs the single command after the count. Braced groups repeat multiple semicolon-separated commands together. A semicolon after the closing brace starts the next command normally.
 
 ## Triggers
 

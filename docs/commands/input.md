@@ -8,7 +8,7 @@ Optional [Vim-style editing](vim.md) adds Insert/Normal modes, operators, visual
 - `Enter` on the highlighted last command resends it.
 - Submitting input returns scrolled output to the latest lines and resumes following new output. Editing a draft does not move the output view; commands such as `/help` can then select their own view.
 - `;` separates multiple MUD commands.
-- `#<count> {command}` repeats a command or braced command group.
+- `#<count> command` repeats one command; braced groups such as `#<count> {command;command}` repeat multiple commands together.
 - `/quit` exits; `Ctrl-C` clears input and never exits.
 
 ## Editing and History
@@ -71,6 +71,7 @@ Defaults below can be customized through [keybindings](keybindings.md), also ava
 ## Repeat Examples
 
 ```text
+#50 buy meat
 #10 {kill orc}
 #3 {look;score}
 #2 {look;score};rest

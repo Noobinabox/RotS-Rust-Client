@@ -263,11 +263,16 @@ fn expand_repeat_command(
         .parse::<usize>()
         .map_err(|_| "repeat count is too large".to_string())?;
     let body_input = remainder[digit_count..].trim_start();
-    let Some((body, rest)) = braced_body(body_input)? else {
-        return Err("usage: #<count> {command[;command...]}".to_string());
+    let body = if let Some((body, rest)) = braced_body(body_input)? {
+        if !rest.trim().is_empty() {
+            return Err("repeat command must end after the closing `}`".to_string());
+        }
+        body
+    } else {
+        body_input.trim().to_string()
     };
-    if !rest.trim().is_empty() {
-        return Err("repeat command must end after the closing `}`".to_string());
+    if body.is_empty() {
+        return Err("usage: #<count> {command[;command...]}".to_string());
     }
     let commands = expand_repeat_commands(&body, max_commands)?;
     if commands.is_empty() {
@@ -406,6 +411,22 @@ mod tests {
     }
 
     #[test]
+    fn repeat_command_expands_unbraced_body() {
+        assert_eq!(
+            split_game_commands("#3 look").unwrap(),
+            ["look", "look", "look"]
+        );
+    }
+
+    #[test]
+    fn unbraced_repeat_stops_at_top_level_semicolon() {
+        assert_eq!(
+            split_game_commands("#2 buy meat;put meat pack").unwrap(),
+            ["buy meat", "buy meat", "put meat pack"]
+        );
+    }
+
+    #[test]
     fn repeat_command_repeats_only_its_braced_semicolon_group() {
         assert_eq!(
             split_game_commands("#2 {look;score};rest").unwrap(),
@@ -426,14 +447,6 @@ mod tests {
         assert_eq!(
             split_game_commands("#action thing").unwrap(),
             vec!["#action thing"]
-        );
-    }
-
-    #[test]
-    fn repeat_command_requires_braced_body() {
-        assert_eq!(
-            split_game_commands("#2 look").unwrap_err(),
-            "usage: #<count> {command[;command...]}"
         );
     }
 

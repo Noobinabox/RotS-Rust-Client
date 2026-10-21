@@ -3776,20 +3776,20 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn repeat_command_errors_without_braced_body() {
+    async fn repeat_command_sends_unbraced_command_requested_count() {
         let mut app = App::new(AppConfig::default());
-        let (tx, mut rx) = mpsc::channel(1);
+        let (tx, mut rx) = mpsc::channel(4);
 
-        app.handle_command(ClientCommand::SendText("#2 look".to_string()), &tx)
+        app.handle_command(ClientCommand::SendText("#2 buy meat".to_string()), &tx)
             .await;
 
+        for _ in 0..2 {
+            assert_eq!(
+                rx.recv().await,
+                Some(ClientCommand::SendText("buy meat".to_string()))
+            );
+        }
         assert!(rx.try_recv().is_err());
-        assert!(
-            app.state
-                .output
-                .iter()
-                .any(|line| line.normalized == "usage: #<count> {command[;command...]}")
-        );
     }
 
     #[tokio::test]
