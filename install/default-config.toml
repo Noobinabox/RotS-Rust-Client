@@ -11,3 +11,9 @@ input_mode = "standard"
 
 [lua]
 enabled = false
+
+# Command history stays in memory unless persistence is enabled.
+[history]
+persist = false
+max_entries = 1000
+ignore_prefixes = ["password ", "passwd "]

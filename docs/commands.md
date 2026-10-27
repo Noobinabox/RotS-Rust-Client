@@ -15,6 +15,7 @@ Type one command at a time into the client and press Enter. These are independen
 | Theme | `/theme use catppuccin-latte` | Switches the runtime palette and its light/dark appearance. |
 | Save | `/save` | Saves current runtime variables, macros, aliases, triggers, highlights, and substitutions for restart. |
 | Reconnect | `/reconnect` | Close the current connection and reconnect to the same server. |
+| History | `/history status` | Shows history status; `/history clear` clears active history. |
 | MSDP | `/msdp` | Shows server variables received so far. |
 | Toggle | `/toggle group on` | Enables the Group panel where the layout allows it. |
 | Echo | `/echo --fg yellow Ready` | Prints a yellow local message. |
@@ -74,3 +75,5 @@ For configurable editing and navigation actions, see [`/help keybindings`](comma
 - [`/help vim`](commands/vim.md) — opt-in modal command editing, examples, and compatibility limits.
 
 Commands without `/` pass through variable expansion, aliases, triggers, movement tracking, command echo, and the network pipeline. `Ctrl-C` clears the current input; `/quit` is the exit command.
+
+- [Command history](commands/history.md): per-character history, automatic persistence, limits, and clearing.

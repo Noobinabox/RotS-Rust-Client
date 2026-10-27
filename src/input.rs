@@ -24,7 +24,8 @@ pub fn insert_paste(state: &mut AppState, text: &str, multiline: bool) -> Result
     if text.len() > MAX_PASTE_BYTES {
         return Err("Paste rejected: maximum size is 64 KiB.");
     }
-    let preserve_lines = multiline
+    let preserve_lines = state.local_echo
+        && multiline
         && !state.output_view.search_active
         && !(state.input_mode == crate::config::InputMode::Vim
             && state.vim.history_search_active());
@@ -49,7 +50,10 @@ pub fn insert_paste(state: &mut AppState, text: &str, multiline: bool) -> Result
     if normalized.is_empty() {
         return Ok(());
     }
-    if state.input_mode == crate::config::InputMode::Vim && !state.output_view.search_active {
+    if state.local_echo
+        && state.input_mode == crate::config::InputMode::Vim
+        && !state.output_view.search_active
+    {
         let mut editor = std::mem::take(&mut state.vim);
         let result = editor.paste_checked(state, &normalized);
         state.vim = editor;
@@ -110,6 +114,21 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) -> InputAction {
         }
         clear_current_input(state);
         return InputAction::None;
+    }
+    if !state.local_echo {
+        if recovery {
+            clear_current_input(state);
+            return InputAction::None;
+        }
+        if matches!(
+            key.code,
+            KeyCode::Tab | KeyCode::BackTab | KeyCode::Up | KeyCode::Down
+        ) || (key.modifiers.contains(KeyModifiers::CONTROL)
+            && matches!(key.code, KeyCode::Char('f' | 'F')))
+        {
+            return InputAction::None;
+        }
+        return handle_standard_key(state, key);
     }
     if state.input_mode == crate::config::InputMode::Vim
         && (!state.output_view.search_active || recovery)
@@ -318,6 +337,8 @@ fn submit_input(state: &mut AppState) -> InputAction {
     };
     let command = if state.submitted_input_selected {
         state.submitted_input.clone().unwrap_or_default()
+    } else if !state.local_echo {
+        state.input.clone()
     } else {
         state.input.trim_end().to_string()
     };
@@ -338,13 +359,20 @@ fn submit_input(state: &mut AppState) -> InputAction {
         }
         return InputAction::Command(ClientCommand::SendText(String::new()));
     }
+    if !state.local_echo {
+        // Password input must never enter history or the repeat-last-command UI.
+        state.submitted_input = None;
+        return InputAction::Command(ClientCommand::SendText(command));
+    }
     if command == "/clear" {
         state.submitted_input = None;
         return InputAction::ClearOutput;
     }
     state.submitted_input = Some(command.clone());
     state.submitted_input_selected = true;
-    state.command_history.push(command.clone());
+    state
+        .history_config
+        .record(&mut state.command_history, &command);
     if command == "/quit" {
         InputAction::Command(ClientCommand::Quit)
     } else {

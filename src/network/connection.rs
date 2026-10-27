@@ -263,6 +263,9 @@ async fn handle_telnet_event(
     window_size: Option<(u16, u16)>,
 ) -> std::io::Result<()> {
     match event {
+        TelnetEvent::LocalEcho(enabled) => {
+            let _ = network_tx.send(NetworkEvent::LocalEcho(enabled)).await;
+        }
         TelnetEvent::Text(bytes) => {
             let events = output_buffer.push_bytes(&bytes);
             for event in events {

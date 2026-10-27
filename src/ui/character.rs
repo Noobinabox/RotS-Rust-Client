@@ -1144,7 +1144,8 @@ fn character_sheet_lines<'a>(state: &AppState, theme: &Theme) -> Vec<Line<'a>> {
         ),
     ];
 
-    if let Some(class_lines) = class_specific_lines(state, theme) {
+    let class_lines = class_specific_lines(state, theme);
+    if !class_lines.is_empty() {
         lines.push(Line::default());
         lines.extend(class_lines);
     }
@@ -1152,50 +1153,44 @@ fn character_sheet_lines<'a>(state: &AppState, theme: &Theme) -> Vec<Line<'a>> {
     lines
 }
 
-fn class_specific_lines<'a>(state: &AppState, theme: &Theme) -> Option<Vec<Line<'a>>> {
-    match highest_class(state) {
-        Some(CharacterClass::Mage) => Some(vec![metric_line_nonbreaking(
+fn class_specific_lines<'a>(state: &AppState, theme: &Theme) -> Vec<Line<'a>> {
+    let character = &state.character;
+    let mage = character.mage_level.unwrap_or(0);
+    let mystic = character.mystic_level.unwrap_or(0);
+    let highest = [
+        mage,
+        mystic,
+        character.warrior_level.unwrap_or(0),
+        character.ranger_level.unwrap_or(0),
+    ]
+    .into_iter()
+    .max()
+    .unwrap_or(0);
+    let mut lines = Vec::new();
+    // Missing reports must not gate another class; ties can have useful details
+    // for both casters. Zero/untrained classes do not select a detail row.
+    if highest > 0 && mage == highest {
+        lines.push(metric_line_nonbreaking(
             &[
-                ("Mana Regen", state.character.stamina_regeneration),
-                ("Spell Power", state.character.spell_power),
-                ("Spell Pen", state.character.spell_pen),
+                ("Mana Regen", character.stamina_regeneration),
+                ("Spell Power", character.spell_power),
+                ("Spell Pen", character.spell_pen),
             ],
             theme,
-        )]),
-        Some(CharacterClass::Mystic) => Some(vec![metric_line_nonbreaking(
+        ));
+    }
+    if highest > 0 && mystic == highest {
+        lines.push(metric_line_nonbreaking(
             &[
-                ("Willpower", state.character.willpower),
-                ("Spirits", state.character.spirit),
-                ("Health Regen", state.character.health_regeneration),
-                ("Movement Regen", state.character.movement_regeneration),
+                ("Willpower", character.willpower),
+                ("Spirits", character.spirit),
+                ("Health Regen", character.health_regeneration),
+                ("Movement Regen", character.movement_regeneration),
             ],
             theme,
-        )]),
-        _ => None,
+        ));
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum CharacterClass {
-    Mage,
-    Mystic,
-}
-
-fn highest_class(state: &AppState) -> Option<CharacterClass> {
-    let mage = state.character.mage_level?;
-    let mystic = state.character.mystic_level.unwrap_or(0);
-    let warrior = state.character.warrior_level.unwrap_or(0);
-    let ranger = state.character.ranger_level.unwrap_or(0);
-    if mage > mystic && mage > warrior && mage > ranger {
-        return Some(CharacterClass::Mage);
-    }
-
-    let mystic = state.character.mystic_level?;
-    if mystic > mage && mystic > warrior && mystic > ranger {
-        return Some(CharacterClass::Mystic);
-    }
-
-    None
+    lines
 }
 
 fn metric_line<'a>(values: &[(&str, Option<i64>)], theme: &Theme) -> Line<'a> {
@@ -1856,6 +1851,35 @@ mod tests {
         assert!(normalized.iter().any(|line| line.contains("Mana Regen 9")));
         assert!(normalized.iter().any(|line| line.contains("Spell Power 7")));
         assert!(normalized.iter().any(|line| line.contains("Spell Pen 3")));
+    }
+
+    #[test]
+    fn character_details_handle_partial_tied_and_non_caster_levels() {
+        for (mage, mystic, warrior, ranger, show_mage, show_mystic) in [
+            (None, Some(57), None, None, false, true),
+            (Some(57), None, None, None, true, false),
+            (Some(57), Some(57), None, None, true, true),
+            (Some(57), Some(20), Some(57), None, true, false),
+            (None, Some(57), None, Some(57), false, true),
+            (Some(20), Some(30), Some(57), None, false, false),
+            (None, None, None, None, false, false),
+            (Some(0), Some(0), Some(0), Some(0), false, false),
+            (Some(-1), None, None, None, false, false),
+        ] {
+            let mut state = AppState::new(&crate::config::AppConfig::default());
+            state.character.mage_level = mage;
+            state.character.mystic_level = mystic;
+            state.character.warrior_level = warrior;
+            state.character.ranger_level = ranger;
+            let rendered = class_specific_lines(&state, &theme())
+                .iter()
+                .map(line_text)
+                .collect::<Vec<_>>()
+                .join("\n")
+                .replace('\u{a0}', " ");
+            assert_eq!(rendered.contains("Spell Power"), show_mage, "{rendered}");
+            assert_eq!(rendered.contains("Willpower"), show_mystic, "{rendered}");
+        }
     }
 
     fn buffer_lines(buffer: &Buffer, area: Rect) -> Vec<String> {

@@ -67,3 +67,5 @@ If you disable or replace Enter, bind another key to `submit` first so you can s
 - Key releases are ignored. Editing/navigation actions can repeat; submit, reconnect, reload, quit, clear, search opening, and display-mode toggling do not repeat.
 
 `/help keybindings` and `/help shortcuts` show this guide. `/help input` describes the default shortcuts.
+
+During server-requested password entry, only explicitly configured `quit` and `reconnect` actions remain active; macros and other custom shortcuts are suspended. Ctrl+] is always available to quit that mode cleanly.

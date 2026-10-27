@@ -62,6 +62,7 @@ pub fn normalize_theme_name(value: &str) -> String {
 pub struct AppConfig {
     pub connection: ConnectionConfig,
     pub terminal: TerminalConfig,
+    pub history: crate::history::HistoryConfig,
     pub layout: LayoutConfig,
     pub colors: ThemeConfig,
     pub theme: ThemeSelectionConfig,
@@ -180,6 +181,21 @@ impl AppConfig {
     }
 
     pub fn validate(&self) -> Result<()> {
+        if self.history.max_entries > 10_000 {
+            return Err(MudClientError::ConfigValidation(
+                "history.max_entries must be 0..=10000".into(),
+            ));
+        }
+        if self.history.ignore_prefixes.len() > 100
+            || self
+                .history
+                .ignore_prefixes
+                .iter()
+                .any(|prefix| prefix.is_empty() || prefix.len() > 256)
+        {
+            return Err(MudClientError::ConfigValidation("history.ignore_prefixes must contain at most 100 nonempty prefixes of at most 256 bytes".into()));
+        }
+
         crate::macros::MacroEngine::new(&self.macros).map_err(MudClientError::ConfigValidation)?;
         let keybindings = crate::keybindings::KeybindingEngine::new(&self.keybindings)
             .map_err(MudClientError::ConfigValidation)?;

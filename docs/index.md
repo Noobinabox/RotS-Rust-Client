@@ -16,3 +16,5 @@ This directory is the end-user reference for the terminal MUD client.
 - [Substitutions and Gagging](commands/substitute.md): change or hide displayed server lines.
 - [Troubleshooting](troubleshooting.md): common setup and runtime issues.
 - [Development and Validation](development.md): building from source, `make` targets (including `make install`), and the full validation/CI command sequence.
+
+- [Command History](commands/history.md): optional per-character history persistence and privacy controls.

@@ -1,1 +1,4 @@
 /target
+
+# Local per-character command history may contain private gameplay text.
+/history/

@@ -64,3 +64,7 @@ Unsaved runtime rules, variables, event handlers, and Lua state are kept in memo
 [`/reload`](commands/reload.md) rechecks whether the current character has a profile (including newly created or deleted files), then rereads shared configuration and the active character file while preserving live runtime edits; it does not reread runtime snapshots. Cached profiles otherwise retain their in-memory settings when revisited. `/save` writes runtime automation only, not edits to panels or other configuration. Malformed or unreadable profiles still report actionable errors; automatic selection falls back to shared settings instead of continuing the previous character's automation.
 
 Command history remains session-only. No automatic profile creation is provided. Save each profile's runtime edits before quitting; `/save` saves only the active profile.
+
+MSDP reports received before the first `CHARACTER_NAME` are retained and interpreted using the selected profile’s mappings. A new connection starts a fresh report set; switching to another character clears the previous character’s reports.
+
+Command history is isolated by server-confirmed character identity, including characters that share the unprofiled automation session. Enable `[history] persist = true` in shared config or a profile to restore it across restarts. History files live in `history/<character>.toml` beside the shared config. Login input before identification is never saved; see [history](commands/history.md).

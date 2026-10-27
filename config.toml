@@ -643,3 +643,9 @@ enabled = true
 [logging]
 level = "mud_client=info"
 raw_protocol = false
+
+# Command history stays in memory unless persistence is enabled.
+[history]
+persist = false
+max_entries = 1000
+ignore_prefixes = ["password ", "passwd "]

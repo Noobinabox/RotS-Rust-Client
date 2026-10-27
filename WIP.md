@@ -2,7 +2,7 @@
 
 ## Active Slice
 
-None. Slice 58 (Configurable Built-In Shortcuts) is complete and reviewed. See `/help keybindings` for typed actions, examples, modal precedence, and recovery guidance.
+None. Slice 54 (Persistent Command History) and slice 58 (Configurable Built-In Shortcuts) are complete and reviewed. See `/help history` for optional history persistence and privacy controls. See `/help keybindings` for typed actions, examples, modal precedence, and recovery guidance.
 
 ## Next Slice: 59. Session Transcripts and Output Export
 

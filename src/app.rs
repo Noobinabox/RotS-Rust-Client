@@ -18,6 +18,7 @@ use tokio::{
 mod character_profiles;
 mod completion;
 mod formatting;
+mod history;
 #[cfg(test)]
 mod keybinding_tests;
 mod local_commands;
@@ -86,6 +87,7 @@ use crate::{
 
 pub struct App {
     config: AppConfig,
+    command_history: history::CommandHistory,
     config_path: Option<PathBuf>,
     character_path: Option<PathBuf>,
     msdp_character: Option<String>,
@@ -284,6 +286,7 @@ impl App {
             panel_cache: crate::ui::panels::PanelCache::default(),
             runtime_store,
             runtime_save: None,
+            command_history: history::CommandHistory::default(),
             full_hd_overrides: LayoutOverrides::default(),
             ultrawide_overrides: LayoutOverrides::default(),
             stacked_overrides: LayoutOverrides::default(),
@@ -393,8 +396,9 @@ impl App {
         }
         let _ = terminal_events.join();
         output.finish()?;
+        let history_error = self.flush_history().await;
         self.save_exit_map();
-        if let Some(error) = self.finish_runtime_save().await {
+        if let Some(error) = self.finish_runtime_save().await.or(history_error) {
             return Err(crate::error::MudClientError::ConfigValidation(error));
         }
         Ok(())
@@ -479,6 +483,15 @@ impl App {
                 {
                     self.finish_runtime_save().await;
                 }
+                if self
+                    .command_history
+                    .save
+                    .as_ref()
+                    .is_some_and(|task| task.is_finished())
+                {
+                    let _ = self.finish_history_save().await;
+                }
+                self.start_history_save(false);
                 self.state.tick_output_status();
                 let now = Instant::now();
                 self.animations.tick(now);
@@ -704,6 +717,35 @@ impl App {
             }
             return true;
         }
+        if command == "history" || command.starts_with("history ") {
+            match command.strip_prefix("history").unwrap_or_default().trim() {
+                "" | "status" => self.state.push_output(
+                    format!(
+                        "Command history: {} entries; persistence {}; character {}.",
+                        self.state.command_history.len(),
+                        self.history_persistence_status(),
+                        self.command_history
+                            .active
+                            .as_deref()
+                            .unwrap_or("not yet identified")
+                    ),
+                    OutputCategory::System,
+                ),
+                "clear" => {
+                    self.clear_history();
+                    let message = if self.history_persistence_status().starts_with("enabled") {
+                        "Command history cleared; persisted history is replaced on the next save tick or graceful exit."
+                    } else {
+                        "In-memory command history cleared; persistence is disabled or unavailable, so the saved file was not changed."
+                    };
+                    self.state.push_output(message, OutputCategory::System);
+                }
+                _ => self
+                    .state
+                    .push_output("usage: /history [status|clear]", OutputCategory::Error),
+            }
+            return true;
+        }
         if command == "timer" || command.starts_with("timer ") {
             match self
                 .handle_timer_command(command.strip_prefix("timer").unwrap_or_default())
@@ -752,6 +794,7 @@ impl App {
             self.refresh_character_selection().await;
             match self.reload_config() {
                 Ok(message) => {
+                    self.refresh_history().await;
                     push_output_lines(&mut self.state, message, OutputCategory::System);
                     self.send_mud_window_size(command_tx).await;
                 }
@@ -1902,13 +1945,52 @@ impl App {
         command_tx: &mpsc::Sender<ClientCommand>,
     ) {
         match event {
+            NetworkEvent::LocalEcho(enabled) => {
+                if !enabled {
+                    self.deactivate_history();
+                    self.state.cancel_output_search();
+                }
+                if enabled && !self.state.local_echo {
+                    // REPORT marks identity dirty; RoTS publishes it on reentry
+                    // even if the same character name has not changed.
+                    let mut variables = vec![self.config.msdp.mapping.character_name.clone()];
+                    if variables[0] != "CHARACTER_NAME" {
+                        variables.push("CHARACTER_NAME".into());
+                    }
+                    for variable in variables {
+                        self.queue_network_command(
+                            ClientCommand::SendRaw(crate::network::telnet::wrap_msdp(
+                                &crate::network::msdp::encode_pair("REPORT", &variable),
+                            )),
+                            command_tx,
+                        );
+                    }
+                }
+                if self.state.local_echo != enabled {
+                    self.state.input.clear();
+                    self.state.cursor = 0;
+                    self.state.vim = crate::input::vim::VimEditor::default();
+                }
+                self.state.local_echo = enabled;
+            }
             NetworkEvent::Connected => {
+                self.deactivate_history();
+                self.state.local_echo = true;
+                // Start a fresh report set before any packets for this login.
+                self.msdp_character = None;
+                self.state.raw_msdp.clear();
+                self.state.character = Default::default();
+                self.state.opponent = Default::default();
+                self.state.group = Default::default();
+                self.panel_cache.clear();
                 self.source_style = Default::default();
                 self.state.connection = ConnectionStatus::Connected;
                 self.state
                     .push_output_boundary("Connected to RoTS.", OutputCategory::System);
             }
             NetworkEvent::Disconnected => {
+                self.deactivate_history();
+                self.state.local_echo = true;
                 self.source_style = Default::default();
                 self.msdp_character = None;
                 self.state.connection = ConnectionStatus::Disconnected;
@@ -1952,6 +2034,9 @@ impl App {
                     .and_then(|frame| frame.value.as_string())
                 {
                     self.select_msdp_character(name, &frames).await;
+                    if self.state.local_echo {
+                        self.activate_history(name).await;
+                    }
                 }
                 self.state
                     .apply_msdp_frames(&frames, &self.config.msdp.mapping);
@@ -1968,6 +2053,8 @@ impl App {
                 }
             }
             NetworkEvent::Error(message) => {
+                self.deactivate_history();
+                self.state.local_echo = true;
                 self.source_style = Default::default();
                 self.state.connection = ConnectionStatus::Disconnected;
                 self.mud_ansi_colors.reset();
@@ -2134,12 +2221,40 @@ impl App {
                 if key.kind == crossterm::event::KeyEventKind::Release {
                     return false;
                 }
+                if !self.state.local_echo {
+                    let recovery = self.keybindings.lookup(key);
+                    let quit = matches!(recovery, Some(crate::keybindings::ShortcutAction::Quit))
+                        || (key
+                            .modifiers
+                            .contains(crossterm::event::KeyModifiers::CONTROL)
+                            && key.code == crossterm::event::KeyCode::Char(']'));
+                    if key.kind != crossterm::event::KeyEventKind::Repeat {
+                        if quit {
+                            return true;
+                        }
+                        if matches!(
+                            recovery,
+                            Some(crate::keybindings::ShortcutAction::Reconnect)
+                        ) {
+                            self.queue_network_command(ClientCommand::Reconnect, command_tx);
+                            return false;
+                        }
+                    } else if quit
+                        || matches!(
+                            recovery,
+                            Some(crate::keybindings::ShortcutAction::Reconnect)
+                        )
+                    {
+                        return false;
+                    }
+                }
                 if self.state.input_mode == crate::config::InputMode::Vim
                     && self.state.vim.suppress_history_enter_repeat(key)
                 {
                     return false;
                 }
-                if self.config.terminal.multiline_input
+                if self.state.local_echo
+                    && self.config.terminal.multiline_input
                     && !self.state.output_view.search_active
                     && key.code == crossterm::event::KeyCode::Enter
                     && key.modifiers == crossterm::event::KeyModifiers::ALT
@@ -2163,11 +2278,13 @@ impl App {
                 {
                     self.macros.printable_mode = false;
                 }
-                let vim_owns = self.state.input_mode == crate::config::InputMode::Vim
+                let vim_owns = self.state.local_echo
+                    && self.state.input_mode == crate::config::InputMode::Vim
                     && !self.state.output_view.search_active
                     && (self.state.vim.history_search_active()
                         || crate::input::vim::VimEditor::owns(key));
-                if !vim_owns
+                if self.state.local_echo
+                    && !vim_owns
                     && let Some(action) = self.macros.action_for_shortcut(
                         key,
                         self.state.output_view.search_active,
@@ -2182,9 +2299,10 @@ impl App {
                         .handle_command(ClientCommand::SendText(command), command_tx)
                         .await;
                 }
-                let shortcut = (!vim_owns && !self.state.output_view.search_active)
-                    .then(|| self.keybindings.lookup(key))
-                    .flatten();
+                let shortcut =
+                    (self.state.local_echo && !vim_owns && !self.state.output_view.search_active)
+                        .then(|| self.keybindings.lookup(key))
+                        .flatten();
                 let action = if let Some(shortcut) = shortcut {
                     if key.kind == crossterm::event::KeyEventKind::Repeat
                         && !shortcut.allow_repeat()
@@ -2208,8 +2326,18 @@ impl App {
                     }
                     handle_key(&mut self.state, key)
                 };
+                if matches!(&action, InputAction::Command(_)) {
+                    self.capture_history();
+                }
                 match action {
                     InputAction::None => false,
+                    InputAction::Command(ClientCommand::SendText(text))
+                        if !self.state.local_echo =>
+                    {
+                        // Credentials bypass aliases, variable expansion, splitting, and local echo.
+                        self.queue_network_command(ClientCommand::SendText(text), command_tx);
+                        false
+                    }
                     InputAction::Command(ClientCommand::SendText(text)) if text.contains('\n') => {
                         if text.split('\n').count() > crate::input::MAX_INPUT_LINES {
                             self.state.push_output(
@@ -2612,11 +2740,12 @@ fn help_text(topic: &str) -> Option<&'static str> {
         "reconnect" => Some(include_str!("../docs/commands/reconnect.md")),
         "vim" => Some(include_str!("../docs/commands/vim.md")),
         "save" => Some(include_str!("../docs/commands/save.md")),
+        "history" => Some(include_str!("../docs/commands/history.md")),
         "panels" => Some(include_str!("../docs/commands/panels.md")),
         "theme" | "themes" => Some(include_str!("../docs/commands/theme.md")),
         "macro" | "macros" => Some(include_str!("../docs/commands/macro.md")),
         "" | "commands" => Some(concat!(
-            "# Mud Client Help\n\n## Local Commands\n- `/help [topic]` - show client help\n- `/clear` - clear output\n- `/quit` - quit the client\n- `/reload` - reload config from disk\n- `/theme [list|current|use <name>|auto on|off]` - inspect or switch palettes\n- `/reconnect` - request a network reconnect\n- `/msdp` - show stored MSDP values\n- `/lua [status|reload|call <function>]` - inspect and run Lua hooks\n- `/echo [--fg <color>] [--bg <color>] <text>` - write styled local output\n- `/variable` - list, set, or unset script variables\n- `/macro` - bind keys to commands; `/help macro` for details\n- `/alias` - list, add, unset, or clear runtime aliases\n- `/triggers` - list, add, unset, or clear runtime text/color triggers\n- `/highlight` - list, add, unset, or clear runtime highlights\n- `/handler` - list, add, unset, or clear runtime event handlers\n- `/event` - inspect or manually emit script events\n- `/toggle group|opponent|social [on|off]` - toggle optional panels for this session\n- `/map <command>` - mapper commands\n\n## Topics\n- `theme` - runtime palettes and light/dark appearance\n- `msdp` - stored MSDP values\n- `lua` - Lua scripting hooks and client API\n- `echo` - local styled output\n- `variable` - configured and runtime script variables\n- `map` - room mapping commands\n- `alias` - alias configuration\n- `trigger` - configured output reactions\n- `event` - script event dispatch and handlers\n- `highlight` - configured and runtime output styling\n- `animation` - animation timing and reduced motion\n- `diagnostics` - logging and troubleshooting\n- `toggle` - optional panel toggles\n- `social` - captured communication panel\n- `path` - path finding and path running\n- `output` - scrollback, search, triggers, and highlights\n- `input` - command input controls\n- `config` - runtime configuration notes\n- `panels` - panel borders, alignment, themes, and refresh intervals\n- `save` - persist runtime rules with /save\n- `reconnect` - reconnect behavior\n- `keybindings` - configurable shortcuts\n- `macro` - persistent key macros\n- `vim` - Vim input mode\n- `substitution` - output substitutions",
+            "# Mud Client Help\n\n## Local Commands\n- `/help [topic]` - show client help\n- `/clear` - clear output\n- `/quit` - quit the client\n- `/reload` - reload config from disk\n- `/theme [list|current|use <name>|auto on|off]` - inspect or switch palettes\n- `/reconnect` - request a network reconnect\n- `/history [status|clear]` - inspect or clear per-character command history\n- `/msdp` - show stored MSDP values\n- `/lua [status|reload|call <function>]` - inspect and run Lua hooks\n- `/echo [--fg <color>] [--bg <color>] <text>` - write styled local output\n- `/variable` - list, set, or unset script variables\n- `/macro` - bind keys to commands; `/help macro` for details\n- `/alias` - list, add, unset, or clear runtime aliases\n- `/triggers` - list, add, unset, or clear runtime text/color triggers\n- `/highlight` - list, add, unset, or clear runtime highlights\n- `/handler` - list, add, unset, or clear runtime event handlers\n- `/event` - inspect or manually emit script events\n- `/toggle group|opponent|social [on|off]` - toggle optional panels for this session\n- `/map <command>` - mapper commands\n\n## Topics\n- `theme` - runtime palettes and light/dark appearance\n- `msdp` - stored MSDP values\n- `lua` - Lua scripting hooks and client API\n- `echo` - local styled output\n- `variable` - configured and runtime script variables\n- `map` - room mapping commands\n- `alias` - alias configuration\n- `trigger` - configured output reactions\n- `event` - script event dispatch and handlers\n- `highlight` - configured and runtime output styling\n- `animation` - animation timing and reduced motion\n- `diagnostics` - logging and troubleshooting\n- `toggle` - optional panel toggles\n- `social` - captured communication panel\n- `path` - path finding and path running\n- `output` - scrollback, search, triggers, and highlights\n- `history` - per-character history and optional persistence\n- `input` - command input controls\n- `config` - runtime configuration notes\n- `panels` - panel borders, alignment, themes, and refresh intervals\n- `save` - persist runtime rules with /save\n- `reconnect` - reconnect behavior\n- `keybindings` - configurable shortcuts\n- `macro` - persistent key macros\n- `vim` - Vim input mode\n- `substitution` - output substitutions",
             "\n- `panels` - panel borders, alignment, themes, and refresh intervals\n- `save` - persist runtime rules with `/save`",
         )),
         "msdp" => Some(

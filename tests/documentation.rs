@@ -80,3 +80,19 @@ fn panel_guide_toml_examples_are_valid_configurations() {
             .unwrap_or_else(|error| panic!("panel example {}: {error}", index + 1));
     }
 }
+
+#[test]
+fn history_guide_toml_enables_persistence() {
+    let guide = include_str!("../docs/commands/history.md");
+    let raw = guide
+        .split("```toml\n")
+        .nth(1)
+        .unwrap()
+        .split("```")
+        .next()
+        .unwrap();
+    let config: AppConfig = toml::from_str(raw).unwrap();
+    config.validate().unwrap();
+    assert!(config.history.persist);
+    assert_eq!(config.history.max_entries, 1000);
+}

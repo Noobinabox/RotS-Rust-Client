@@ -38,7 +38,7 @@ Patterns use the client's Rust regular-expression syntax, case-sensitive by defa
 
 For example, press Esc, type `/^cast `, then Enter to recall a casting command. Use `n`/`N` to browse matching commands; edit with `i`, or press Enter again to send. To type a MUD-client slash command such as `/help`, enter Insert mode first.
 
-Queries are limited to 4 KiB; regex compilation and history scanning have bounded work limits. A limit error leaves the command draft unchanged. Reported Enter repeats after accepting a result are suppressed, including numpad Enter; terminals that report held keys as fresh presses cannot provide this protection. This is session history only, not persistent history or incremental preview while typing. Ctrl-F still searches MUD output separately.
+Queries are limited to 4 KiB; regex compilation and history scanning have bounded work limits. A limit error leaves the command draft unchanged. Reported Enter repeats after accepting a result are suppressed, including numpad Enter; terminals that report held keys as fresh presses cannot provide this protection. This searches the active character’s history, including restored entries when [history persistence](history.md) is enabled; it does not provide incremental preview while typing. Ctrl-F still searches MUD output separately.
 
 ## Motions and edits
 

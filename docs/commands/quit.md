@@ -21,3 +21,5 @@ When you are ready to close the client, enter:
 ```
 
 This disconnects and exits immediately; it does not send the MUD's own logout command. Follow your MUD's logout procedure first if needed. Session-only settings are not automatically saved.
+
+During server-requested password entry, use Ctrl+] or an explicitly configured `quit` shortcut to exit cleanly. Text entered in the hidden password field, including `/quit`, is sent literally.

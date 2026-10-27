@@ -6,6 +6,7 @@ pub mod completion;
 pub mod config;
 pub mod error;
 pub mod events;
+pub mod history;
 pub mod input;
 pub mod keybindings;
 pub mod macros;

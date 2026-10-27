@@ -760,6 +760,16 @@ Variable persistence follow-up: 458 tests passed; one optional probe ignored. Co
 
 Validation: 428 tests passed; one optional timing probe ignored. PTY save/restart verification passed, including restored macro/alias execution and terminal restoration. Formatting and diff checks passed. Thranduil, Magus, and Sauron completed reviews; fixed unknown nested fields being silently discarded and stale persistence wording. Sudden-power-loss durability is not guaranteed without parent-directory syncing (documented). Typed filesystem error sources remain a low-priority improvement; messages retain path and error details. Strict Clippy retains four pre-existing warnings.
 
+### 54. Persistent Command History
+
+Status: `Done`
+
+- Bounded per-character history with consecutive duplicate suppression, opt-in automatic persistence, and `/history status|clear`.
+- Files in `history/<character>.toml` are separate from automation snapshots and work without profile files. Background atomic writes use private Unix permissions, locks, conflict detection, and graceful-exit flushing.
+- Login input before identification is never persisted; leading-space and configured-prefix exclusions apply to all history. Telnet ECHO password mode suppresses history/repeat, hides input, and bypasses automation expansion. Ctrl+] and configured quit/reconnect actions provide recovery; renewed identity REPORT resumes same-character history after RoTS menu/password entry.
+
+Validation: 782 tests passed; one optional probe ignored. Formatting and diff checks passed. Clippy passed with only the pre-existing `collapsible_if` lint allowed. Thranduil, Magus, and Sauron completed reviews; reload transitions, effective status, shutdown failures, password drafts, same-connection password changes, and same-name identity refresh are covered. Live MUD validation remains pending. Persistence defaults off; see `/help history`.
+
 ### 55. Character Profiles
 
 Status: `Done`

@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 
 pub const COMMANDS: &[&str] = &[
     "help",
+    "history",
     "macro",
     "msdp",
     "echo",
@@ -118,6 +119,7 @@ impl CommandCompletions {
                 }
                 ["/variable"] => "unset",
                 ["/lua"] => "status reload call",
+                ["/history"] => "status clear",
                 ["/timer"] => "list set cancel clear",
                 ["/timer", "set", _, _, _] => "once repeat",
                 ["/macro"] => "remove clear mode --override --repeat",

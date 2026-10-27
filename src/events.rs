@@ -81,6 +81,8 @@ pub enum TerminalEvent {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum NetworkEvent {
+    /// Server Telnet ECHO negotiation controls local credential entry.
+    LocalEcho(bool),
     Connected,
     Disconnected,
     Text(String),

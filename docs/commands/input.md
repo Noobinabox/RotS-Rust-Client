@@ -16,7 +16,7 @@ Optional [Vim-style editing](vim.md) adds Insert/Normal modes, operators, visual
 - `Left`, `Right`, `Home`, and `End` move the cursor.
 - `Ctrl-Left` / `Alt-B` move back one word; `Ctrl-Right` / `Alt-F` move forward one word.
 - `Ctrl-Backspace`, `Alt-Backspace`, or `Ctrl-W` delete the previous word; `Ctrl-Delete` or `Alt-D` delete the next word.
-- `Up` and `Down` navigate history; typed input filters history by prefix.
+- `Up` and `Down` navigate history; typed input filters history by prefix. History is bounded, suppresses consecutive duplicates, and is isolated per server-confirmed character. Optional [persistent history](history.md) restores it after restarting; `/history clear` clears it.
 - `Tab` completes slash-command names, subcommands, and known arguments in a dropdown. For example, `/theme use h` offers `haradrim`, `hobbit`, and `human`; `/theme use ` offers all built-in and custom themes. Repeated Tab selects the next choice without executing it; Enter submits the completed command.
 - Runtime rule removal, variables, timers, macros, and map destinations use current session choices. Outside braces, free-form slash-command arguments must still be entered manually. Ordinary MUD commands retain recent-output word completion.
 - `Shift-Tab` cycles completion backward.
@@ -78,3 +78,5 @@ Defaults below can be customized through [keybindings](keybindings.md), also ava
 ```
 
 In the last example, only `look;score` repeats; `rest` runs once.
+
+When the server requests password entry through Telnet ECHO negotiation, input is hidden and is sent directly without aliases, variable expansion, command splitting, macros, completion, or history recording. Normal input behavior returns when the server restores echo. During password entry, Ctrl+] exits cleanly; explicitly configured `quit`/`reconnect` shortcuts also work. Typed `/quit` is literal password text in that mode. See [history privacy](history.md).

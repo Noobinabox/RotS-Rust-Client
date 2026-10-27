@@ -47,6 +47,16 @@ See [key macro configuration](commands/macro.md#persistent-configuration): `[[ma
 | `input_mode` | `"standard"` (default) or opt-in `"vim"`. Reloadable and character-profile-aware; see [Vim editing](commands/vim.md). |
 | `multiline_input` | Defaults to `false`: pasted newlines become spaces. When `true`, preserve pasted newlines and use Alt+Enter to add a line; Enter submits nonblank lines in order. See [input examples](commands/input.md#paste-and-multiline-editing). |
 
+## history
+
+| Option | Meaning |
+|---|---|
+| `persist` | Defaults to `false`. When enabled, automatically save/restore history for each server-confirmed character. |
+| `max_entries` | Retain at most 0..=10000 entries (default 1000); 0 disables history. A 1 MiB text budget also applies. |
+| `ignore_prefixes` | Case-sensitive prefixes excluded from both memory and saved history. Defaults to `["password ", "passwd "]`. Leading-space commands are always excluded. |
+
+Settings are reloadable and may be overridden by character profiles. Files live in `history/<character>.toml` beside shared configuration, even for characters without profile files. Login input before MSDP identification is never saved. See [`/history`](commands/history.md) for examples, privacy, background saving, conflicts, and clearing history.
+
 ## layout
 
 | Option | Meaning |

@@ -9,11 +9,13 @@ pub const WONT: u8 = 252;
 pub const WILL: u8 = 251;
 pub const SB: u8 = 250;
 pub const SE: u8 = 240;
+pub const TELOPT_ECHO: u8 = 1;
 pub const TELOPT_NAWS: u8 = 31;
 pub const MAX_SUBNEGOTIATION_LEN: usize = 8192;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TelnetEvent {
+    LocalEcho(bool),
     Text(Vec<u8>),
     Msdp(Vec<MsdpFrame>),
     MsdpEnabled,
@@ -120,6 +122,13 @@ impl TelnetParser {
 
     fn handle_negotiation(&mut self, command: u8, option: u8, events: &mut Vec<TelnetEvent>) {
         match (command, option) {
+            (WILL, TELOPT_ECHO) => {
+                events.push(TelnetEvent::LocalEcho(false));
+                events.push(TelnetEvent::Send(vec![IAC, DO, TELOPT_ECHO]));
+            }
+            (WONT, TELOPT_ECHO) => {
+                events.push(TelnetEvent::LocalEcho(true));
+            }
             (WILL, TELOPT_MSDP) => {
                 events.push(TelnetEvent::Send(vec![IAC, DO, TELOPT_MSDP]));
                 events.push(TelnetEvent::MsdpEnabled);
@@ -274,6 +283,22 @@ mod tests {
             events
                 .iter()
                 .any(|event| matches!(event, TelnetEvent::ProtocolError(message) if message.contains("exceeded")))
+        );
+    }
+    #[test]
+    fn fragmented_echo_negotiation_controls_sensitive_input_in_order() {
+        let mut parser = TelnetParser::default();
+        assert!(parser.push(&[IAC, WILL]).is_empty());
+        assert_eq!(
+            parser.push(&[TELOPT_ECHO]),
+            vec![
+                TelnetEvent::LocalEcho(false),
+                TelnetEvent::Send(vec![IAC, DO, TELOPT_ECHO])
+            ]
+        );
+        assert_eq!(
+            parser.push(&[IAC, WONT, TELOPT_ECHO]),
+            vec![TelnetEvent::LocalEcho(true)]
         );
     }
 }

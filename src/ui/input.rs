@@ -100,6 +100,13 @@ fn mode_label(state: &AppState, width: u16) -> String {
 const NEWLINE_MARKER: &str = "↵";
 
 fn input_viewport(state: &AppState, width: usize) -> InputViewport {
+    if !state.local_echo {
+        return InputViewport {
+            text: String::new(),
+            cursor_width: 0,
+            selection: None,
+        };
+    }
     let (text, cursor) = if state.output_view.search_active {
         (
             format!("/{}", state.output_view.search_input),
@@ -536,5 +543,15 @@ mod tests {
             assert_eq!(buf[(x, 1)].bg, theme.accent);
             assert_eq!(buf[(x, 1)].fg, theme.contrasting_foreground(theme.accent));
         }
+    }
+    #[test]
+    fn sensitive_input_is_hidden_in_the_viewport() {
+        let mut state = AppState::new(&crate::config::AppConfig::default());
+        state.local_echo = false;
+        state.input = "private password".into();
+        state.cursor = state.input.len();
+        let viewport = input_viewport(&state, 80);
+        assert!(viewport.text.is_empty());
+        assert_eq!(viewport.cursor_width, 0);
     }
 }
