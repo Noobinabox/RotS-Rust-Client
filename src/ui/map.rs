@@ -375,6 +375,25 @@ fn map_lines<'a>(
                     exit_overlays.insert(key, overlay);
                 }
             }
+            if door_marker(config, exit, theme).is_none()
+                && teleport_marker(config, exit, theme).is_none()
+                && let Some((symbol, color)) =
+                    one_way_marker(config, theme, map, room_id, target_id, exit)
+            {
+                let overlay = ExitOverlay {
+                    from: (x, y),
+                    to: (
+                        center_x + target_x * column_spacing,
+                        center_y + target_y * config.room_spacing_rows,
+                    ),
+                    symbol,
+                    color,
+                };
+                exit_overlays.insert(
+                    ("one_way".into(), room_id.clone(), target_id.clone()),
+                    overlay,
+                );
+            }
         }
     }
 
@@ -947,9 +966,13 @@ fn direction_bit(direction: &str) -> Option<usize> {
 fn opposite_direction(direction: &str) -> Option<&'static str> {
     match direction {
         "n" | "north" => Some("s"),
+        "ne" | "northeast" => Some("sw"),
         "e" | "east" => Some("w"),
+        "se" | "southeast" => Some("nw"),
         "s" | "south" => Some("n"),
+        "sw" | "southwest" => Some("ne"),
         "w" | "west" => Some("e"),
+        "nw" | "northwest" => Some("se"),
         _ => None,
     }
 }
@@ -1047,6 +1070,68 @@ fn teleport_marker(
         config.teleport.glyph.clone(),
         theme.readable_map_color(parse_color(&config.teleport.color).unwrap_or(theme.accent)),
     ))
+}
+
+fn one_way_marker(
+    config: &MapRenderConfig,
+    theme: &Theme,
+    map: &MapState,
+    source_id: &str,
+    target_id: &str,
+    exit: &Exit,
+) -> Option<(String, Color)> {
+    if !config.one_way.show || has_reverse_exit(map, source_id, target_id, exit) {
+        return None;
+    }
+    let unicode = match crate::map::normalize_direction(&exit.direction).as_str() {
+        "n" => '▲',
+        "ne" => '↗',
+        "e" => '▶',
+        "se" => '↘',
+        "s" => '▼',
+        "sw" => '↙',
+        "w" => '◀',
+        "nw" => '↖',
+        _ => return None,
+    };
+    let ascii = match crate::map::normalize_direction(&exit.direction).as_str() {
+        "n" => '^',
+        "ne" | "sw" => '/',
+        "e" => '>',
+        "se" | "nw" => '\\',
+        "s" => 'v',
+        "w" => '<',
+        _ => return None,
+    };
+    Some((
+        if map.unicode {
+            unicode.to_string()
+        } else {
+            ascii.to_string()
+        },
+        config
+            .one_way
+            .color
+            .as_deref()
+            .and_then(parse_color)
+            .map(|color| theme.readable_map_color(color))
+            .unwrap_or(
+                theme.readable_map_color(parse_color(&config.link_color).unwrap_or(theme.muted)),
+            ),
+    ))
+}
+
+fn has_reverse_exit(map: &MapState, source_id: &str, target_id: &str, exit: &Exit) -> bool {
+    let Some(target) = map.rooms.get(target_id) else {
+        return false;
+    };
+    let Some(reverse) = opposite_direction(&exit.direction) else {
+        return false;
+    };
+    target.exits.values().any(|candidate| {
+        crate::map::normalize_direction(&candidate.direction) == reverse
+            && candidate.to.as_deref() == Some(source_id)
+    })
 }
 
 #[derive(Debug, Clone)]
@@ -2354,7 +2439,7 @@ mod tests {
         ));
 
         assert_eq!(lines[4].chars().nth(10), Some('X'));
-        assert_eq!(lines[4].chars().nth(11), Some('━'));
+        assert_eq!(lines[4].chars().nth(11), Some('▶'));
         assert_eq!(lines[4].chars().nth(12), Some('━'));
         assert_eq!(lines[4].chars().nth(13), Some('╸'));
     }
@@ -2421,6 +2506,84 @@ mod tests {
         ));
 
         assert_eq!(lines[4].chars().nth(11), Some('◇'));
+    }
+
+    #[test]
+    fn one_way_exit_renders_directional_marker() {
+        let mut map = MapState::default();
+        map.current_room = Some("1101".to_string());
+        map.rooms.insert(
+            "1101".to_string(),
+            room("1101", "Source", 0, 0, [("e", "1102")]),
+        );
+        map.rooms
+            .insert("1102".to_string(), room("1102", "Target", 0, 0, []));
+        let lines = plain_lines(map_lines(
+            Rect::new(0, 0, 21, 9),
+            &map,
+            &theme(),
+            &map_config(),
+        ));
+        assert_eq!(lines[4].chars().nth(11), Some('▶'));
+    }
+
+    #[test]
+    fn reciprocal_exit_does_not_render_one_way_marker() {
+        let mut map = MapState::default();
+        map.current_room = Some("1".to_string());
+        map.rooms
+            .insert("1".to_string(), room("1", "West", 0, 0, [("e", "2")]));
+        map.rooms
+            .insert("2".to_string(), room("2", "East", 0, 0, [("w", "1")]));
+        let lines = plain_lines(map_lines(
+            Rect::new(0, 0, 21, 9),
+            &map,
+            &theme(),
+            &map_config(),
+        ));
+        assert_eq!(lines[4].chars().nth(11), Some('─'));
+    }
+
+    #[test]
+    fn one_way_exit_uses_ascii_fallback_when_unicode_is_disabled() {
+        let mut map = MapState::default();
+        map.unicode = false;
+        map.current_room = Some("1".to_string());
+        map.rooms
+            .insert("1".to_string(), room("1", "West", 0, 0, [("e", "2")]));
+        map.rooms
+            .insert("2".to_string(), room("2", "East", 0, 0, []));
+        let lines = plain_lines(map_lines(
+            Rect::new(0, 0, 21, 9),
+            &map,
+            &theme(),
+            &map_config(),
+        ));
+        assert_eq!(lines[4].chars().nth(11), Some('>'));
+    }
+
+    #[test]
+    fn one_way_marker_yields_to_door_marker() {
+        let mut map = MapState::default();
+        map.current_room = Some("1".to_string());
+        map.rooms
+            .insert("1".to_string(), room("1", "West", 0, 0, [("e", "2")]));
+        map.rooms
+            .insert("2".to_string(), room("2", "East", 0, 0, []));
+        map.rooms
+            .get_mut("1")
+            .unwrap()
+            .exits
+            .get_mut("e")
+            .unwrap()
+            .door = Some(DoorState::Closed);
+        let lines = plain_lines(map_lines(
+            Rect::new(0, 0, 21, 9),
+            &map,
+            &theme(),
+            &map_config(),
+        ));
+        assert_eq!(lines[4].chars().nth(11), Some('╬'));
     }
 
     #[test]

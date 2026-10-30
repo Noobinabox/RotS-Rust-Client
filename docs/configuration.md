@@ -386,6 +386,21 @@ Teleport markers show exits flagged with `/map exitflag <dir> teleport on`.
 | `glyph` | One-cell teleport symbol. Default is `◇`. |
 | `color` | Teleport glyph color. Default is cyan. |
 
+### map.one_way
+
+One-way markers identify links whose destination has no matching reverse exit.
+
+| Option | Meaning |
+|---|---|
+| `show` | Enables directional one-way arrows; default `true`. |
+| `color` | Optional arrow color. Omit it to inherit the configured map link color. |
+
+```toml
+[map.one_way]
+show = true
+color = "yellow"
+```
+
 ### map.terrain
 
 Terrain tables are keyed by terrain name, for example `[map.terrain.Forest]` or `[map.terrain.Dense_forest]`.
@@ -581,7 +596,7 @@ A highlight must define at least one color or style.
 
 - Required names and patterns must not be empty.
 - Regex patterns are compiled during config validation.
-- Map room, stub, door, boundary, and teleport glyphs must occupy one terminal cell when rendered.
+- Map room, stub, door, boundary, teleport, and one-way glyphs must occupy one terminal cell when rendered.
 - Double terrain symbols must be exactly two one-cell characters.
 - Required panel visibility cannot remove the map, output, or command input from all modes.
 - Lua, trigger, event, variable, animation, and terminal limits must be greater than zero.

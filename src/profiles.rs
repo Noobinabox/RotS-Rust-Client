@@ -154,10 +154,10 @@ fn merge_value(base: &mut toml::Value, overrides: toml::Value, key: Option<&str>
         }
         (toml::Value::Array(base), toml::Value::Array(overrides)) => {
             for value in overrides {
-                if key == Some("bindings") {
-                    if let Some(new_key) = value.get("key") {
-                        base.retain(|existing| existing.get("key") != Some(new_key));
-                    }
+                if key == Some("bindings")
+                    && let Some(new_key) = value.get("key")
+                {
+                    base.retain(|existing| existing.get("key") != Some(new_key));
                 }
                 base.push(value);
             }

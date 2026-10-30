@@ -495,6 +495,17 @@ impl AppConfig {
                 "map.boundary.color must be a valid terminal color or RGB hex color".to_string(),
             ));
         }
+        if self
+            .map
+            .one_way
+            .color
+            .as_deref()
+            .is_some_and(|color| parse_color(color).is_none())
+        {
+            return Err(MudClientError::ConfigValidation(
+                "map.one_way.color must be a valid terminal color or RGB hex color".to_string(),
+            ));
+        }
         if self.map.teleport.show && !is_fixed_width_map_symbol(&self.map.teleport.glyph, 1) {
             return Err(MudClientError::ConfigValidation(
                 "map.teleport.glyph must be exactly one terminal cell when teleport markers are shown"
@@ -1457,6 +1468,7 @@ pub struct MapRenderConfig {
     pub doors: MapDoorConfig,
     pub boundary: MapBoundaryConfig,
     pub teleport: MapTeleportConfig,
+    pub one_way: MapOneWayConfig,
     pub terrain: BTreeMap<String, MapTerrainConfig>,
 }
 
@@ -1481,6 +1493,7 @@ impl Default for MapRenderConfig {
             doors: MapDoorConfig::default(),
             boundary: MapBoundaryConfig::default(),
             teleport: MapTeleportConfig::default(),
+            one_way: MapOneWayConfig::default(),
             terrain: default_map_terrain(),
         }
     }
@@ -1569,6 +1582,22 @@ pub struct MapTeleportConfig {
     pub show: bool,
     pub glyph: String,
     pub color: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default)]
+pub struct MapOneWayConfig {
+    pub show: bool,
+    pub color: Option<String>,
+}
+
+impl Default for MapOneWayConfig {
+    fn default() -> Self {
+        Self {
+            show: true,
+            color: None,
+        }
+    }
 }
 
 impl Default for MapTeleportConfig {
@@ -2476,6 +2505,32 @@ report_variables = ["ROOM_NAME", "ROOM_VNUM", "ROOM_EXITS"]
         let serialized = toml::to_string(&config).expect("config serializes");
         let restored: AppConfig = toml::from_str(&serialized).expect("config deserializes");
         assert_eq!(restored.map.boundary, config.map.boundary);
+    }
+
+    #[test]
+    fn map_one_way_defaults_and_custom_style_round_trip() {
+        let defaults: AppConfig = toml::from_str("").expect("legacy config parses");
+        assert!(defaults.map.one_way.show);
+        assert_eq!(defaults.map.one_way.color, None);
+        let config: AppConfig = toml::from_str("[map.one_way]\nshow = false\ncolor = \"yellow\"")
+            .expect("custom one-way config parses");
+        config.validate().expect("custom one-way config is valid");
+        let serialized = toml::to_string(&config).expect("config serializes");
+        let restored: AppConfig = toml::from_str(&serialized).expect("config deserializes");
+        assert_eq!(restored.map.one_way, config.map.one_way);
+    }
+
+    #[test]
+    fn map_one_way_rejects_invalid_color() {
+        let mut config = AppConfig::default();
+        config.map.one_way.color = Some("not-a-color".to_string());
+        assert!(
+            config
+                .validate()
+                .expect_err("invalid one-way color rejected")
+                .to_string()
+                .contains("map.one_way.color")
+        );
     }
 
     #[test]

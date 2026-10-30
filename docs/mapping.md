@@ -237,6 +237,10 @@ Some directional exits teleport instead of physically connecting adjacent rooms.
 
 The default teleport glyph is `◇`, rendered on the exit link. Customize it in `[map.teleport]`.
 
+## One-way exits
+
+When a mapped exit points to a room that has no matching reverse exit, the link is shown with a directional arrow. For example, an east-only exit from room `1101` to `1102` appears as `1101 ───▶ 1102`. Unicode mode uses directional arrows such as `▲`, `▶`, `▼`, and `◀`; ASCII mode uses `^`, `>`, `v`, and `<`. Reciprocal exits keep the normal connector. Door, teleport, and boundary markers take precedence. Set `[map.one_way] show = false` to hide these indicators, or set `color` to override their link color.
+
 ## Terrain
 
 Terrain controls room appearance and path weight. Defaults:
