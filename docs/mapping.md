@@ -22,7 +22,15 @@ The map header shows the current room name and exits. The current room marker us
 
 Up and down exits are shown as vertical-layer indicators. Moving through `u` or `d` changes the visible z layer so same-layer rooms connected to the new room remain visible while rooms on the previous layer disappear.
 
-When multiple mapped rooms resolve to the same display position, the map keeps the first room reached from the current room and hides later overlapping rooms and their branches. This matches TinTin-style map display behavior and keeps overlapping loops from drawing unrelated rooms over the current route.
+Rooms keep stable schematic positions as you move. New rooms use their exit's compass position when it is free; collisions move the new room into the next free lane below it. Existing rooms and their branches remain available instead of disappearing on overlap. The viewport follows the current room without rebuilding the arrangement.
+
+Connections that disagree with those positions use bent paths labeled with the actual movement command (`e`, `w`, `ne`, etc.). Arrows on these paths point toward the drawn destination; the command label tells you what to type. Cramped or obstructed paths use destination labels such as `w→1103` where space permits. The drawing is schematic, so a bent west exit can lead to a room drawn below its source. Unicode and ASCII modes are supported.
+
+Regular maps, snapshots, and legends share the saved positions. Nearby Map uses the same positions with its compact room-only presentation. Bent links reserve more display spacing; resizing changes the viewport rather than stored positions. Hidden exits, fog, area boundaries, and vertical layers continue to control visibility.
+
+Display positions are saved by `/map write` and restored by `/map read`, independently of server coordinates and pathfinding. Legacy maps generate positions when loaded; duplicate or invalid saved positions are repaired. Deleting rooms removes their positions, and `/map create` starts a fresh layout.
+
+MSDP reports establish only their explicitly reported directional links. Reporting `1101 e → 1102` does not invent `1102 w → 1101`; this preserves mazes whose west exit goes elsewhere. Older saved maps may contain previously inferred links, which cannot be distinguished automatically from learned links. Explicit fresh reports update those destinations; `/map unlink` can remove an unwanted historical exit.
 
 ## Commands
 

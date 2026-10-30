@@ -11,6 +11,9 @@ use ratatui::{
 };
 use unicode_width::UnicodeWidthChar;
 
+mod routing;
+use routing::draw_schematic_connection;
+
 use crate::{
     config::MapRenderConfig,
     map::{DoorState, Exit, ExitFlag, MapState, RoomFlag},
@@ -247,6 +250,8 @@ fn map_lines<'a>(
     let mut cells = vec![vec![' '; width]; height];
     let mut styles: BTreeMap<(usize, usize), Color> = BTreeMap::new();
     let mut exit_overlays = BTreeMap::new();
+    let mut link_styles = BTreeMap::new();
+    let mut schematic_links = Vec::new();
     let positions = visible_positions(map, current_id);
     let markers = MapMarkers::new(map);
     let marker_spacing = positions
@@ -265,7 +270,30 @@ fn map_lines<'a>(
         })
         .max()
         .unwrap_or(3);
-    let column_spacing = config.room_spacing_columns.max(marker_spacing);
+    let schematic = config.show_links
+        && positions.iter().any(|(id, &(x, y))| {
+            map.rooms.get(id).is_some_and(|room| {
+                room.exits.values().any(|exit| {
+                    if exit.flags.contains(&ExitFlag::Hide)
+                        || exit.flags.contains(&ExitFlag::Boundary)
+                    {
+                        return false;
+                    }
+                    exit.to
+                        .as_ref()
+                        .and_then(|id| positions.get(id))
+                        .is_some_and(|target| {
+                            direction_offset(&exit.direction)
+                                .is_some_and(|(dx, dy)| *target != (x + dx, y + dy))
+                        })
+                })
+            })
+        });
+    let column_spacing = config
+        .room_spacing_columns
+        .max(marker_spacing)
+        .max(if schematic { 8 } else { 3 });
+    let row_spacing = config.room_spacing_rows.max(if schematic { 4 } else { 1 });
     let center_x = (width / 2) as i32;
     let center_y = (height / 2) as i32;
 
@@ -276,8 +304,8 @@ fn map_lines<'a>(
         if room.flags.contains(&RoomFlag::Hide) {
             continue;
         }
-        let x = center_x + room_x * column_spacing;
-        let y = center_y + room_y * config.room_spacing_rows;
+        let x = center_x.saturating_add(room_x.saturating_mul(column_spacing));
+        let y = center_y.saturating_add(room_y.saturating_mul(row_spacing));
         if !inside(width, height, x, y) {
             continue;
         }
@@ -299,8 +327,8 @@ fn map_lines<'a>(
         if room.flags.contains(&RoomFlag::Hide) {
             continue;
         }
-        let x = center_x + room_x * column_spacing;
-        let y = center_y + room_y * config.room_spacing_rows;
+        let x = center_x.saturating_add(room_x.saturating_mul(column_spacing));
+        let y = center_y.saturating_add(room_y.saturating_mul(row_spacing));
         if !inside(width, height, x, y) {
             continue;
         }
@@ -331,13 +359,30 @@ fn map_lines<'a>(
                 theme.readable_map_color(parse_color(&config.link_color).unwrap_or(theme.muted))
             };
             let link_color = exit_color(config, theme, room, target_room, exit, default_link_color);
+            let direction = direction_offset(&exit.direction);
+            if direction
+                .is_some_and(|(dx, dy)| (*target_x, *target_y) != (*room_x + dx, *room_y + dy))
+            {
+                schematic_links.push((
+                    exit,
+                    (
+                        (x, y),
+                        (
+                            center_x.saturating_add(target_x.saturating_mul(column_spacing)),
+                            center_y.saturating_add(target_y.saturating_mul(row_spacing)),
+                        ),
+                    ),
+                    link_color,
+                ));
+                continue;
+            }
             draw_connection(
                 &mut cells,
-                &mut styles,
+                &mut link_styles,
                 (x, y),
                 (
-                    center_x + target_x * column_spacing,
-                    center_y + target_y * config.room_spacing_rows,
+                    center_x.saturating_add(target_x.saturating_mul(column_spacing)),
+                    center_y.saturating_add(target_y.saturating_mul(row_spacing)),
                 ),
                 ConnectionStyle {
                     unicode: map.unicode,
@@ -350,8 +395,8 @@ fn map_lines<'a>(
                 let overlay = ExitOverlay {
                     from: (x, y),
                     to: (
-                        center_x + target_x * column_spacing,
-                        center_y + target_y * config.room_spacing_rows,
+                        center_x.saturating_add(target_x.saturating_mul(column_spacing)),
+                        center_y.saturating_add(target_y.saturating_mul(row_spacing)),
                     ),
                     symbol,
                     color,
@@ -365,8 +410,8 @@ fn map_lines<'a>(
                 let overlay = ExitOverlay {
                     from: (x, y),
                     to: (
-                        center_x + target_x * column_spacing,
-                        center_y + target_y * config.room_spacing_rows,
+                        center_x.saturating_add(target_x.saturating_mul(column_spacing)),
+                        center_y.saturating_add(target_y.saturating_mul(row_spacing)),
                     ),
                     symbol,
                     color,
@@ -383,8 +428,8 @@ fn map_lines<'a>(
                 let overlay = ExitOverlay {
                     from: (x, y),
                     to: (
-                        center_x + target_x * column_spacing,
-                        center_y + target_y * config.room_spacing_rows,
+                        center_x.saturating_add(target_x.saturating_mul(column_spacing)),
+                        center_y.saturating_add(target_y.saturating_mul(row_spacing)),
                     ),
                     symbol,
                     color,
@@ -398,8 +443,25 @@ fn map_lines<'a>(
     }
 
     for overlay in exit_overlays.into_values() {
-        draw_exit_overlay(&mut cells, &mut styles, overlay);
+        draw_exit_overlay(&mut cells, &mut link_styles, overlay);
     }
+
+    for (exit, endpoints, color) in schematic_links {
+        draw_schematic_connection(
+            &mut cells,
+            &mut link_styles,
+            map,
+            config,
+            theme,
+            exit,
+            endpoints,
+            &positions,
+            ((center_x, center_y), (column_spacing, row_spacing)),
+            color,
+        );
+    }
+
+    styles.extend(link_styles);
 
     draw_boundary_exits(
         &mut cells,
@@ -408,10 +470,7 @@ fn map_lines<'a>(
         &positions,
         config,
         theme,
-        (
-            (center_x, center_y),
-            (column_spacing, config.room_spacing_rows),
-        ),
+        ((center_x, center_y), (column_spacing, row_spacing)),
     );
 
     for (room_id, (room_x, room_y)) in &positions {
@@ -424,8 +483,8 @@ fn map_lines<'a>(
                 config,
                 room_id,
                 (
-                    center_x + room_x * column_spacing,
-                    center_y + room_y * config.room_spacing_rows,
+                    center_x.saturating_add(room_x.saturating_mul(column_spacing)),
+                    center_y.saturating_add(room_y.saturating_mul(row_spacing)),
                 ),
             );
         }
@@ -439,8 +498,8 @@ fn map_lines<'a>(
             config,
             current_id,
             (
-                center_x + room_x * column_spacing,
-                center_y + room_y * config.room_spacing_rows,
+                center_x.saturating_add(room_x.saturating_mul(column_spacing)),
+                center_y.saturating_add(room_y.saturating_mul(row_spacing)),
             ),
         );
     }
@@ -475,8 +534,8 @@ fn map_lines<'a>(
             .iter()
             .filter_map(|(id, &(rx, ry))| {
                 let room = map.rooms.get(id)?;
-                let x = center_x + rx * column_spacing;
-                let y = center_y + ry * config.room_spacing_rows;
+                let x = center_x.saturating_add(rx.saturating_mul(column_spacing));
+                let y = center_y.saturating_add(ry.saturating_mul(row_spacing));
                 if room.note.trim().is_empty()
                     || !room_marker_visible(room, id == current_id)
                     || !inside(width, height, x, y)
@@ -816,7 +875,10 @@ fn draw_boundary_exits(
         {
             continue;
         }
-        let origin = (center.0 + rx * spacing.0, center.1 + ry * spacing.1);
+        let origin = (
+            center.0.saturating_add(rx.saturating_mul(spacing.0)),
+            center.1.saturating_add(ry.saturating_mul(spacing.1)),
+        );
         if !inside(
             cells.first().map_or(0, Vec::len),
             cells.len(),
@@ -1279,128 +1341,7 @@ fn terrain_hash(room_id: &str, dx: i32, dy: i32) -> u64 {
 }
 
 fn visible_positions(map: &MapState, current_id: &str) -> BTreeMap<String, (i32, i32)> {
-    let mut positions = BTreeMap::from([(current_id.to_string(), (0, 0))]);
-    let mut occupied = BTreeMap::from([((0, 0), current_id.to_string())]);
-    let mut queue = VecDeque::from([VisibleNode {
-        room_id: current_id.to_string(),
-        from_id: None,
-        incoming_direction: None,
-    }]);
-    let Some(current_z) = map.rooms.get(current_id).map(|room| room.z) else {
-        return positions;
-    };
-
-    while let Some(node) = queue.pop_front() {
-        let room_id = node.room_id;
-        let Some(room) = map.rooms.get(&room_id) else {
-            continue;
-        };
-        if room.flags.contains(&RoomFlag::Fog) && room_id != current_id {
-            continue;
-        }
-        let Some((x, y)) = positions.get(&room_id).copied() else {
-            continue;
-        };
-        for exit in traversable_exits(
-            room,
-            node.from_id.as_deref(),
-            node.incoming_direction.as_deref(),
-        ) {
-            if exit.flags.contains(&ExitFlag::Hide) || exit.flags.contains(&ExitFlag::Boundary) {
-                continue;
-            }
-            let Some(target_id) = exit.to.as_ref() else {
-                continue;
-            };
-            let Some(target_room) = map.rooms.get(target_id) else {
-                continue;
-            };
-            if target_room.flags.contains(&RoomFlag::Hide) {
-                continue;
-            }
-            if positions.contains_key(target_id) {
-                continue;
-            }
-            let position = if target_room.z == current_z {
-                let Some((dx, dy)) = direction_offset(&exit.direction) else {
-                    continue;
-                };
-                Some((x + dx, y + dy))
-            } else if is_vertical_direction(&exit.direction) {
-                None
-            } else {
-                continue;
-            };
-            if let Some(mut position) = position {
-                if room.flags.contains(&RoomFlag::Void)
-                    && !target_room.flags.contains(&RoomFlag::Void)
-                    && occupied.contains_key(&position)
-                    && let Some((dx, dy)) = direction_offset(&exit.direction)
-                {
-                    position = next_free_position(position, (dx, dy), &occupied);
-                }
-                if occupied.contains_key(&position) && !target_room.flags.contains(&RoomFlag::Void)
-                {
-                    continue;
-                }
-                occupied
-                    .entry(position)
-                    .or_insert_with(|| target_id.clone());
-                positions.insert(target_id.clone(), position);
-                queue.push_back(VisibleNode {
-                    room_id: target_id.clone(),
-                    from_id: Some(room_id.clone()),
-                    incoming_direction: Some(exit.direction.clone()),
-                });
-            }
-        }
-    }
-
-    positions
-}
-
-fn next_free_position(
-    mut position: (i32, i32),
-    direction: (i32, i32),
-    occupied: &BTreeMap<(i32, i32), String>,
-) -> (i32, i32) {
-    for _ in 0..16 {
-        if !occupied.contains_key(&position) {
-            return position;
-        }
-        position = (position.0 + direction.0, position.1 + direction.1);
-    }
-    position
-}
-
-#[derive(Debug, Clone)]
-struct VisibleNode {
-    room_id: String,
-    from_id: Option<String>,
-    incoming_direction: Option<String>,
-}
-
-fn traversable_exits<'a>(
-    room: &'a crate::map::Room,
-    from_id: Option<&str>,
-    incoming_direction: Option<&str>,
-) -> Vec<&'a Exit> {
-    if !room.flags.contains(&RoomFlag::Void) || incoming_direction.is_none() {
-        return room.exits.values().collect();
-    }
-    if let Some(exit) = incoming_direction.and_then(|direction| room.exits.get(direction)) {
-        return vec![exit];
-    }
-    let outbound = room
-        .exits
-        .values()
-        .filter(|exit| exit.to.as_deref() != from_id)
-        .collect::<Vec<_>>();
-    if room.exits.len() == 2 && outbound.len() == 1 {
-        outbound
-    } else {
-        room.exits.values().collect()
-    }
+    crate::map::display::visible_positions(map, current_id)
 }
 
 fn direction_offset(direction: &str) -> Option<(i32, i32)> {
@@ -1417,10 +1358,6 @@ fn direction_offset(direction: &str) -> Option<(i32, i32)> {
     }
 }
 
-fn is_vertical_direction(direction: &str) -> bool {
-    matches!(direction, "u" | "up" | "d" | "down")
-}
-
 fn draw_connection(
     cells: &mut [Vec<char>],
     styles: &mut BTreeMap<(usize, usize), Color>,
@@ -1428,17 +1365,18 @@ fn draw_connection(
     to: (i32, i32),
     connection: ConnectionStyle,
 ) {
-    let distance_x = to.0 - from.0;
-    let distance_y = to.1 - from.1;
+    let distance_x = i64::from(to.0) - i64::from(from.0);
+    let distance_y = i64::from(to.1) - i64::from(from.1);
     let dx = distance_x.signum();
     let dy = distance_y.signum();
     let steps = distance_x.abs().max(distance_y.abs());
     if steps <= 1 {
         return;
     }
-    for step in 1..steps {
-        let x = from.0 + distance_x * step / steps;
-        let y = from.1 + distance_y * step / steps;
+    let visible_steps = (cells.len().max(cells.first().map_or(0, Vec::len)) * 2) as i64;
+    for step in 1..steps.min(visible_steps) {
+        let x = (i64::from(from.0) + distance_x * step / steps) as i32;
+        let y = (i64::from(from.1) + distance_y * step / steps) as i32;
         let ch = match (dx, dy, connection.unicode, connection.route_link) {
             (0, _, true, true) => '┃',
             (_, 0, true, true) => '━',
@@ -1513,6 +1451,106 @@ mod tests {
     use unicode_width::UnicodeWidthStr;
 
     use super::*;
+
+    #[test]
+    fn schematic_maze_labels_bent_links_and_keeps_room_markers() {
+        let mut map = MapState::default();
+        map.current_room = Some("1101".into());
+        for id in 1101..1106 {
+            let exits = if id < 1105 {
+                vec![(if id % 2 == 1 { "e" } else { "w" }, (id + 1).to_string())]
+            } else {
+                vec![]
+            };
+            let mut room = Room {
+                id: id.to_string(),
+                symbol: char::from(b'A' + (id - 1101) as u8).to_string(),
+                ..Room::default()
+            };
+            for (direction, target) in exits {
+                room.exits.insert(
+                    direction.into(),
+                    Exit {
+                        direction: direction.into(),
+                        to: Some(target),
+                        ..Exit::default()
+                    },
+                );
+            }
+            map.rooms.insert(id.to_string(), room);
+        }
+        map.refresh_display();
+        let saved = map.display.clone();
+        let mut dense = map_config();
+        let forest = dense.terrain.get_mut("Forest").unwrap();
+        forest.density = "dense".into();
+        forest.spread = "vast".into();
+        for room in map.rooms.values_mut() {
+            room.terrain = "Forest".into();
+        }
+        let rendered =
+            plain_lines(map_lines(Rect::new(0, 0, 61, 31), &map, &theme(), &dense)).join("\n");
+        assert!(
+            rendered.contains('w'),
+            "terrain must not erase command labels: {rendered}"
+        );
+        for room in map.rooms.values_mut() {
+            room.terrain.clear();
+        }
+        for (unicode, vnums) in [(true, false), (false, false), (true, true)] {
+            map.unicode = unicode;
+            map.show_vnums = vnums;
+            let lines = plain_lines(map_lines(
+                Rect::new(0, 0, 61, 31),
+                &map,
+                &theme(),
+                &map_config(),
+            ));
+            let rendered = lines.join("\n");
+            for ch in ['X', 'B', 'C', 'D', 'E', 'w'] {
+                assert!(rendered.contains(ch), "{ch} missing:\n{rendered}");
+            }
+            if !unicode {
+                assert!(rendered.is_ascii());
+            }
+            assert_eq!(map.display, saved);
+        }
+        map.execute("goto 1103").unwrap();
+        assert_eq!(map.display, saved);
+        for width in 0..10 {
+            for height in 0..10 {
+                for draw in [map_lines, nearby_map_lines] {
+                    let lines = plain_lines(draw(
+                        Rect::new(0, 0, width, height),
+                        &map,
+                        &theme(),
+                        &map_config(),
+                    ));
+                    assert!(lines.len() <= height as usize);
+                    assert!(lines.iter().all(|line| line.width() <= width as usize));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn extreme_spacing_is_safe_with_legend_and_offscreen_connections() {
+        let mut map = MapState::default();
+        map.execute("create").unwrap();
+        map.execute("link e 2 both").unwrap();
+        map.execute("link s 3 both").unwrap();
+        let mut config = MapRenderConfig {
+            room_spacing_columns: i32::MAX,
+            room_spacing_rows: i32::MAX,
+            ..Default::default()
+        };
+        for show_links in [true, false] {
+            config.show_links = show_links;
+            let lines = plain_lines(map_lines(Rect::new(0, 0, 21, 12), &map, &theme(), &config));
+            assert_eq!(lines.len(), 12);
+            assert!(lines.iter().any(|line| line.contains('X')));
+        }
+    }
 
     fn boundary_map() -> MapState {
         let mut map = MapState::default();
@@ -2092,7 +2130,7 @@ mod tests {
     }
 
     #[test]
-    fn visible_positions_hide_overlapping_rooms_after_first_occupant() {
+    fn visible_positions_put_colliding_rooms_in_distinct_lanes() {
         let mut map = MapState::default();
         map.current_room = Some("1".to_string());
         map.rooms.insert(
@@ -2111,12 +2149,19 @@ mod tests {
         assert_eq!(positions.get("1"), Some(&(0, 0)));
         assert_eq!(positions.get("2"), Some(&(1, 0)));
         assert_eq!(positions.get("3"), Some(&(-1, 0)));
-        assert!(!positions.contains_key("5"));
-        assert!(!positions.contains_key("6"));
+        assert!(positions.contains_key("5"));
+        assert!(positions.contains_key("6"));
+        assert_eq!(
+            positions
+                .values()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+            positions.len()
+        );
     }
 
     #[test]
-    fn visible_positions_do_not_traverse_hidden_overlapping_rooms() {
+    fn visible_positions_continue_through_displaced_rooms() {
         let mut map = MapState::default();
         map.current_room = Some("1".to_string());
         map.rooms.insert(
@@ -2132,8 +2177,8 @@ mod tests {
 
         let positions = visible_positions(&map, "1");
 
-        assert!(!positions.contains_key("5"));
-        assert!(!positions.contains_key("7"));
+        assert!(positions.contains_key("5"));
+        assert!(positions.contains_key("7"));
     }
 
     #[test]
@@ -2194,9 +2239,16 @@ mod tests {
 
         let positions = visible_positions(&map, "1");
 
-        assert_eq!(positions.get("5"), Some(&(0, 0)));
-        assert_eq!(positions.get("7"), Some(&(-2, 0)));
-        assert!(!positions.contains_key("6"));
+        assert!(positions.contains_key("5"));
+        assert!(positions.contains_key("7"));
+        assert!(positions.contains_key("6"));
+        assert_eq!(
+            positions
+                .values()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+            positions.len()
+        );
     }
 
     #[test]

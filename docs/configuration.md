@@ -388,6 +388,8 @@ Teleport markers show exits flagged with `/map exitflag <dir> teleport on`.
 
 ### map.one_way
 
+Stable room positions are stored in map files by `/map write`, rather than in application configuration. Maze connections use additional lane spacing automatically; their command labels describe movement even when the drawing bends away from that compass direction. Nearby Map keeps its compact presentation using the same room positions. See [map placement](mapping.md#current-room-display).
+
 One-way markers identify links whose destination has no matching reverse exit.
 
 | Option | Meaning |

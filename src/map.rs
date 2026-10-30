@@ -9,9 +9,12 @@ use unicode_width::UnicodeWidthChar;
 
 use crate::network::msdp::MsdpValue;
 
+pub mod display;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 pub struct MapState {
+    pub display: display::DisplayLayout,
     pub rooms: BTreeMap<String, Room>,
     pub landmarks: BTreeMap<String, Landmark>,
     pub current_room: Option<String>,
@@ -30,6 +33,7 @@ pub struct MapState {
 impl Default for MapState {
     fn default() -> Self {
         Self {
+            display: display::DisplayLayout::default(),
             rooms: BTreeMap::new(),
             landmarks: BTreeMap::new(),
             current_room: None,
@@ -182,6 +186,16 @@ impl MapState {
     }
 
     pub fn execute_with_base_path(
+        &mut self,
+        input: &str,
+        base_path: Option<&Path>,
+    ) -> Result<MapCommandResult, String> {
+        let result = self.execute_inner(input, base_path);
+        self.refresh_display();
+        result
+    }
+
+    fn execute_inner(
         &mut self,
         input: &str,
         base_path: Option<&Path>,
@@ -402,6 +416,7 @@ impl MapState {
     }
 
     pub fn create(&mut self) {
+        self.display = display::DisplayLayout::default();
         self.rooms.clear();
         self.landmarks.clear();
         self.current_room = Some("1".to_string());
@@ -461,6 +476,7 @@ impl MapState {
         if update_exits {
             self.sync_current_room_exits(&id, exits);
         }
+        self.refresh_display();
     }
 
     pub fn sync_current_room_terrain(&mut self, terrain: Option<String>) {
@@ -491,6 +507,11 @@ impl MapState {
 
         room.id = authoritative_id.to_string();
         self.rooms.insert(authoritative_id.to_string(), room);
+        if let Some(position) = self.display.positions.remove(&last_move.to) {
+            self.display
+                .positions
+                .insert(authoritative_id.to_string(), position);
+        }
         self.current_room = Some(authoritative_id.to_string());
         self.rewrite_exit_targets(&last_move.to, authoritative_id);
         self.last_move = Some(MapMove {
@@ -523,9 +544,6 @@ impl MapState {
             let target = exit.to.filter(|value| !value.trim().is_empty());
             if let Some(target) = target.as_ref() {
                 self.ensure_adjacent_room(id, &direction, target);
-                if let Some(reverse) = direction_by_name(&direction).map(|value| value.reverse) {
-                    self.set_exit(target, reverse, Some(id.to_string()));
-                }
             }
             if let Some(room) = self.rooms.get_mut(id) {
                 let mapped_exit = room.exits.entry(direction.clone()).or_insert_with(|| Exit {
@@ -576,6 +594,7 @@ impl MapState {
     }
 
     pub fn move_direction(&mut self, direction: &str) -> Result<(), String> {
+        self.refresh_display();
         if self.nofollow {
             return Ok(());
         }
@@ -632,6 +651,7 @@ impl MapState {
         if self.room_has_flag(&to, RoomFlag::Leave) {
             self.previous_room = self.current_room.take();
         }
+        self.refresh_display();
         Ok(())
     }
 
@@ -1088,6 +1108,7 @@ impl MapState {
         let raw = fs::read_to_string(path).map_err(|error| error.to_string())?;
         let loaded: Self = toml::from_str(&raw).map_err(|error| error.to_string())?;
         *self = loaded;
+        self.refresh_display();
         Ok(())
     }
 
@@ -1098,7 +1119,9 @@ impl MapState {
         {
             fs::create_dir_all(parent).map_err(|error| error.to_string())?;
         }
-        let raw = toml::to_string_pretty(self).map_err(|error| error.to_string())?;
+        let mut snapshot = self.clone();
+        snapshot.refresh_display();
+        let raw = toml::to_string_pretty(&snapshot).map_err(|error| error.to_string())?;
         fs::write(path, raw).map_err(|error| error.to_string())
     }
 
@@ -2582,8 +2605,8 @@ mod tests {
 
         assert_eq!(map.rooms["100"].exits["n"].to.as_deref(), Some("101"));
         assert_eq!(map.rooms["100"].exits["e"].to.as_deref(), Some("102"));
-        assert_eq!(map.rooms["101"].exits["s"].to.as_deref(), Some("100"));
-        assert_eq!(map.rooms["102"].exits["w"].to.as_deref(), Some("100"));
+        assert!(!map.rooms["101"].exits.contains_key("s"));
+        assert!(!map.rooms["102"].exits.contains_key("w"));
         assert_eq!((map.rooms["101"].x, map.rooms["101"].y), (0, -1));
         assert_eq!((map.rooms["102"].x, map.rooms["102"].y), (1, 0));
         assert!(map.rooms.contains_key("101"));
