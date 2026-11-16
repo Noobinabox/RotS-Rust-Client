@@ -483,7 +483,6 @@ An alias must define at least one `commands` entry or `lua` hook.
 | `entrypoint` | Legacy Lua file loaded from `script_dir`, usually `init.lua`; used only when `scripts` is omitted. |
 | `scripts` | Optional nonempty ordered list of Lua files under `script_dir`; overrides `entrypoint`. Files share a Lua environment and duplicate canonical paths load once. Explicitly listed missing files fail loading. |
 | `instruction_budget` | Instruction limit for hooks and script loading to stop runaway scripts. Must be greater than zero. |
-| `max_actions_per_hook` | Maximum actions a hook may enqueue. Must be greater than zero. |
 | `runtime_errors_to_output` | Shows Lua hook errors in the MUD output pane. |
 
 Example:
@@ -494,7 +493,6 @@ enabled = true
 script_dir = "scripts"
 entrypoint = "init.lua"
 instruction_budget = 100000
-max_actions_per_hook = 32
 runtime_errors_to_output = true
 ```
 

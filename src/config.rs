@@ -591,10 +591,9 @@ impl AppConfig {
                     "lua.scripts must contain at least one nonempty script path".to_string(),
                 ));
             }
-            if self.lua.instruction_budget == 0 || self.lua.max_actions_per_hook == 0 {
+            if self.lua.instruction_budget == 0 {
                 return Err(MudClientError::ConfigValidation(
-                    "lua.instruction_budget and lua.max_actions_per_hook must be greater than zero"
-                        .to_string(),
+                    "lua.instruction_budget must be greater than zero".to_string(),
                 ));
             }
         }
@@ -1786,7 +1785,6 @@ pub struct LuaConfig {
     pub entrypoint: String,
     pub scripts: Option<Vec<String>>,
     pub instruction_budget: u32,
-    pub max_actions_per_hook: usize,
     pub runtime_errors_to_output: bool,
 }
 
@@ -1829,7 +1827,6 @@ impl Default for LuaConfig {
             entrypoint: "init.lua".to_string(),
             scripts: None,
             instruction_budget: 100_000,
-            max_actions_per_hook: 32,
             runtime_errors_to_output: true,
         }
     }
@@ -2256,6 +2253,12 @@ pub fn default_config_path() -> Option<PathBuf> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn legacy_lua_action_limit_is_ignored() {
+        let config: super::AppConfig = toml::from_str("[lua]\nmax_actions_per_hook = 0\n").unwrap();
+        assert!(config.validate().is_ok());
+    }
+
     use super::*;
 
     #[test]

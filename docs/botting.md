@@ -14,7 +14,6 @@ enabled = true
 script_dir = "scripts"
 entrypoint = "bot.lua"
 instruction_budget = 100000
-max_actions_per_hook = 32
 runtime_errors_to_output = true
 ```
 

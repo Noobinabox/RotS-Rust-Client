@@ -16,7 +16,6 @@ enabled = true
 script_dir = "scripts"
 entrypoint = "init.lua"
 instruction_budget = 100000
-max_actions_per_hook = 32
 runtime_errors_to_output = true
 ```
 
@@ -374,7 +373,7 @@ ctx.captures
 - Use `client.map.*` for mapper command wrappers.
 - Filesystem, OS, package, process, and debug globals are disabled.
 - Long-running hooks are stopped by `lua.instruction_budget`.
-- Hooks can enqueue only `lua.max_actions_per_hook` actions.
+- Lua actions have no per-hook count limit.
 
 For the full API surface, including `client.msdp`, snapshots, output search, UI toggles, map door helpers, and `client.time`, see [Lua API Reference](lua-api.md).
 

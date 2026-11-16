@@ -208,7 +208,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn execute_recursion_has_a_root_budget_for_typed_aliases() {
+    async fn execute_recursion_has_a_depth_limit_for_typed_aliases() {
         let mut app = app(&[]);
         app.aliases
             .add_runtime_config(crate::config::AliasRuleConfig {
@@ -222,12 +222,11 @@ mod tests {
         app.handle_command(ClientCommand::SendText("recursive".into()), &tx)
             .await;
         assert!(rx.try_recv().is_err());
-        assert!(
-            app.state
-                .output
-                .iter()
-                .any(|line| line.normalized.contains("exceeded maximum command count"))
-        );
+        assert!(app.state.output.iter().any(|line| {
+            line.normalized
+                .contains("Lua hook recursion depth exceeded")
+        }));
+        assert_eq!(app.lua_hook_depth, 0);
     }
 
     #[tokio::test]

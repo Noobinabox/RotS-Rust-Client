@@ -143,7 +143,7 @@ impl LuaEngine {
 
     fn empty(config: &LuaConfig, state: &AppState, variables: &VariableStore) -> Self {
         let lua = Lua::new();
-        let actions = Rc::new(LuaActionQueue::new(config.max_actions_per_hook));
+        let actions = Rc::new(LuaActionQueue::new());
         let snapshot = Rc::new(RefCell::new(snapshot_from_state(state, variables)));
         let mut engine = Self {
             enabled: config.enabled,
@@ -492,15 +492,13 @@ fn lua_script_path(config: &LuaConfig, config_path: Option<&Path>, name: &str) -
 #[derive(Debug)]
 struct LuaActionQueue {
     actions: RefCell<Vec<LuaAction>>,
-    max_actions: usize,
     allow_line_edits: Cell<bool>,
 }
 
 impl LuaActionQueue {
-    fn new(max_actions: usize) -> Self {
+    fn new() -> Self {
         Self {
             actions: RefCell::new(Vec::new()),
-            max_actions,
             allow_line_edits: Cell::new(false),
         }
     }
@@ -516,10 +514,7 @@ impl LuaActionQueue {
     }
 
     fn push(&self, action: LuaAction) {
-        let mut actions = self.actions.borrow_mut();
-        if actions.len() < self.max_actions {
-            actions.push(action);
-        }
+        self.actions.borrow_mut().push(action);
     }
 
     fn extend_send(&self, commands: Vec<String>) {
@@ -1304,6 +1299,23 @@ mod tests {
     };
 
     use super::{LuaAction, LuaEngine, LuaHookContext, lua_entrypoint_path};
+
+    #[test]
+    fn lua_collects_large_batches_in_order() {
+        let (config, path) = lua_config_with_script(
+            "function burst() for i = 1, 1000 do client.send(tostring(i)) end end",
+        );
+        let state = AppState::new(&AppConfig::default());
+        let variables = VariableStore::empty();
+        let mut engine = LuaEngine::new(&config, Some(&path), &state, &variables);
+        for _ in 0..2 {
+            let result = engine
+                .call_hook("burst", LuaHookContext::default(), &state, &variables)
+                .unwrap();
+            let expected: Vec<_> = (1..=1000).map(|i| LuaAction::Send(i.to_string())).collect();
+            assert_eq!(result.actions, expected);
+        }
+    }
 
     #[test]
     fn lua_execute_is_distinct_from_direct_send() {

@@ -157,7 +157,7 @@ function smart_kill(ctx)
 end
 ```
 
-The Lua environment removes filesystem, process, package, OS, and debug access. Hooks are bounded by `lua.instruction_budget` and `lua.max_actions_per_hook`.
+The Lua environment removes filesystem, process, package, OS, and debug access. Hooks are bounded by `lua.instruction_budget`; there is no per-hook action-count limit.
 
 Editor completion is provided by `scripts/mud-client-api.lua` and `.luarc.json` for Lua Language Server.
 

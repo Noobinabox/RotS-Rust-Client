@@ -12,7 +12,6 @@ enabled = true
 script_dir = "scripts"
 entrypoint = "init.lua"
 instruction_budget = 100000
-max_actions_per_hook = 32
 runtime_errors_to_output = true
 ```
 
@@ -445,5 +444,6 @@ The repository includes `scripts/mud-client-api.lua` with LuaLS annotations and 
 - Filesystem, OS, process, package, and debug globals are disabled.
 - Hooks cannot mutate Rust state directly.
 - Hooks are stopped by `lua.instruction_budget`.
-- Hooks can enqueue only `lua.max_actions_per_hook` actions.
+- Lua actions have no per-hook count limit. The legacy `max_actions_per_hook` setting is ignored. Nested Lua hook recursion is bounded independently of batch size.
+- Hooks run synchronously: queued actions are applied after the hook returns. For work that must send commands over time, split it into short hooks using `client.timer` rather than waiting or looping inside one hook. Outgoing commands briefly wait for network queue capacity during bursts; a stalled or closed network queue still reports send failures. Event/trigger command budgets also apply.
 - Runtime errors are shown in output when `runtime_errors_to_output = true`.

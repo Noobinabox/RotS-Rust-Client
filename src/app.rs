@@ -109,6 +109,8 @@ pub struct App {
     incoming_sequence: u64,
     source_style: crate::scripting::ansi::AnsiStyleState,
     lua: LuaEngine,
+    lua_hook_depth: usize,
+    network_queue_stalled: bool,
     animations: AnimationScheduler,
     weather_playback: crate::animation::weather_playback::WeatherPlayback,
     celestial_playback: crate::animation::celestial_playback::CelestialPlayback,
@@ -279,6 +281,8 @@ impl App {
             incoming_sequence: 0,
             source_style: Default::default(),
             lua,
+            lua_hook_depth: 0,
+            network_queue_stalled: false,
             animations,
             weather_playback: Default::default(),
             celestial_playback: Default::default(),
@@ -1531,6 +1535,14 @@ impl App {
         command_tx: &mpsc::Sender<ClientCommand>,
         budgets: &mut Vec<CommandBudget>,
     ) {
+        // Bound recursive client.execute -> Lua calls independently of batch size.
+        const MAX_LUA_HOOK_DEPTH: usize = 32;
+        if self.lua_hook_depth >= MAX_LUA_HOOK_DEPTH {
+            self.state
+                .push_output("Lua hook recursion depth exceeded", OutputCategory::Error);
+            return;
+        }
+        self.lua_hook_depth += 1;
         let result = self
             .lua
             .call_hook(function, context, &self.state, &self.variables);
@@ -1546,6 +1558,7 @@ impl App {
                 }
             }
         }
+        self.lua_hook_depth -= 1;
     }
 
     async fn apply_lua_actions(
@@ -1557,15 +1570,6 @@ impl App {
         for action in actions {
             match action {
                 LuaAction::Execute(command) => {
-                    let root = budgets.is_empty();
-                    if root {
-                        let limit = self.config.lua.max_actions_per_hook;
-                        budgets.push(CommandBudget {
-                            remaining: limit,
-                            limit,
-                            source: "Lua execution",
-                        });
-                    }
                     if self.consume_command_budget(budgets) {
                         let expanded = if preserves_variable_templates(&command) {
                             Ok(command)
@@ -1581,9 +1585,6 @@ impl App {
                             }
                             Err(error) => self.state.push_output(error, OutputCategory::Error),
                         }
-                    }
-                    if root {
-                        budgets.pop();
                     }
                 }
                 LuaAction::Send(command) => {
@@ -1881,13 +1882,38 @@ impl App {
         }
     }
 
+    async fn queue_mud_text(
+        &mut self,
+        text: String,
+        command_tx: &mpsc::Sender<ClientCommand>,
+    ) -> bool {
+        // Apply brief backpressure for bursts without hanging input on a stalled socket.
+        const NETWORK_QUEUE_WAIT: Duration = Duration::from_millis(100);
+        if self.network_queue_stalled && command_tx.capacity() == 0 {
+            return self.queue_network_command(ClientCommand::SendText(text), command_tx);
+        }
+        match tokio::time::timeout(NETWORK_QUEUE_WAIT, command_tx.reserve()).await {
+            Ok(Ok(permit)) => {
+                self.network_queue_stalled = false;
+                permit.send(ClientCommand::SendText(text));
+                true
+            }
+            _ => {
+                self.network_queue_stalled = true;
+                self.queue_network_command(ClientCommand::SendText(text), command_tx)
+            }
+        }
+    }
+
     async fn send_mud_text_command(
         &mut self,
         command: &str,
         command_tx: &mpsc::Sender<ClientCommand>,
     ) {
         for command in self.state.map.mud_commands_for_movement(command) {
-            if !self.queue_network_command(ClientCommand::SendText(command.clone()), command_tx) {
+            // Let the network task drain commands during large command batches.
+            tokio::task::yield_now().await;
+            if !self.queue_mud_text(command.clone(), command_tx).await {
                 break;
             }
             self.state.path.record(&command);
@@ -1902,7 +1928,9 @@ impl App {
         command_tx: &mpsc::Sender<ClientCommand>,
     ) {
         for command in self.state.map.mud_commands_for_movement(command) {
-            if !self.queue_network_command(ClientCommand::SendText(command.clone()), command_tx) {
+            // Let the network task drain commands during large command batches.
+            tokio::task::yield_now().await;
+            if !self.queue_mud_text(command.clone(), command_tx).await {
                 break;
             }
             self.track_movement_command(&command);
@@ -2756,7 +2784,7 @@ fn help_text(topic: &str) -> Option<&'static str> {
         ),
         "variable" | "variables" => Some(include_str!("../docs/commands/variable.md")),
         "lua" => Some(
-            "# Lua Help\n\n## Commands\n- `/lua` or `/lua status` - show Lua status\n- `/lua reload` - reload the configured entrypoint\n- `/lua call <function>` - call a Lua function with manual context\n\n## Examples\n- `/lua status`\n- `/lua reload`\n- `/lua call smoke_test`\n\n## Config\n- `[lua] enabled` turns Lua hooks on or off\n- `script_dir` and `entrypoint` locate the startup script\n- `max_actions_per_hook` caps queued client actions\n- `runtime_errors_to_output` controls whether hook failures appear in output\n\n## Hooks\nAdd `lua = \"function_name\"` to an alias rule, trigger rule, or event handler. Lua hooks receive a context table and use the global `client` API to send commands, emit events, read MSDP, inspect output, update variables, run map commands, and toggle UI panels.\n\n## API\n`client.send`, `send_all`, `echo`, `notify`, `log.*`, `var.*`, `msdp.*`, `character.get`, `opponent.get`, `group.list`, `room.current`, `output.recent`, `output.search`, `event.emit`, `event.recent`, `map.*`, `ui.*`, and `time.now_ms` are available. Filesystem, OS, process, package, and debug globals are disabled.\n\n## Docs\nSee `docs/lua-api.md` and `docs/lua-scripting-examples.md`.",
+            "# Lua Help\n\n## Commands\n- `/lua` or `/lua status` - show Lua status\n- `/lua reload` - reload the configured entrypoint\n- `/lua call <function>` - call a Lua function with manual context\n\n## Examples\n- `/lua status`\n- `/lua reload`\n- `/lua call smoke_test`\n\n## Config\n- `[lua] enabled` turns Lua hooks on or off\n- `script_dir` and `entrypoint` locate the startup script\n- Lua actions have no per-hook count limit\n- `runtime_errors_to_output` controls whether hook failures appear in output\n\n## Hooks\nAdd `lua = \"function_name\"` to an alias rule, trigger rule, or event handler. Lua hooks receive a context table and use the global `client` API to send commands, emit events, read MSDP, inspect output, update variables, run map commands, and toggle UI panels.\n\n## API\n`client.send`, `send_all`, `echo`, `notify`, `log.*`, `var.*`, `msdp.*`, `character.get`, `opponent.get`, `group.list`, `room.current`, `output.recent`, `output.search`, `event.emit`, `event.recent`, `map.*`, `ui.*`, and `time.now_ms` are available. Filesystem, OS, process, package, and debug globals are disabled.\n\n## Docs\nSee `docs/lua-api.md` and `docs/lua-scripting-examples.md`.",
         ),
         "map" | "mapping" => Some(
             "# Map Help\n\n## Display\n- `/map map` - show a full MUD-output-pane map centered on the current room\n- `/map get` / `/map info` - show current room details\n- `/map list [query]` - list mapped rooms\n\n## Rooms and Links\n- `/map create` - reset and create a map\n- `/map goto <vnum|name> [dig]` - set current map room\n- `/map move <direction>` - move only the mapper\n- `/map dig <direction> [new|vnum]` - create and link a room\n- `/map link <direction> <vnum> [both]` - link rooms\n- `/map unlink <direction>` - remove an exit link\n- `/map delete <direction|vnum>` - delete an exit or room\n- `/map undo` - undo the last mapper-created move\n- `/map return` - restore the previous mapper room\n- `/map leave` - leave the map while remembering the previous room\n\n## Metadata and Flags\n- `/map set <option> <value>` - set room metadata\n- `/map flag <name> [on|off]` - toggle mapper-wide flags\n- `/map roomflag [flag[;flag...] [on|off|get <variable>]]` - list or update current-room flags\n- `/map exitflag <direction> <flag> [on|off]` - toggle an exit flag\n- `/map door <direction> [state|none] [name]` - mark or clear an exit door\n\n## Paths and Files\n- `/map find <vnum|name>` - show optimized weighted path\n- `/map run <vnum|name>` - send each movement command in the optimized weighted path\n- `/map read <file>` - load map TOML\n- `/map write <file>` - save map TOML\n\nUse `/help map <command>` for focused help, such as `/help map set`, `/help map flag`, or `/help map door`.",
