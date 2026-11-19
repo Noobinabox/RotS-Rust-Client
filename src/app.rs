@@ -2787,7 +2787,7 @@ fn help_text(topic: &str) -> Option<&'static str> {
             "# Lua Help\n\n## Commands\n- `/lua` or `/lua status` - show Lua status\n- `/lua reload` - reload the configured entrypoint\n- `/lua call <function>` - call a Lua function with manual context\n\n## Examples\n- `/lua status`\n- `/lua reload`\n- `/lua call smoke_test`\n\n## Config\n- `[lua] enabled` turns Lua hooks on or off\n- `script_dir` and `entrypoint` locate the startup script\n- Lua actions have no per-hook count limit\n- `runtime_errors_to_output` controls whether hook failures appear in output\n\n## Hooks\nAdd `lua = \"function_name\"` to an alias rule, trigger rule, or event handler. Lua hooks receive a context table and use the global `client` API to send commands, emit events, read MSDP, inspect output, update variables, run map commands, and toggle UI panels.\n\n## API\n`client.send`, `send_all`, `echo`, `notify`, `log.*`, `var.*`, `msdp.*`, `character.get`, `opponent.get`, `group.list`, `room.current`, `output.recent`, `output.search`, `event.emit`, `event.recent`, `map.*`, `ui.*`, and `time.now_ms` are available. Filesystem, OS, process, package, and debug globals are disabled.\n\n## Docs\nSee `docs/lua-api.md` and `docs/lua-scripting-examples.md`.",
         ),
         "map" | "mapping" => Some(
-            "# Map Help\n\n## Display\n- `/map map` - show a full MUD-output-pane map centered on the current room\n- `/map get` / `/map info` - show current room details\n- `/map list [query]` - list mapped rooms\n\n## Rooms and Links\n- `/map create` - reset and create a map\n- `/map goto <vnum|name> [dig]` - set current map room\n- `/map move <direction>` - move only the mapper\n- `/map dig <direction> [new|vnum]` - create and link a room\n- `/map link <direction> <vnum> [both]` - link rooms\n- `/map unlink <direction>` - remove an exit link\n- `/map delete <direction|vnum>` - delete an exit or room\n- `/map undo` - undo the last mapper-created move\n- `/map return` - restore the previous mapper room\n- `/map leave` - leave the map while remembering the previous room\n\n## Metadata and Flags\n- `/map set <option> <value>` - set room metadata\n- `/map flag <name> [on|off]` - toggle mapper-wide flags\n- `/map roomflag [flag[;flag...] [on|off|get <variable>]]` - list or update current-room flags\n- `/map exitflag <direction> <flag> [on|off]` - toggle an exit flag\n- `/map door <direction> [state|none] [name]` - mark or clear an exit door\n\n## Paths and Files\n- `/map find <vnum|name>` - show optimized weighted path\n- `/map run <vnum|name>` - send each movement command in the optimized weighted path\n- `/map read <file>` - load map TOML\n- `/map write <file>` - save map TOML\n\nUse `/help map <command>` for focused help, such as `/help map set`, `/help map flag`, or `/help map door`.",
+            "# Map Help\n\n## Display\n- `/map map` - show a full MUD-output-pane map centered on the current room\n- `/map get` / `/map info` - show current room details\n- `/map list [query]` - list mapped rooms\n\n## Rooms and Links\n- `/map create` - reset and create a map\n- `/map goto <vnum|name> [dig]` - set current map room\n- `/map move <direction>` - move only the mapper\n- `/map dig <direction> [new|vnum]` - create and link a room\n- `/map link <direction> <vnum> [both]` - link rooms\n- `/map unlink <direction>` - remove an exit link\n- `/map delete <direction|vnum>` - delete an exit or room\n- `/map undo` - undo the last mapper-created move\n- `/map return` - restore the previous mapper room\n- `/map leave` - leave the map while remembering the previous room\n\n## Metadata and Flags\n- `/map set <option> <value>` - set room metadata\n- `/map flag <name> [on|off]` - toggle mapper-wide flags\n- `/map roomflag [flag[;flag...] [on|off|get <variable>]]` - list or update current-room flags\n- `/map exitflag <direction> <flag> [on|off]` - toggle an exit flag\n- `/map door <direction> [state|none] [name]` - mark or clear an exit door\n\n## Paths and Files\n- `/map find <vnum|name> [--save <variable>]` - show optimized weighted path\n- `/map run <vnum|name>` - send each movement command in the optimized weighted path\n- `/map read <file>` - load map TOML\n- `/map write <file>` - save map TOML\n\nUse `/help map <command>` for focused help, such as `/help map set`, `/help map flag`, or `/help map door`.",
         ),
         "map map" => Some(
             "# /map map\n\n## Usage\n- `/map map`\n\n## Description\nRenders a map snapshot centered on the current room into every row and column of the MUD output content area. The snapshot is appended to scrollback and follows the newest output.",
@@ -2832,7 +2832,7 @@ fn help_text(topic: &str) -> Option<&'static str> {
             "# /map list\n\n## Usage\n- `/map list [query]`\n\n## Description\nLists mapped rooms, optionally filtered by room id, name, area, description, note, or terrain.",
         ),
         "map find" => Some(
-            "# /map find\n\n## Usage\n- `/map find <vnum|name>`\n\n## Description\nFinds and displays the shortest known path from the current room to a target room.",
+            "# /map find\n\n## Usage\n- `/map find <vnum|name> [--save <variable>]`\n\n## Description\nFinds and displays the lowest-cost known path from the current room to a target room. Use `--save` to save it to a runtime variable for `/path load` and `/path walk`.",
         ),
         "map run" => Some(
             "# /map run\n\n## Usage\n- `/map run <vnum|name>`\n\n## Description\nFinds the lowest-cost known path using room weights and sends each movement command to the MUD.",
@@ -2862,7 +2862,7 @@ fn help_text(topic: &str) -> Option<&'static str> {
             "# /map write\n\n## Usage\n- `/map write <file>`\n\n## Description\nWrites the current map state to a TOML map file, creating parent directories when needed.",
         ),
         "path" | "paths" | "pathing" => Some(
-            "# Path Help\n\n## Commands\n- `/path create|destroy|start|stop` - manage movement recording\n- `/path insert <forward> [backward]` - add a path step\n- `/path delete` / `/path undo` - remove the last step\n- `/path describe` - show path length, position, and mapping state\n- `/path get <length|position>` - return path metadata\n- `/path goto <start|end|position>` - select a path position\n- `/path move [forward|backward] [number]` - move the path position without sending a command\n- `/path walk [forward|backward]` - send one path step\n- `/path run` - send the remaining path steps\n- `/path swap` - reverse the path and its directions\n- `/path zip` / `/path unzip <speedwalk>` - convert direction steps\n- `/path map` - show the current map\n- `/path save <forward|backward|both> <variable>` - save steps to a runtime variable\n- `/path load <variable>` - load steps from a runtime variable\n\n`/map find <vnum|name>` and `/map run <vnum|name>` remain the weighted destination-routing commands.",
+            "# Path Help\n\n## Commands\n- `/path create|destroy|start|stop` - manage movement recording\n- `/path insert <forward> [backward]` - add a path step\n- `/path delete` / `/path undo` - remove the last step\n- `/path describe` - show path length, position, and mapping state\n- `/path get <length|position>` - return path metadata\n- `/path goto <start|end|position>` - select a path position\n- `/path move [forward|backward] [number]` - move the path position without sending a command\n- `/path walk [forward|backward]` - send one path step\n- `/path run` - send the remaining path steps\n- `/path swap` - reverse the path and its directions\n- `/path zip` / `/path unzip <speedwalk>` - convert direction steps\n- `/path map` - show the current map\n- `/path save <forward|backward|both> <variable>` - save steps to a runtime variable\n- `/path load <variable>` - load steps from a runtime variable\n\n`/map find <vnum|name> [--save <variable>]` and `/map run <vnum|name>` remain the weighted destination-routing commands.",
         ),
         "alias" | "aliases" => Some(include_str!("../docs/commands/alias.md")),
         "alias lua" | "aliases lua" => Some(
@@ -6704,6 +6704,51 @@ port = 3791
             app.state.output.back().map(|line| &line.category),
             Some(&OutputCategory::Error)
         );
+    }
+
+    #[tokio::test]
+    async fn map_find_saved_route_loads_and_walks_through_command_pipeline() {
+        let mut app = App::new(AppConfig::default());
+        app.state.map.create();
+        app.state.map.move_direction("n").unwrap();
+        app.state.map.move_direction("e").unwrap();
+        app.state.map.execute("goto 1").unwrap();
+        let (tx, mut rx) = mpsc::channel(8);
+        for command in [
+            "/map find 3 --save route",
+            "/path load route",
+            "/path walk",
+            "/path walk",
+        ] {
+            app.handle_command(ClientCommand::SendText(command.to_string()), &tx)
+                .await;
+        }
+        assert_eq!(app.variables.expand("${route}").unwrap(), "n;e");
+        assert_eq!(rx.try_recv().unwrap(), ClientCommand::SendText("n".into()));
+        assert_eq!(rx.try_recv().unwrap(), ClientCommand::SendText("e".into()));
+        assert!(rx.try_recv().is_err());
+        for command in [
+            "/map find missing --save route",
+            "/map find 3 --save",
+            "/map find 3 --save invalid-name",
+        ] {
+            app.handle_command(ClientCommand::SendText(command.to_string()), &tx)
+                .await;
+            assert_eq!(
+                app.state.output.back().unwrap().category,
+                OutputCategory::Error
+            );
+            assert_eq!(app.variables.expand("${route}").unwrap(), "n;e");
+        }
+        app.handle_command(
+            ClientCommand::SendText("/map find 3 --save route".into()),
+            &tx,
+        )
+        .await;
+        assert_eq!(app.variables.expand("${route}").unwrap(), "");
+        app.handle_command(ClientCommand::SendText("/path load route".into()), &tx)
+            .await;
+        assert!(app.state.path.steps.is_empty());
     }
 
     #[tokio::test]

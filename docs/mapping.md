@@ -56,7 +56,7 @@ When multiple mapped rooms resolve to the same display position, the map keeps t
 /map landmarks [query]
 /map landmark <name> <vnum> [description] [size]
 /map unlandmark <name-or-pattern>
-/map find <vnum|name>
+/map find <vnum|name> [--save <variable>]
 /map run <vnum|name>
 /map write <file>
 /map read <file>
@@ -90,7 +90,7 @@ When multiple mapped rooms resolve to the same display position, the map keeps t
 | `/map roomflag [flag[;...] [on|off|get <variable>]]` | List, toggle, set, or read TinTin-style room flags on the current room. |
 | `/map exitflag <dir> <flag> [on|off]` | Toggle an exit flag on a mapped exit. |
 | `/map door <dir> [state|none] [name]` | Set or clear a directional door state and optional name. Omitted state means `closed`. |
-| `/map find <vnum|name>` | Display the optimized weighted path to a target room. |
+| `/map find <vnum|name> [--save <variable>]` | Display the optimized weighted path to a target room. |
 | `/map run <vnum|name>` | Send each movement command in the optimized weighted path. |
 | `/map read <file>` | Load map state from TOML. |
 | `/map write <file>` | Save map state as TOML, creating parent directories if needed. |

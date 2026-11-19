@@ -308,9 +308,37 @@ impl MapState {
                 }))
             }
             "find" => {
-                let query = parts.collect::<Vec<_>>().join(" ");
+                let fields = parts.collect::<Vec<_>>();
+                let (query, variable) = if let Some(index) =
+                    fields.iter().position(|field| *field == "--save")
+                {
+                    if index == 0 || index + 2 != fields.len() {
+                        return Err("usage: /map find <vnum|name> [--save <variable>]".to_string());
+                    }
+                    (fields[..index].join(" "), Some(fields[index + 1]))
+                } else {
+                    (fields.join(" "), None)
+                };
                 let path = self.find_path(&query)?;
-                Ok(self.message(format_path(&path)))
+                let mut result = self.message(format_path(&path));
+                if let Some(variable) = variable {
+                    if path.iter().any(|step| step.contains(';')) {
+                        return Err(
+                            "Cannot save a path containing semicolons in its commands.".to_string()
+                        );
+                    }
+                    if path.iter().any(|step| step.contains("${")) {
+                        return Err(
+                            "Cannot save a path containing variable references in its commands."
+                                .to_string(),
+                        );
+                    }
+                    result.variable = Some((variable.to_string(), path.join(";")));
+                    result
+                        .message
+                        .push_str(&format!("\nPath saved to {variable}."));
+                }
+                Ok(result)
             }
             "run" => {
                 let query = parts.collect::<Vec<_>>().join(" ");
@@ -1225,7 +1253,7 @@ impl MapState {
     }
 
     fn help(&self) -> MapCommandResult {
-        self.message("# Map Commands\n\n## Display\n- `/map map` - show a full MUD-output-pane map centered on the current room\n- `/map get` / `/map info` - show current room details\n- `/map list [query]` - list mapped rooms\n\n## Movement and Rooms\n- `/map create` - create a new map\n- `/map goto <vnum|name> [dig]` - select a room\n- `/map move <direction>` - move only the mapper\n- `/map dig <direction> [new|vnum]` - create and link a room\n- `/map link <direction> <vnum> [both]` - link rooms\n- `/map unlink <direction>` - remove an exit link\n- `/map delete <direction|vnum>` - delete an exit or room\n- `/map undo` - undo the last mapper-created move\n- `/map return` - restore the previous mapper room\n- `/map leave` - leave the map while remembering the previous room\n\n## Metadata and Flags\n- `/map set <option> <value>` - set room metadata\n- `/map flag <name> [on|off]` - toggle mapper-wide flags\n- `/map roomflag [flag[;flag...] [on|off|get <variable>]]` - list or update current-room flags\n- `/map exitflag <direction> <flag> [on|off]` - toggle an exit flag\n- `/map door <direction> [state|none] [name]` - mark or clear an exit door\n\n## Paths and Files\n- `/map find <vnum|name>` - show a weighted path\n- `/map run <vnum|name>` - send a weighted path\n- `/map read <file>` - load map TOML\n- `/map write <file>` - save map TOML\n\nUse `/help map` for the complete command reference.")
+        self.message("# Map Commands\n\n## Display\n- `/map map` - show a full MUD-output-pane map centered on the current room\n- `/map get` / `/map info` - show current room details\n- `/map list [query]` - list mapped rooms\n\n## Movement and Rooms\n- `/map create` - create a new map\n- `/map goto <vnum|name> [dig]` - select a room\n- `/map move <direction>` - move only the mapper\n- `/map dig <direction> [new|vnum]` - create and link a room\n- `/map link <direction> <vnum> [both]` - link rooms\n- `/map unlink <direction>` - remove an exit link\n- `/map delete <direction|vnum>` - delete an exit or room\n- `/map undo` - undo the last mapper-created move\n- `/map return` - restore the previous mapper room\n- `/map leave` - leave the map while remembering the previous room\n\n## Metadata and Flags\n- `/map set <option> <value>` - set room metadata\n- `/map flag <name> [on|off]` - toggle mapper-wide flags\n- `/map roomflag [flag[;flag...] [on|off|get <variable>]]` - list or update current-room flags\n- `/map exitflag <direction> <flag> [on|off]` - toggle an exit flag\n- `/map door <direction> [state|none] [name]` - mark or clear an exit door\n\n## Paths and Files\n- `/map find <vnum|name> [--save <variable>]` - show a weighted path\n- `/map run <vnum|name>` - send a weighted path\n- `/map read <file>` - load map TOML\n- `/map write <file>` - save map TOML\n\nUse `/help map` for the complete command reference.")
     }
 
     fn help_with_landmarks(&self) -> MapCommandResult {
@@ -1852,6 +1880,50 @@ mod tests {
 
         let restored: MapState = toml::from_str(&toml::to_string(&map).unwrap()).unwrap();
         assert_eq!(restored.rooms["1"].z, -2);
+    }
+
+    #[test]
+    fn find_saves_route_for_path_load_and_walk() {
+        let mut map = MapState::default();
+        map.create();
+        map.move_direction("n").unwrap();
+        map.move_direction("e").unwrap();
+        map.current_room = Some("1".to_string());
+        let result = map.execute("find 3 --save route").unwrap();
+        let (name, value) = result.variable.unwrap();
+        assert_eq!(value, "n;e");
+        let variables = std::collections::HashMap::from([(name, value)]);
+        let mut path = crate::path::PathState::default();
+        path.execute("load route", &variables).unwrap();
+        assert_eq!(path.execute("walk", &variables).unwrap().commands, ["n"]);
+        assert_eq!(path.execute("walk", &variables).unwrap().commands, ["e"]);
+        assert!(path.execute("walk", &variables).is_err());
+        assert!(map.execute("find 3 --save").is_err());
+        assert!(map.execute("find missing --save route").is_err());
+        assert_eq!(
+            map.execute("find 1 --save route")
+                .unwrap()
+                .variable
+                .unwrap()
+                .1,
+            ""
+        );
+    }
+
+    #[test]
+    fn find_rejects_routes_that_cannot_round_trip_through_variables() {
+        let mut map = MapState::default();
+        map.create();
+        map.move_direction("n").unwrap();
+        map.current_room = Some("1".to_string());
+        let room = map.rooms.get_mut("1").unwrap();
+        let exit = room.exits.remove("n").unwrap();
+        room.exits.insert("${direction}".into(), exit.clone());
+        assert!(map.execute("find 2 --save route").is_err());
+        let room = map.rooms.get_mut("1").unwrap();
+        room.exits.remove("${direction}");
+        room.exits.insert("open;n".into(), exit);
+        assert!(map.execute("find 2 --save route").is_err());
     }
 
     #[test]

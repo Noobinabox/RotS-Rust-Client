@@ -138,3 +138,9 @@ Customize the marker in `[map.boundary]` and use `/reload`. Its default is `¦` 
 Relative map file paths resolve beside the active `config.toml`, normally `~/.config/mud-client`.
 
 Room flags are `avoid`, `block`, `curved`, `fog`, `hide`, `invis`, `leave`, `noglobal`, `static`, and `void`. Exit flags are `avoid`, `block`, `hide`, `invis`, `teleport`, `gate`, and `boundary`. Door states are `trigger`, `unknown`, `open`, `closed`, `pickable`, `locked`, and `none`.
+
+## Save A Route For Walking
+
+Use `/map find Home --save route` to save the calculated route to a runtime variable, then `/path load route` and `/path walk` to send one step at a time. `/path run` sends the remaining steps. The route starts at the current mapped room; verify your character is there before walking. Backward commands are inferred only for abbreviated standard directions and are not checked against map exits. Other commands are repeated when walking backward, so verify the return route before using `/path walk backward`. Runtime variables survive `/reload`; use `/save` to persist them for the active profile.
+
+The `--save` option is reserved in destination names. Routes with semicolons or variable-reference syntax in exit commands cannot be saved, because those characters have special meaning in path variables.
